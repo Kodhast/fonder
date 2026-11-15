@@ -31,10 +31,12 @@ private val localProps = Properties().apply {
 }
 
 android {
-    namespace = "se.partee71.fonder"
+    namespace = "se.kodhast.fonder"
     compileSdk = 37
 
     defaultConfig {
+        // Appens id står kvar efter bytet till se.kodhast.fonder: telefonerna uppdaterar samma app,
+        // och Google-inloggningen och Drive-backupen är knutna till id:t (fonder #253).
         applicationId = "se.partee71.fonder"
         minSdk = 30
         targetSdk = 36
@@ -42,7 +44,7 @@ android {
         versionName = versionNameOverride ?: appVersion.getProperty("versionName")
 
         // HiltTestApplication i stället för FonderApp, så att @HiltAndroidTest kan starta MainActivity.
-        testInstrumentationRunner = "se.partee71.fonder.HiltTestRunner"
+        testInstrumentationRunner = "se.kodhast.fonder.HiltTestRunner"
     }
 
     val releaseStorePassword = localProps.getProperty("signing.storePassword")

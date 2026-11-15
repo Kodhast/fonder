@@ -3,11 +3,11 @@
 # bygget alltid tolkar filerna likadant. Lägg till ett exempel här när ett mönster ändras.
 # Allt körs med tom allowlist utom sektionen allowlist.
 #
-# ok            = rader som är tillåtna i feature-kod (app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt)
+# ok            = rader som är tillåtna i feature-kod (app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt)
 # stopp         = rader som ska stoppas i feature-kod
-# komponent-ok  = rader som är tillåtna i en delad komponent (app/src/main/kotlin/se/partee71/fonder/ui/components/X.kt)
+# komponent-ok  = rader som är tillåtna i en delad komponent (app/src/main/kotlin/se/kodhast/fonder/ui/components/X.kt)
 # komponent-stopp = rader som stoppas överallt utom i ui/components – även i ui/diagram (X.kt)
-# diagram-ok    = rader som är tillåtna i ett delat diagram (app/src/main/kotlin/se/partee71/fonder/ui/diagram/X.kt)
+# diagram-ok    = rader som är tillåtna i ett delat diagram (app/src/main/kotlin/se/kodhast/fonder/ui/diagram/X.kt)
 # diagram-stopp = Vico-rader som stoppas även i en delad komponent i ui/components (X.kt)
 # scope         = <sökväg><TAB><scope, kommaseparerade; tomt = inga>
 # allowlist     = <allowlist-rad><TAB><kodrad i HemRow.kt><TAB><ok|stopp>
@@ -185,27 +185,27 @@ VerticalAxis.rememberStart()
 
 [scope]
 README.md
-app/src/main/kotlin/se/partee71/fonder/ui/hem/notes.md
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/notes.md
 app/src/test/kotlin/X.kt
-app/src/main/kotlin/se/partee71/fonder/data/repository/FundRepository.kt	component-only,vico,dispatchers
-app/src/main/kotlin/se/partee71/fonder/ui/theme/Theme.kt	component-only,vico,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/ui/components/PullToRefreshContainer.kt	vico,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/ui/diagram/FundLineChart.kt	component-only,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemScreen.kt	feature,component-only,vico,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/ui/navigation/AppNavigation.kt	feature,component-only,vico,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/ui/MainViewModel.kt	feature,component-only,vico,dispatchers,events
-app/src/main/kotlin/se/partee71/fonder/MainActivity.kt	component-only,vico,dispatchers
-app/src/main/kotlin/se/partee71/fonder/di/AppModule.kt	component-only,vico
+app/src/main/kotlin/se/kodhast/fonder/data/repository/FundRepository.kt	component-only,vico,dispatchers
+app/src/main/kotlin/se/kodhast/fonder/ui/theme/Theme.kt	component-only,vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/components/PullToRefreshContainer.kt	vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/diagram/FundLineChart.kt	component-only,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemScreen.kt	feature,component-only,vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/navigation/AppNavigation.kt	feature,component-only,vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/MainViewModel.kt	feature,component-only,vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/MainActivity.kt	component-only,vico,dispatchers
+app/src/main/kotlin/se/kodhast/fonder/di/AppModule.kt	component-only,vico
 
 [allowlist]
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card( – test	Card(modifier) { }	ok
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card( – test	Card(colors = CardDefaults.cardColors(Color.Red)) { }	stopp
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card( – test	AlertDialog(onDismissRequest = {})	stopp
-app/src/main/kotlin/se/partee71/fonder/ui/portfolj/PortfoljRow.kt:Card( – annan fil	Card(modifier) { }	stopp
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Color.Red – test	tint = Color.Red	ok
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card( – baslinje 2026-10 – rättas i skärm-PR:erna	Card(modifier) { }	ok
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card( – test	Card(modifier) { }	ok
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card( – test	Card(colors = CardDefaults.cardColors(Color.Red)) { }	stopp
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card( – test	AlertDialog(onDismissRequest = {})	stopp
+app/src/main/kotlin/se/kodhast/fonder/ui/portfolj/PortfoljRow.kt:Card( – annan fil	Card(modifier) { }	stopp
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Color.Red – test	tint = Color.Red	ok
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card( – baslinje 2026-10 – rättas i skärm-PR:erna	Card(modifier) { }	ok
 
 [allowlist-fel]
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt – saknar symbol
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card(
-app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt:Card( –
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt – saknar symbol
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card(
+app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt:Card( –

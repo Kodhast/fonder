@@ -1,0 +1,114 @@
+package se.kodhast.fonder.domain.usecase
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import se.kodhast.fonder.domain.usecase.ChartPeriodFilter.Period
+
+class ChartPeriodFilterTest {
+
+    private fun point(epochDay: Long, nav: Double = 100.0) = epochDay to nav
+
+    @Test
+    fun `en manad behaller bara punkter inom 30 dagar fran senaste punkten`() {
+        val latest = 20_000L
+        val points = listOf(
+            point(latest - 400),
+            point(latest - 31),
+            point(latest - 30),
+            point(latest - 1),
+            point(latest)
+        )
+
+        val result = ChartPeriodFilter.apply(points, Period.EN_MANAD)
+
+        assertEquals(setOf(latest - 30, latest - 1, latest), result.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `kortare historik an perioden ger hela historiken`() {
+        val latest = 20_000L
+        val points = listOf(point(latest - 5), point(latest - 2), point(latest))
+
+        val result = ChartPeriodFilter.apply(points, Period.ETT_AR)
+
+        assertEquals(points.map { it.first }.toSet(), result.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `allt ger tillbaka precis samma punkter oavsett tidsspann`() {
+        val points = listOf(point(0), point(10_000), point(20_000))
+
+        val result = ChartPeriodFilter.apply(points, Period.ALLT)
+
+        assertEquals(points, result)
+    }
+
+    @Test
+    fun `tom lista ger tom lista utan att krascha`() {
+        assertTrue(ChartPeriodFilter.apply(emptyList(), Period.EN_MANAD).isEmpty())
+    }
+
+    @Test
+    fun `cutoff raknas fran senaste punkten i datan, inte fran nagon extern tidsreferens`() {
+        // En fond med gammal, orörlig historik ska ändå visa sitt senaste kända fönster när
+        // "1 månad" väljs — inte ett tomt diagram bara för att ingen punkt ligger nära dagens
+        // datum.
+        val gammaltDatum = 5_000L
+        val points = listOf(point(gammaltDatum - 40), point(gammaltDatum - 10), point(gammaltDatum))
+
+        val result = ChartPeriodFilter.apply(points, Period.EN_MANAD)
+
+        assertEquals(setOf(gammaltDatum - 10, gammaltDatum), result.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `punkter behover inte vara sorterade for att senaste ska hittas ratt`() {
+        val latest = 20_000L
+        val ordnat = listOf(point(latest), point(latest - 5), point(latest - 400))
+
+        val result = ChartPeriodFilter.apply(ordnat, Period.EN_MANAD)
+
+        assertEquals(setOf(latest, latest - 5), result.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `tre och fem ar avgransar till sina egna fonster`() {
+        val latest = 20_000L
+        val points = listOf(
+            point(latest),
+            point(latest - 900), // inom 3 år
+            point(latest - 1_500), // inom 5 år, utanför 3
+            point(latest - 2_500) // utanför båda
+        )
+
+        assertEquals(
+            setOf(latest, latest - 900),
+            ChartPeriodFilter.apply(points, Period.TRE_AR).map { it.first }.toSet()
+        )
+        assertEquals(
+            setOf(latest, latest - 900, latest - 1_500),
+            ChartPeriodFilter.apply(points, Period.FEM_AR).map { it.first }.toSet()
+        )
+    }
+
+    @Test
+    fun `en kortare historik an perioden ger hela historiken, inte ett halvtomt fonster`() {
+        // Den som köpt nyligen ska se sin kurva under "5 år", inte ett tomt diagram — samma
+        // princip som redan gäller för de kortare perioderna.
+        val latest = 20_000L
+        val points = listOf(point(latest - 200), point(latest))
+
+        val result = ChartPeriodFilter.apply(points, Period.FEM_AR)
+
+        assertEquals(points.map { it.first }.toSet(), result.map { it.first }.toSet())
+    }
+
+    @Test
+    fun `perioderna ar ordnade fran kortast till langst, med Allt sist`() {
+        // Ordningen är chipparnas ordning i UI:t — en ny period får inte hamna mitt i skalan.
+        val dagar = Period.entries.map { it.days }
+
+        assertEquals(listOf(30L, 90L, 365L, 1_095L, 1_825L, null), dagar)
+    }
+}

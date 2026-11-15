@@ -1,0 +1,911 @@
+package se.kodhast.fonder.ui.hem
+
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.time.LocalDate
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.model.RiskProfile
+import se.kodhast.fonder.domain.model.SuggestionKind
+import se.kodhast.fonder.domain.usecase.BackupReminder
+import se.kodhast.fonder.domain.usecase.CheaperAlternative
+import se.kodhast.fonder.domain.usecase.FundAnalysisCalc
+import se.kodhast.fonder.domain.usecase.OpenSwitchWatch
+import se.kodhast.fonder.domain.usecase.PendingDecisions
+import se.kodhast.fonder.domain.usecase.PortfolioFeeCalc
+import se.kodhast.fonder.domain.usecase.PortfolioPerformanceCalc
+import se.kodhast.fonder.domain.usecase.PortfolioReturnSeriesCalc
+import se.kodhast.fonder.domain.usecase.PortfolioRiskCalc
+import se.kodhast.fonder.domain.usecase.PortfolioRiskSource
+import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
+import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
+import se.kodhast.fonder.ui.diagram.CHART_PERIOD_ROW_TEST_TAG
+import se.kodhast.fonder.ui.theme.FonderTheme
+import se.kodhast.ui.common.DetailUiState
+
+/**
+ * Instrumenterat test av Hem-skärmens tillståndsdrivna innehåll (issue #14) — bygger
+ * [HemUiState] direkt i stället för att gå via ett riktigt [HemViewModel]/Hilt, för ett
+ * deterministiskt test utan korutin-timing.
+ */
+@RunWith(AndroidJUnit4::class)
+class HemScreenTest {
+
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    /**
+     * Riskkortet är sista `item {}` i Hems `LazyColumn` och komponeras inte förrän listan
+     * skrollats dit — `onNodeWithText(...)` hittar då ingen nod alls, oavsett `performScrollTo()`,
+     * som kräver att noden **redan** är komponerad (UI-5, issue #66). Testerna klarade sig
+     * tidigare bara på att korten råkade rymmas i testviewporten: rubrikraderna med väntesnurra
+     * (NAV-6) gjorde varje kort några dp högre och slog ut dem. Samma `testTag`-mönster som
+     * Portfölj, Facit och Pågående byte redan använder.
+     */
+    private fun scrollToRiskCard() {
+        composeRule.onNodeWithTag(HEM_LIST_TEST_TAG).performScrollToIndex(RISK_CARD_INDEX)
+    }
+
+    @Test
+    fun tomt_tillstand_visas_utan_innehav() {
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = false)))) }
+        }
+
+        composeRule.onNodeWithText("Ingen portfölj ännu").assertExists()
+    }
+
+    // --- Påminnelse om säkerhetskopia (HEM-12) ---
+
+    @Test
+    fun paminnelsen_visar_antal_och_leder_till_installningar() {
+        var opened = 0
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true
+                )
+            ),
+            backupReminder = BackupReminder(newTransactions = 3, lastBackupEpochMillis = 1_759_449_600_000L)
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state, onOpenBackup = { opened++ }) }
+        }
+
+        composeRule.onNodeWithText("Ändringar sedan senaste säkerhetskopian").assertIsDisplayed()
+        composeRule.onNodeWithText("3 nya transaktioner · senast", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Säkerhetskopiera").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun paminnelsen_utan_kopia_sager_det() {
+        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)), backupReminder = BackupReminder(0, null))
+
+        composeRule.setContent { FonderTheme { HemContent(state = state) } }
+
+        composeRule.onNodeWithText("Ingen säkerhetskopia än").assertIsDisplayed()
+    }
+
+    @Test
+    fun ingen_paminnelse_nar_innehallet_finns_i_en_kopia() {
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)))) }
+        }
+
+        composeRule.onNodeWithText("Ändringar sedan senaste säkerhetskopian").assertDoesNotExist()
+    }
+
+    @Test
+    fun kurskorten_visar_vantesnurra_medan_kurserna_hamtas() {
+        // NAV-6: chromets indikator säger bara att *något* kör. Snurran på kortet säger vilket
+        // korts siffror som håller på att bli till.
+        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)), pricesWorking = true)
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertExists()
+        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertExists()
+    }
+
+    @Test
+    fun kurskorten_star_stilla_i_vila() {
+        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)))
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertDoesNotExist()
+    }
+
+    @Test
+    fun bara_avkastningskortet_snurrar_for_en_referensfondsskanning() {
+        // Referensfonden (HEM-10) rör bara avkastningskurvan. Snurrar totalkortet med, slutar
+        // snurran betyda något — den skulle då bara säga "appen jobbar", vilket chromet redan
+        // säger (NAV-6).
+        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)), benchmarkWorking = true)
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertExists()
+        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertDoesNotExist()
+    }
+
+    @Test
+    fun totalkort_visar_varde_vinst_och_period_forandring() {
+        // Undviker tresiffriga belopp — tusentalsavgränsaren kan vara vanligt eller hårt
+        // blanksteg beroende på JVM/lokal (samma försiktighet som MoneyFormatTest).
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    totalValue = 500.0,
+                    totalGainLoss = 100.0,
+                    totalGainLossFraction = 0.2,
+                    total = PortfolioTotalCalc.Result(netDepositsKr = 400.0, totalGainKr = 100.0, totalGainFraction = 0.25, moneyWeightedAnnualReturn = null, partial = false, ageDays = 100),
+                    performance = PortfolioPerformanceCalc.PortfolioPerformance(
+                        day = PortfolioPerformanceCalc.PortfolioPeriodResult.Available(amount = 50.0, fraction = 0.05, partial = false),
+                        week = PortfolioPerformanceCalc.PortfolioPeriodResult.Available(amount = 90.0, fraction = 0.1, partial = false),
+                        month = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory
+                    ),
+                    navEpochDay = java.time.LocalDate.of(2026, 7, 10).toEpochDay() // POR-7, issue #27
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("500,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("Totalresultat").assertExists()
+        composeRule.onNodeWithText("+25,0 % · 100,00 kr", substring = true).assertExists() // HEM-1, issue #191
+        composeRule.onNodeWithText("Varav orealiserat").assertExists()
+        composeRule.onNodeWithText("+20,0 % · 100,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("+5,0 % · 50,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("Otillräcklig data").assertExists()
+        composeRule.onNodeWithText("Värde per 2026-07-10").assertExists()
+    }
+
+    @Test
+    fun otillracklig_historik_visar_otillracklig_data_ist_for_falsk_noll() {
+        // Räcker inte historiken för en period markeras den "Otillräcklig data" — aldrig ett gissat 0.
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    totalValue = 500.0,
+                    totalGainLoss = 100.0,
+                    totalGainLossFraction = 0.2,
+                    total = PortfolioTotalCalc.Result(netDepositsKr = 400.0, totalGainKr = 100.0, totalGainFraction = 0.25, moneyWeightedAnnualReturn = null, partial = false, ageDays = 100),
+                    performance = PortfolioPerformanceCalc.PortfolioPerformance(
+                        day = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory,
+                        week = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory,
+                        month = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        // Tre perioder – totalkortets årsavkastning säger "Visas efter ett år", inte "Otillräcklig data" (HEM-1).
+        composeRule.onAllNodesWithText("Otillräcklig data").assertCountEquals(3)
+        composeRule.onNodeWithText("Visas efter ett år").assertExists()
+    }
+
+    @Test
+    fun delvis_osaker_markering_visas_for_en_period() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    totalValue = 1000.0,
+                    totalGainLoss = 0.0,
+                    totalGainLossFraction = 0.0,
+                    performance = PortfolioPerformanceCalc.PortfolioPerformance(
+                        day = PortfolioPerformanceCalc.PortfolioPeriodResult.Available(amount = 10.0, fraction = 0.01, partial = true),
+                        week = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory,
+                        month = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Delvis osäker — någon fond saknar historik").assertExists()
+    }
+
+    @Test
+    fun analys_summeringskort_visar_tomt_tillstand_utan_flaggade_fonder() {
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)))) }
+        }
+
+        composeRule.onNodeWithText("Inga fonder flaggade").assertExists()
+    }
+
+    @Test
+    fun analys_summeringskort_visar_flaggad_fond_och_navigerar_vid_klick() {
+        val fund = Fund(fundId = "SHB0000442", name = "Flaggad Fond")
+        val analysis = sampleAnalysis(FundAnalysisCalc.SignalLevel.GUL)
+        var clickedFundId: String? = null
+
+        composeRule.setContent {
+            FonderTheme {
+                HemContent(
+                    state = HemUiState(
+                        portfolio = DetailUiState.Content(
+                            HemPortfolio(
+                                hasHoldings = true,
+                                analysisSummary = AnalysisSummary(gulCount = 1, flagged = persistentListOf(FlaggedHolding(fund, analysis)))
+                            )
+                        )
+                    ),
+                    onFundClick = { clickedFundId = it }
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Flaggad Fond").assertExists()
+        composeRule.onNodeWithText("Under 200-dagars snitt").assertExists()
+
+        // Skrolla fram raden innan klicket: `assertExists()` passerar för innehåll som är
+        // komponerat men avklippt (UI-5, issue #63), och ett klick på en rad utanför
+        // skärmen landar aldrig. Kortet ligger fjärde på Hem sedan avkastningsdiagrammet
+        // (HEM-9) lades in som tredje.
+        composeRule.onNodeWithText("Flaggad Fond").performScrollTo().performClick()
+        assertEquals("SHB0000442", clickedFundId)
+    }
+
+    // --- Fondavgifter (HEM-5, issue #60) ---
+
+    @Test
+    fun fondavgiftskort_visar_totalen_och_forklaringstexten() {
+        // Under 1000 kr — tusentalsavgränsaren kan vara vanligt eller hårt blanksteg (se MoneyFormatTest).
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(totalAnnualFeeKr = 500.0, byHolding = emptyList(), unknownFeeCount = 0)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Fondavgifter per år").assertExists()
+        composeRule.onNodeWithText("500,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("Redan avdraget löpande ur fondernas kurs", substring = true).assertExists()
+    }
+
+    @Test
+    fun fondavgiftskort_visar_antal_fonder_utan_kand_avgift() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(totalAnnualFeeKr = 0.0, byHolding = emptyList(), unknownFeeCount = 2)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("2 fond(er) saknar känd avgift", substring = true).assertExists()
+    }
+
+    @Test
+    fun fondavgiftskort_visar_ingen_okand_avgift_text_nar_alla_kanda() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(totalAnnualFeeKr = 500.0, byHolding = emptyList(), unknownFeeCount = 0)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("saknar känd avgift", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun fondavgiftskort_visar_rad_per_innehav_sorterat_och_navigerar_vid_klick() {
+        val dyr = Fund(fundId = "DYR", name = "Dyr Fond")
+        val billig = Fund(fundId = "BIL", name = "Billig Fond")
+        var clickedFundId: String? = null
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(
+                        totalAnnualFeeKr = 900.0,
+                        // Redan sorterat störst avgift först av PortfolioFeeCalc.compute — kortet
+                        // ska bara rendera i den ordningen, inte sortera om.
+                        byHolding = listOf(
+                            PortfolioFeeCalc.HoldingFee(dyr, annualFeeKr = 700.0),
+                            PortfolioFeeCalc.HoldingFee(billig, annualFeeKr = 200.0)
+                        ),
+                        unknownFeeCount = 0
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state, onFundClick = { clickedFundId = it }) }
+        }
+
+        composeRule.onNodeWithText("Dyr Fond").assertExists()
+        composeRule.onNodeWithText("700,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("Billig Fond").assertExists()
+        composeRule.onNodeWithText("200,00 kr", substring = true).assertExists()
+
+        // Samma skäl som i analyskortets test ovan — avgiftskortet ligger femte sedan HEM-9.
+        composeRule.onNodeWithText("Billig Fond").performScrollTo().performClick()
+        assertEquals("BIL", clickedFundId)
+    }
+
+    // --- Samlad besparingspotential (HEM-6, issue #61) ---
+
+    @Test
+    fun fondavgiftskort_visar_samlad_besparing_och_antal_genomsokta() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(
+                        totalAnnualFeeKr = 900.0,
+                        byHolding = emptyList(),
+                        unknownFeeCount = 0,
+                        totalAnnualSavingsKr = 300.0,
+                        comparedCount = 2,
+                        comparableCount = 3
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("300,00 kr", substring = true).assertExists()
+        composeRule.onNodeWithText("2 av 3", substring = true).assertExists()
+    }
+
+    @Test
+    fun fondavgiftskort_visar_ingen_besparingstext_utan_jamforbara_innehav() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(totalAnnualFeeKr = 0.0, byHolding = emptyList(), unknownFeeCount = 0)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Möjlig besparing", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun avgiftsrad_visar_besparing_nar_ett_farskt_billigare_alternativ_finns() {
+        val dyr = Fund(fundId = "DYR", name = "Dyr Fond")
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(
+                        totalAnnualFeeKr = 700.0,
+                        byHolding = listOf(PortfolioFeeCalc.HoldingFee(dyr, annualFeeKr = 700.0, annualSavingsKr = 350.0)),
+                        unknownFeeCount = 0,
+                        totalAnnualSavingsKr = 350.0,
+                        comparedCount = 1,
+                        comparableCount = 1
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Kan spara 350,00 kr/år", substring = true).assertExists()
+    }
+
+    @Test
+    fun avgiftsrad_visar_ingen_text_alls_for_ett_aldrig_sokt_innehav() {
+        val dyr = Fund(fundId = "DYR", name = "Dyr Fond")
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(
+                        totalAnnualFeeKr = 700.0,
+                        // wasCompared=false (standard) — aldrig sökt, eller ett utgånget resultat.
+                        byHolding = listOf(PortfolioFeeCalc.HoldingFee(dyr, annualFeeKr = 700.0, annualSavingsKr = null)),
+                        unknownFeeCount = 0
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Kan spara", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Redan bland de billigaste", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun avgiftsrad_visar_redan_bland_de_billigaste_nar_genomsokt_utan_traff() {
+        // Skilt tillstånd från "aldrig sökt" — samma text som ANA-9:s eget kort i Fonddetalj
+        // (regel 4), så det inte ser ut som att innehavet aldrig genomsökts.
+        val dyr = Fund(fundId = "DYR", name = "Dyr Fond")
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    feeSummary = PortfolioFeeCalc.Result(
+                        totalAnnualFeeKr = 700.0,
+                        byHolding = listOf(PortfolioFeeCalc.HoldingFee(dyr, annualFeeKr = 700.0, annualSavingsKr = null, wasCompared = true)),
+                        unknownFeeCount = 0,
+                        comparedCount = 1,
+                        comparableCount = 1
+                    )
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("Redan bland de billigaste", substring = true).assertExists()
+        composeRule.onNodeWithText("Kan spara", substring = true).assertDoesNotExist()
+    }
+
+    // --- Skrollbarhet (UI-5, issue #63) ---
+
+    @Test
+    fun hem_ar_skrollbar_nar_innehallet_overstiger_skarmen() {
+        // Ett generöst antal flaggade fonder — inte den minsta möjliga för att just överstiga
+        // en uppskattad skärmhöjd (för sköra tal beroende på exakt Material3-metrik), utan
+        // gott om marginal så testet är robust oavsett enhetens faktiska viewport.
+        val funds = (1..10).map { i -> Fund(fundId = "F$i", name = "Flaggad Fond $i") }
+        val analysis = sampleAnalysis(FundAnalysisCalc.SignalLevel.GUL)
+        val flagged = funds.map { FlaggedHolding(it, analysis) }
+
+        composeRule.setContent {
+            FonderTheme {
+                HemContent(
+                    state = HemUiState(
+                        portfolio = DetailUiState.Content(
+                            HemPortfolio(
+                                hasHoldings = true,
+                                analysisSummary = AnalysisSummary(gulCount = flagged.size, flagged = flagged.toImmutableList())
+                            )
+                        )
+                    )
+                )
+            }
+        }
+
+        // performScrollTo() kräver en skrollbar förälder — utan den (bugen i #63) skulle
+        // testet aldrig nå fram till assertIsDisplayed() på den sista, annars avklippta raden.
+        composeRule.onNodeWithText("Flaggad Fond 10").performScrollTo().assertIsDisplayed()
+    }
+
+    private fun sampleAnalysis(status: FundAnalysisCalc.SignalLevel) = FundAnalysisCalc.Analysis(
+        keyFigures = FundAnalysisCalc.KeyFigures(
+            periodReturns = FundAnalysisCalc.Period.entries.map { FundAnalysisCalc.PeriodReturn(it, null, null) },
+            cagr = null,
+            currentNav = 100.0,
+            gavPerShare = 100.0,
+            gavFraction = 0.0,
+            portfolioShareFraction = null,
+            annualizedVolatility = null,
+            sharpeRatio = null,
+            riskWindowYears = null
+        ),
+        distanceFromHigh = null,
+        trend = FundAnalysisCalc.TrendSignal(status),
+        momentum = null,
+        status = status,
+        profitTake = null
+    )
+
+    // --- Riskprofil (HEM-7, issue #68, #238) ---
+
+    /** Riskkortet för en målfördelning och ett klassificerat värde per nivå, utan bytesplan. */
+    private fun riskOf(target: Map<Int, Double>, valueByLevelKr: Map<Int, Double>) = PortfolioRiskSource.summary(PortfolioRiskSource.RiskBase(RiskProfile(targetAllocation = target), valueByLevelKr, emptyMap()), emptyList())
+
+    @Test
+    fun riskkortet_uteblir_helt_utan_sparad_profil() {
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true, risk = null)))) }
+        }
+
+        composeRule.onNodeWithText("Riskprofil").assertDoesNotExist()
+    }
+
+    @Test
+    fun riskkortet_visar_malniva_och_faktisk_niva() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    risk = riskOf(mapOf(5 to 1.0), mapOf(3 to 500.0, 4 to 500.0)),
+                    portfolioRisk = PortfolioRiskCalc.Result(weightedAverageRisk = 3.5, includedValueKr = 1000.0, excludedCount = 0)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        scrollToRiskCard()
+
+        composeRule.onNodeWithText("Riskprofil").assertExists()
+        composeRule.onNodeWithText("5,00").assertExists()
+        composeRule.onNodeWithText("3,50").assertExists()
+    }
+
+    @Test
+    fun riskkortet_visar_mal_mot_faktisk_per_niva() {
+        // Andelarna är medvetet olika sinsemellan — annars kan flera ExposureBar-rader råka
+        // rendera samma procenttext, vilket gör onNodeWithText tvetydig (kräver exakt en träff).
+        val target = mapOf(3 to 0.31, 4 to 0.46, 5 to 0.23)
+        val actual = mapOf(3 to 120.0, 4 to 530.0, 5 to 350.0)
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    risk = riskOf(target, actual),
+                    portfolioRisk = PortfolioRiskCalc.Result(weightedAverageRisk = 4.0, includedValueKr = 1000.0, excludedCount = 0)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        scrollToRiskCard()
+
+        // En stapel per nivå med målstreck; raden läses som en mening (ExposureBar med mål).
+        composeRule.onNodeWithText("Du har mer risk än ditt mål").assertExists()
+        composeRule.onNodeWithContentDescription("Nivå 3: 12,0 %, mål 31,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Nivå 4: 53,0 %, mål 46,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Nivå 5: 35,0 %, mål 23,0 %").assertExists()
+    }
+
+    @Test
+    fun riskkortet_visar_ingen_bytesplan_den_ligger_pa_beslut() {
+        // Sedan 0.61.0 visas bytesplanen på Beslut (NAV-9); riskkortet visar bara fördelningen,
+        // och Översikten säger bara hur många förslag som väntar (HEM-13).
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    risk = riskOf(mapOf(3 to 1.0), mapOf(3 to 10_000.0)),
+                    portfolioRisk = PortfolioRiskCalc.Result(weightedAverageRisk = 3.0, includedValueKr = 10_000.0, excludedCount = 0)
+                )
+            ),
+            decisions = PendingDecisions(switchPlan = listOf(planSuggestion)).withSwitches(emptyList(), LocalDate.now())
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        composeRule.onNodeWithText("1 föreslaget").assertExists()
+        composeRule.onNodeWithTag(HEM_LIST_TEST_TAG).performScrollToIndex(RISK_CARD_INDEX + 1)
+
+        composeRule.onNodeWithText("Bytesplan").assertDoesNotExist()
+        composeRule.onNodeWithText("Sälj Dyr fond", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun riskkortet_visar_otillrackligt_data_nar_ingen_faktisk_niva_kunde_beraknas() {
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true,
+                    risk = riskOf(mapOf(4 to 1.0), emptyMap()),
+                    portfolioRisk = PortfolioRiskCalc.Result(weightedAverageRisk = null, includedValueKr = 0.0, excludedCount = 1)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            FonderTheme { HemContent(state = state) }
+        }
+
+        scrollToRiskCard()
+
+        // 3 kommer från PerformanceCard-kortets dag/vecka/månad (ingen performance-data satt i
+        // testtillståndet), den fjärde är riskradens "otillräcklig data".
+        composeRule.onAllNodesWithText("Otillräcklig data").assertCountEquals(4)
+        composeRule.onNodeWithText("1 fond(er) saknar känd risknivå", substring = true).assertExists()
+    }
+
+    // --- Avkastningsdiagrammet med indexjämförelse (HEM-9/HEM-10, issue #96) ---
+
+    private fun returnState(
+        points: List<Pair<Long, Double>> = listOf(20_000L to 0.0, 20_015L to 0.08, 20_030L to 0.20),
+        partial: Boolean = false,
+        benchmark: BenchmarkSeries? = null
+    ) = HemUiState(
+        portfolio = DetailUiState.Content(
+            HemPortfolio(
+                hasHoldings = true,
+                totalValue = 1200.0,
+                totalGainLoss = 200.0,
+                totalGainLossFraction = 0.2,
+                returnSeries = PortfolioReturnSeriesCalc.Result(points = points, partial = partial),
+                benchmarkSeries = benchmark,
+                purchaseEpochDays = persistentListOf(20_000L)
+            )
+        )
+    )
+
+    @Test
+    fun avkastningsdiagrammet_forklarar_att_kurvorna_nollstalls_mot_perioden() {
+        // Nollställningen är inte självklar av bilden ensam — utan texten ser en kurva som
+        // startar på 0 % ut som en portfölj utan avkastning (HEM-9).
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        composeRule.onNodeWithText("startar på 0 %", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun avkastningsdiagrammet_forklarar_varfor_det_skiljer_sig_fran_totalkortet() {
+        // Kurvan är tidsviktad och slutar därför inte på totalkortets procent (issue #116). Två
+        // olika tal på samma skärm måste förklaras, annars läses det ena som ett fel i det andra.
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        composeRule.onNodeWithText("flyttar inte kurvan", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("hur fonderna gick", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun avkastningsdiagrammet_ar_natt_via_skroll() {
+        // UI-5: kortet ligger under totalen och "Att besluta", alltså delvis utanför skärmen på en
+        // telefon — det ska gå att skrolla till, inte bara finnas i semantikträdet (issue #63).
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        composeRule.onNodeWithText("Avkastning över tid").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun avkastningsdiagrammet_har_samma_perioder_som_ovriga_diagram() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        // Chipraden skrollar, så de sista perioderna är inte komponerade förrän listan skrollats
+        // dit — `performScrollTo` hade letat i semantikträdet och inte hittat dem (UI-5, samma
+        // metod som Portföljs innehavslista, issue #66).
+        composeRule.onNodeWithText("1 mån").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("3 mån").assertIsDisplayed()
+
+        composeRule.onNodeWithTag(CHART_PERIOD_ROW_TEST_TAG).performScrollToIndex(5)
+        listOf("3 år", "5 år", "Allt").forEach { period ->
+            composeRule.onNodeWithText(period).assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun periodbyte_faller_inte_kortet() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        composeRule.onNodeWithText("1 år").performScrollTo().performClick()
+
+        composeRule.onNodeWithText("Avkastning över tid").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun otillracklig_historik_visar_forklaring_i_stallet_for_tomt_diagram() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(points = emptyList())) } }
+
+        composeRule.onNodeWithText("För lite kurshistorik", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("1 mån").assertDoesNotExist()
+    }
+
+    @Test
+    fun delvis_osaker_avkastningskurva_markeras() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(partial = true)) } }
+
+        composeRule.onNodeWithText("Delvis osäker", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun indexjamforelsen_namnger_referensfonden() {
+        // UI-3: jämförelsen får aldrig bäras av enbart kurvans färg — fondens namn ska stå både
+        // i teckenförklaringen och i texten under diagrammet.
+        val benchmark = BenchmarkSeries(
+            fundName = "Länsförsäkringar Global Index",
+            points = persistentListOf(20_000L to 0.0, 20_030L to 0.10)
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(benchmark = benchmark)) } }
+
+        composeRule.onAllNodesWithText("Länsförsäkringar Global Index", substring = true)
+            .onFirst()
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun viktad_referens_visar_sina_andelar_i_teckenforklaringen() {
+        // Blandningen ska gå att läsa av: "70,0 % Global Index / 30,0 % Räntefond X" säger både
+        // vad man jämförs med och i vilka proportioner (UI-3).
+        val benchmark = BenchmarkSeries(
+            fundName = "70,0 % Global Index / 30,0 % Räntefond X",
+            points = persistentListOf(20_000L to 0.0, 20_030L to 0.07)
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(benchmark = benchmark)) } }
+
+        composeRule.onAllNodesWithText("70,0 % Global Index", substring = true)
+            .onFirst()
+            .performScrollTo()
+            .assertIsDisplayed()
+    }
+
+    @Test
+    fun stor_oklassificerad_andel_markeras_i_stallet_for_att_doljas() {
+        // Vikterna vilar bara på klassificerat värde. Är resten stor är blandningen en grov
+        // approximation, och det ska synas i stället för att gömmas bakom en exakt procentsats.
+        val benchmark = BenchmarkSeries(
+            fundName = "Global Index",
+            points = persistentListOf(20_000L to 0.0, 20_030L to 0.07),
+            unclassifiedFraction = 0.30
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(benchmark = benchmark)) } }
+
+        composeRule.onNodeWithText("ingår inte i viktningen", substring = true).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun liten_oklassificerad_andel_ger_ingen_notis() {
+        val benchmark = BenchmarkSeries(
+            fundName = "Global Index",
+            points = persistentListOf(20_000L to 0.0, 20_030L to 0.07),
+            unclassifiedFraction = 0.02
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(benchmark = benchmark)) } }
+
+        composeRule.onNodeWithText("ingår inte i viktningen", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun utan_referensfond_visas_kurvan_ensam_med_en_forklaring() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState(benchmark = null)) } }
+
+        composeRule.onNodeWithText("Ingen indexjämförelse än", substring = true).performScrollTo().assertIsDisplayed()
+        // Kurvan ska fortfarande finnas — en utebliven jämförelse döljer inte diagrammet.
+        composeRule.onNodeWithText("Avkastning över tid").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun avkastningsdiagrammet_beskrivs_i_procent_for_skarmlasare() {
+        composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
+
+        composeRule.onNodeWithContentDescription("Avkastningsdiagram", substring = true)
+            .assertExists()
+    }
+    // --- Att besluta (HEM-13) — förslagen och de pågående bytena själva ligger på Beslut ---
+
+    @Test
+    fun att_besluta_visar_antalet_och_leder_till_beslut() {
+        var opened = 0
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true
+                )
+            ),
+            decisions = PendingDecisions(
+                switchPlan = listOf(planSuggestion, planSuggestion.copy(recordId = 2, planIndex = 1)),
+                cheaperAlternatives = listOf(
+                    CheaperAlternative(
+                        suggestion = planSuggestion.copy(recordId = 3, kind = SuggestionKind.FEE),
+                        sellFeePercent = 1.4,
+                        buyFeePercent = 0.4
+                    )
+                ),
+                openWatches = listOf(OpenSwitchWatch(watchId = 7, sellFundName = "Fond A", daysWaiting = 2, candidateCount = 3))
+            ).withSwitches(emptyList(), LocalDate.now())
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = state, onOpenBeslut = { opened++ }) } }
+
+        composeRule.onNodeWithText("Att besluta").assertIsDisplayed()
+        // Varje slag för sig (HEM-13) ur listan Byten (BYT-4): föreslagna, sålda och billigare alternativ (ANA-9).
+        composeRule.onNodeWithText("2 föreslagna · 1 sålt, väntar på köp · 1 billigare alternativ").assertIsDisplayed()
+        // Själva bytet visas inte här — det har flyttat till Beslut (NAV-9).
+        composeRule.onNodeWithText("Fond A", substring = true).assertDoesNotExist()
+        composeRule.onNodeWithText("Att besluta").performClick()
+
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun att_besluta_uteblir_nar_inget_vantar() {
+        // Ett kvitterat förslag är redan beslutat — raden ska då inte stå kvar med en nolla.
+        val state = HemUiState(
+            portfolio = DetailUiState.Content(
+                HemPortfolio(
+                    hasHoldings = true
+                )
+            ),
+            decisions = PendingDecisions(switchPlan = listOf(planSuggestion.copy(followed = true))).withSwitches(emptyList(), LocalDate.now())
+        )
+
+        composeRule.setContent { FonderTheme { HemContent(state = state) } }
+
+        composeRule.onNodeWithText("Att besluta").assertDoesNotExist()
+    }
+
+    /** Ett förslag i bytesplanen (HEM-8) — underlaget för Att besluta-testerna ovan. */
+    private val planSuggestion = SwitchPlanResolver.Suggestion(
+        recordId = 1, planIndex = 0, sellIsin = "SE0004297927", buyIsin = "SE0000581434",
+        sellFundName = "Dyr fond", buyFundName = "Billig fond",
+        fromLevel = 5, toLevel = 3, feeDeltaPercent = -0.7, switchValueKr = 250.0
+    )
+}
+
+/**
+ * Riskkortets plats i Hems lista: total, avkastning, utveckling, analys, avgifter, risk — utan
+ * "Att besluta" och utan påminnelse om säkerhetskopia, som testerna ovan inte har. Ett index och inte en sökning på rubriken:
+ * rubriken finns inte i semantikträdet förrän kortet komponerats, vilket är just det som ska
+ * åstadkommas.
+ */
+private const val RISK_CARD_INDEX = 5

@@ -1,0 +1,571 @@
+package se.kodhast.fonder.ui.hem
+
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
+import javax.inject.Inject
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.datastore.BenchmarkComponentRef
+import se.kodhast.fonder.data.datastore.PreferencesRepository
+import se.kodhast.fonder.data.repository.BackupStatusRepository
+import se.kodhast.fonder.data.repository.FundMetadataRepository
+import se.kodhast.fonder.data.repository.FundPriceRepository
+import se.kodhast.fonder.data.repository.TransactionRepository
+import se.kodhast.fonder.data.repository.analysisHistory
+import se.kodhast.fonder.domain.model.AccountType
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.model.FundMetadata
+import se.kodhast.fonder.domain.model.FundPrice
+import se.kodhast.fonder.domain.model.Holding
+import se.kodhast.fonder.domain.model.Transaction
+import se.kodhast.fonder.domain.model.TransactionType
+import se.kodhast.fonder.domain.usecase.BackupReminder
+import se.kodhast.fonder.domain.usecase.FundAnalysisCalc
+import se.kodhast.fonder.domain.usecase.IndexBenchmarkSelector
+import se.kodhast.fonder.domain.usecase.MoneyFormat
+import se.kodhast.fonder.domain.usecase.PendingDecisions
+import se.kodhast.fonder.domain.usecase.PendingDecisionsSource
+import se.kodhast.fonder.domain.usecase.PortfolioCalc
+import se.kodhast.fonder.domain.usecase.PortfolioExposureCalc
+import se.kodhast.fonder.domain.usecase.PortfolioFeeCalc
+import se.kodhast.fonder.domain.usecase.PortfolioPerformanceCalc
+import se.kodhast.fonder.domain.usecase.PortfolioReturnSeriesCalc
+import se.kodhast.fonder.domain.usecase.PortfolioRiskCalc
+import se.kodhast.fonder.domain.usecase.PortfolioRiskSource
+import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
+import se.kodhast.fonder.domain.usecase.RiskSummary
+import se.kodhast.fonder.domain.usecase.TaxCalc
+import se.kodhast.fonder.ui.common.RetrySignal
+import se.kodhast.fonder.ui.common.catchAsDetailError
+import se.kodhast.fonder.ui.common.errorOrNull
+import se.kodhast.fonder.ui.common.restartOn
+import se.kodhast.fonder.ui.common.valueOrNull
+import se.kodhast.fonder.worker.BackgroundWork
+import se.kodhast.fonder.worker.FundPriceRefreshScheduler
+import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.common.UiError
+
+/** Ett innehav flaggat gul eller röd i analysen (HEM-4), med det underliggande resultatet för visning av triggade signaler. */
+data class FlaggedHolding(val fund: Fund, val analysis: FundAnalysisCalc.Analysis)
+
+/**
+ * Indexjämförelsens kurva, redo för visning (HEM-10) — skuggportföljen i referensen [fundName],
+ * som sedan issue #101 kan vara en viktad blandning av en aktie- och en räntedel. Namnet är inte
+ * kosmetiskt: jämförelsen namnger alltid sin egen referens i teckenförklaringen (UI-3), den
+ * påstår aldrig att den är "index" i abstrakt mening.
+ */
+@Immutable
+data class BenchmarkSeries(
+    /** Etikett för teckenförklaringen — en fond namnges rakt av, en blandning som "70 % X / 30 % Y". */
+    val fundName: String,
+    val points: ImmutableList<Pair<Long, Double>>,
+    /** Andel av portföljen som varken kunde klassificeras som aktier eller räntor (blandfonder, okänd typ) — vikterna vilar inte på den delen. */
+    val unclassifiedFraction: Double = 0.0
+)
+
+/** Summering av [FundAnalysisCalc]-status över alla innehav (issue #16, HEM-4). */
+@Immutable
+data class AnalysisSummary(
+    val gronCount: Int = 0,
+    val gulCount: Int = 0,
+    val rodCount: Int = 0,
+    /** Bara gul/röd, sorterat mest allvarligt (röd) först — se [HemScreen]. */
+    val flagged: ImmutableList<FlaggedHolding> = persistentListOf()
+)
+
+/**
+ * Det Hem läser och räknar ur innehaven, kurserna och inställningarna (HEM-1–HEM-10) — innehållet
+ * i [HemUiState.portfolio]. Allt i ett läsfel saknas, aldrig nollor som ser ut som en tom portfölj (NFR-6).
+ */
+@Immutable
+data class HemPortfolio(
+    val hasHoldings: Boolean = false,
+    val totalInvested: Double = 0.0,
+    val totalValue: Double = 0.0,
+    val totalGainLoss: Double = 0.0,
+    val totalGainLossFraction: Double? = null,
+    /** Totalresultat och pengaviktad avkastning över alla transaktioner, även helt sålda fonder (HEM-1, issue #191). */
+    val total: PortfolioTotalCalc.Result = PortfolioTotalCalc.Result.EMPTY,
+    val performance: PortfolioPerformanceCalc.PortfolioPerformance = PortfolioPerformanceCalc.PortfolioPerformance(
+        day = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory,
+        week = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory,
+        month = PortfolioPerformanceCalc.PortfolioPeriodResult.InsufficientHistory
+    ),
+    val analysisSummary: AnalysisSummary = AnalysisSummary(),
+    /** Portföljens tidsviktade avkastning i procent per NAV-dag (HEM-9, issue #96/#116). Tom = historiken räcker inte till en enda punkt. */
+    val returnSeries: PortfolioReturnSeriesCalc.Result = PortfolioReturnSeriesCalc.Result.EMPTY,
+    /** Indexjämförelsen som skuggportfölj (HEM-10), null tills referensens historik finns cachad. */
+    val benchmarkSeries: BenchmarkSeries? = null,
+    /** Köpdagar (epoch-day) för samtliga innehav — markeras i avkastningsdiagrammet, eftersom de förklarar varför kurvan och totalkortet visar olika tal (HEM-9). */
+    val purchaseEpochDays: ImmutableList<Long> = persistentListOf(),
+    /** Äldsta NAV-datumet bland innehav med känt värde, för "per <datum>" bredvid totalen (POR-7, issue #27). */
+    val navEpochDay: Long? = null,
+    /** Portföljens totala fondavgift per år (HEM-5, issue #60). */
+    val feeSummary: PortfolioFeeCalc.Result = PortfolioFeeCalc.Result(totalAnnualFeeKr = 0.0, byHolding = emptyList(), unknownFeeCount = 0),
+    /** Innehavens genomsnittliga risknivå, viktad på värde (HEM-7, issue #68) — här för antalet fonder utan känd nivå. */
+    val portfolioRisk: PortfolioRiskCalc.Result = PortfolioRiskCalc.Result(weightedAverageRisk = null, includedValueKr = 0.0, excludedCount = 0),
+    /**
+     * Riskkortets portföljdel ([PortfolioRiskSource.base]), null utan profil. Bytesplanen läggs på i
+     * förslagens egen gren ([risk]), så ett nytt förslag inte räknar om portföljen.
+     */
+    val riskBase: PortfolioRiskSource.RiskBase? = null,
+    /** Riskkortet (HEM-7, HEM-17): andel per nivå mot målet, läget och summan att flytta — null utan profil, då uteblir kortet. */
+    val risk: RiskSummary? = null,
+    /**
+     * Årets ungefärliga schablonskatt i ISK/KF (HEM-16, issue #199) — null utan ISK/KF (SET-4), för
+     * ett år utan parametrar ([TaxCalc.ISK_PARAMETERS]) eller när ett innehavs värde inte går att avgöra.
+     */
+    val iskTax: TaxCalc.IskTax? = null
+)
+
+@Immutable
+data class HemUiState(
+    /** Portföljen — laddning, läsfel (NFR-6) eller innehåll. */
+    val portfolio: DetailUiState<HemPortfolio> = DetailUiState.Loading,
+    /**
+     * Det som väntar på ett beslut (HEM-13) — samma källa som fliken Beslut och flikradens märke
+     * läser ([PendingDecisionsSource]), så "Att besluta" aldrig kan visa ett annat antal.
+     */
+    val decisions: PendingDecisions = PendingDecisions(),
+    /** Kurserna hämtas just nu ([BackgroundWork.PRICE_REFRESH]) — kurskortens väntesnurra (NAV-6). */
+    val pricesWorking: Boolean = false,
+    /** Referensfonden väljs/hämtas just nu ([BackgroundWork.BENCHMARK_SCAN]) — bara avkastningskortet berörs. */
+    val benchmarkWorking: Boolean = false,
+    /** Fondmetadatan slås upp just nu (nätverk per okänd ISIN) — avgifts- och riskkortet vilar på den. */
+    val metadataWorking: Boolean = false,
+    /** Påminnelsen om att säkerhetskopiera (HEM-12), null när innehållet redan finns i en kopia. */
+    val backupReminder: BackupReminder? = null
+) {
+    val loading: Boolean get() = portfolio is DetailUiState.Loading
+
+    /** Läsfelet som visas i stället för portföljen (NFR-6). */
+    val error: UiError? get() = portfolio.errorOrNull()
+
+    /**
+     * Det korten visar: portföljen, eller nollor under den första laddningen — då snurrar varje
+     * kort (se nedan), så nollorna aldrig ser ut som svar. Vid ett läsfel visas felet i stället.
+     */
+    val content: HemPortfolio get() = portfolio.valueOrNull() ?: HemPortfolio()
+
+    val isEmpty: Boolean get() = portfolio.valueOrNull()?.hasHoldings == false
+
+    // Per kort, inte ett gemensamt "något kör" (NAV-6): korten visar olika data, och en snurra
+    // på avkastningskortet medan bytesplanen skannas hade sagt att kurvan är osäker när den
+    // inte är det. Härlett här i stället för i skärmen, så kopplingen kort → jobb är
+    // enhetstestbar utan Compose. Den första laddningen räknas alltid som pågående: då är
+    // varje siffra på skärmen en nolla som ännu inte fyllts i.
+    val totalWorking: Boolean get() = loading || pricesWorking
+    val performanceWorking: Boolean get() = loading || pricesWorking
+    val returnChartWorking: Boolean get() = loading || pricesWorking || benchmarkWorking
+    val analysisWorking: Boolean get() = loading || pricesWorking
+    val feeWorking: Boolean get() = loading || pricesWorking || metadataWorking
+    val riskWorking: Boolean get() = loading || metadataWorking
+}
+
+/**
+ * Hur långt tillbaka periodresultaten och avkastningskurvan (HEM-1, HEM-9) ser för en fond utan
+ * transaktion — de räknar bara på ägda andelar, så fönstret påverkar inga siffror; det är
+ * kvar som det var innan analysen fick sin egen, längre historik (issue #214).
+ */
+private const val PORTFOLIO_FALLBACK_LOOKBACK_YEARS = 1L
+
+/** Portföljen med riskkortet räknat ur [HemPortfolio.riskBase] och planen i [decisions] (HEM-17). */
+private fun DetailUiState<HemPortfolio>.withRisk(decisions: PendingDecisions): DetailUiState<HemPortfolio> {
+    val content = this as? DetailUiState.Content ?: return this
+    val risk = content.value.riskBase?.let { PortfolioRiskSource.summary(it, decisions.switchPlan) }
+    return DetailUiState.Content(content.value.copy(risk = risk))
+}
+
+/** Användarens handlingar på Översikt, till [HemViewModel.onEvent]. */
+sealed interface HemEvent {
+    /** Dra ned för att uppdatera (UI-11). */
+    data object Refresh : HemEvent
+
+    /** "Försök igen" efter ett läsfel (NFR-6). */
+    data object Retry : HemEvent
+}
+
+/**
+ * Hem — ny startskärm (issue #14) med portföljens totala värde/vinst/procent (samma
+ * beräkning som Portfölj, [PortfolioCalc]) plus dag/vecka/månads-förändring
+ * ([PortfolioPerformanceCalc]) och en analys-summering av gul-/rödflaggade fonder
+ * ([FundAnalysisCalc], issue #16, HEM-4). Ingen egen "uppdatera nyss tillagd fond"-logik
+ * behövs här (jämför [se.kodhast.fonder.ui.portfolj.PortfoljViewModel]) — fonder läggs bara
+ * till via Portfölj-fliken (NAV-3), som redan äger den engångsuppdateringen.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class HemViewModel internal constructor(
+    private val transactionRepository: TransactionRepository,
+    private val fundPriceRepository: FundPriceRepository,
+    private val fundMetadataRepository: FundMetadataRepository,
+    private val preferencesRepository: PreferencesRepository,
+    private val pendingDecisionsSource: PendingDecisionsSource,
+    private val fundPriceRefreshScheduler: FundPriceRefreshScheduler,
+    private val backupStatusRepository: BackupStatusRepository,
+    private val portfolioRiskSource: PortfolioRiskSource,
+    /** "Idag" — fast i testerna, så att årets skatt (HEM-16) inte beror på när de körs. */
+    private val today: () -> LocalDate
+) : ViewModel() {
+
+    @Inject
+    constructor(
+        transactionRepository: TransactionRepository,
+        fundPriceRepository: FundPriceRepository,
+        fundMetadataRepository: FundMetadataRepository,
+        preferencesRepository: PreferencesRepository,
+        pendingDecisionsSource: PendingDecisionsSource,
+        fundPriceRefreshScheduler: FundPriceRefreshScheduler,
+        backupStatusRepository: BackupStatusRepository,
+        portfolioRiskSource: PortfolioRiskSource
+    ) : this(
+        transactionRepository,
+        fundPriceRepository,
+        fundMetadataRepository,
+        preferencesRepository,
+        pendingDecisionsSource,
+        fundPriceRefreshScheduler,
+        backupStatusRepository,
+        portfolioRiskSource,
+        LocalDate::now
+    )
+
+    /**
+     * [PortfolioInput.funds] bärs med, inte bara de sammanräknade innehaven: avkastningskurvan
+     * (HEM-9) räknar om innehaven för varje historisk dag, och en fond som sedan dess sålts av
+     * helt saknas i [PortfolioInput.holdings] trots att den fanns i portföljen då. Utan hela
+     * fondlistan hade kurvan ritat om historien som om den fonden aldrig ägts.
+     */
+    private data class PortfolioInput(
+        val funds: List<Fund>,
+        val holdings: List<Holding>,
+        val transactions: List<Transaction>
+    )
+
+    private val baseHoldings: Flow<PortfolioInput> =
+        combine(transactionRepository.observeFunds(), transactionRepository.observeTransactions()) { funds, transactions ->
+            PortfolioInput(funds, PortfolioCalc.computeHoldings(funds, transactions), transactions)
+        }
+
+    /**
+     * Inställningarna **i** flödet, inte lästa med `first()` inne i `map`. Bottennavigeringen
+     * använder `popUpTo(saveState = true)`, så den här ViewModel:en överlever ett besök i
+     * Inställningar: läste vi värdena i map-kroppen emitterade uppströmsflödet aldrig om på en
+     * ändring, och SET-4-gaten utvärderades mot det gamla valet tills en kursuppdatering eller
+     * en ny transaktion råkade trigga flödet — upp till 12 timmar senare (issue #75).
+     */
+    private val settings: Flow<Settings> =
+        combine(
+            // Profilen och bevakningarna (BYT-3) ur riskkällan — likviden som väntar på köp räknas på
+            // sin målnivå, så kortet och bytesplanen mäter samma gap (HEM-7).
+            portfolioRiskSource.observeContext(),
+            combine(preferencesRepository.benchmark, preferencesRepository.chosenBenchmarkIsin) { derived, chosen ->
+                // Eget val vinner alltid över appens (HEM-10, issue #102) — och ersätter hela
+                // blandningen, inte en del av den: väljer man en fond är det den man vill mätas
+                // mot, inte den plus appens gissning om resten.
+                chosen?.let { listOf(BenchmarkComponentRef(isin = it, weight = 1.0)) } ?: derived
+            },
+            preferencesRepository.accountType
+        ) { riskContext, benchmark, accountType ->
+            Settings(riskContext, benchmark, accountType)
+        }
+
+    /**
+     * Fondmetadata i ett eget flöde — samma skäl som i
+     * [se.kodhast.fonder.ui.portfolj.PortfoljViewModel]: [FundMetadataRepository.metadataFor]
+     * gör ett sekventiellt nätverksuppslag per okänd/inaktuell ISIN, och låg det i `map`
+     * blockerades hela Hem på nätverket.
+     */
+    private val metadata = MutableStateFlow<Map<String, FundMetadata>>(emptyMap())
+    private var metadataJob: Job? = null
+    private var metadataIsins: List<String>? = null
+
+    /**
+     * Sant medan uppslaget ovan pågår — avgifts- och riskkortets väntesnurra (NAV-6). Utan den
+     * står de två korten med tomma avgifter och okänd risknivå utan att något säger att svaret
+     * är på väg; det ser ut som ANA-4:s "vet inte", som är ett helt annat besked.
+     */
+    private val metadataLoading = MutableStateFlow(false)
+
+    /**
+     * Löpnummer per begäran, så bara den **senaste** hämtningen får släcka snurran. En avbruten
+     * hämtnings `finally` kör efter att nästa redan tänt den, och utan numret hade snurran
+     * slocknat mitt under det pågående uppslaget.
+     */
+    private var metadataRequestId = 0
+
+    /** Se [requestBenchmarkIfMissing] — flödet emitterar om vid varje kursändring, begäran ska ändå bara gå en gång. */
+    private var benchmarkScanRequested = false
+
+    private fun refreshMetadata(isins: List<String>) {
+        val distinct = isins.distinct().sorted()
+        if (distinct == metadataIsins) return
+        metadataIsins = distinct
+        val requestId = ++metadataRequestId
+        metadataJob?.cancel()
+        // Se PortfoljViewModel: utan ISIN finns inget svar på väg, och då ska korten inte snurra.
+        if (distinct.isEmpty()) {
+            metadataLoading.value = false
+            metadata.value = emptyMap()
+            return
+        }
+        metadataLoading.value = true
+        metadataJob = viewModelScope.launch {
+            try {
+                metadata.value = fundMetadataRepository.metadataFor(distinct)
+            } finally {
+                if (requestId == metadataRequestId) metadataLoading.value = false
+            }
+        }
+    }
+
+    /** Läsfelets "Försök igen" (NFR-6) – se [retry]. */
+    private val retrySignal = RetrySignal()
+
+    val uiState: StateFlow<HemUiState> =
+        baseHoldings.flatMapLatest { (funds, holdings, transactions) ->
+            val fundIds = holdings.map { it.fund.fundId }
+            combine(
+                fundPriceRepository.observeLatestPrices(fundIds),
+                metadata,
+                settings
+            ) { prices, metadataByIsin, currentSettings ->
+                val enriched = PortfolioCalc.withCurrentValue(holdings, prices)
+                val today = today()
+                val firstTransactionByFund = PortfolioCalc.firstTransactionEpochDayByFund(transactions).mapValues { LocalDate.ofEpochDay(it.value) }
+                // **En** hämtning per fond, inte en per läsare. Innehaven läser analyshistoriken
+                // (den delade [analysisHistory], minst tre år bakåt, issue #214), som rymmer både
+                // avkastningskurvans "sedan första köpet" och dag/vecka/månadens
+                // HISTORY_LOOKBACK_DAYS; helt sålda och bevakade fonder analyseras inte och läser
+                // bara portföljfönstret. Var och en klipper sedan till sitt eget fönster i minnet —
+                // analysen räknar volatilitet på hela listan den får (ANA-7) och måste därför få
+                // exakt sitt, och kurvan och periodresultaten ska fortsatt utgå från köpet (HEM-1, HEM-9).
+                val analysisHistoryByFundId = holdings.associate { holding ->
+                    val fundId = holding.fund.fundId
+                    fundId to fundPriceRepository.analysisHistory(fundId, firstTransactionByFund[fundId], today)
+                }
+                val historyByFundId = funds.associate { fund ->
+                    val since = (
+                        firstTransactionByFund[fund.fundId]
+                            ?.let { minOf(it, today.minusDays(PortfolioPerformanceCalc.HISTORY_LOOKBACK_DAYS)) }
+                            ?: today.minusYears(PORTFOLIO_FALLBACK_LOOKBACK_YEARS)
+                        ).toEpochDay()
+                    fund.fundId to (
+                        analysisHistoryByFundId[fund.fundId]?.filter { it.epochDay >= since }
+                            ?: fundPriceRepository.priceHistory(fund.fundId, since, today.toEpochDay())
+                        )
+                }
+                refreshMetadata(enriched.mapNotNull { it.fund.isin })
+                requestBenchmarkIfMissing(currentSettings.benchmark, hasHoldings = enriched.isNotEmpty())
+                val exposure = PortfolioExposureCalc.compute(enriched, metadataByIsin)
+                val navEpochDay = PortfolioCalc.oldestKnownNavEpochDay(enriched)
+                val transactionsByFundId = transactions.groupBy { it.fundId }
+                HemPortfolio(
+                    hasHoldings = enriched.isNotEmpty(),
+                    totalInvested = PortfolioCalc.totalInvested(enriched),
+                    totalValue = PortfolioCalc.totalValue(enriched),
+                    totalGainLoss = PortfolioCalc.totalGainLoss(enriched),
+                    totalGainLossFraction = PortfolioCalc.totalGainLossFraction(enriched),
+                    total = PortfolioTotalCalc.compute(transactions, enriched, navEpochDay),
+                    performance = PortfolioPerformanceCalc.totalPerformance(enriched, transactionsByFundId, today, historyByFundId),
+                    analysisSummary = buildAnalysisSummary(enriched, transactionsByFundId, analysisHistoryByFundId, today),
+                    returnSeries = PortfolioReturnSeriesCalc.compute(funds, transactions, historyByFundId),
+                    benchmarkSeries = buildBenchmark(
+                        refs = currentSettings.benchmark,
+                        transactions = transactions,
+                        unclassifiedFraction = IndexBenchmarkSelector.exposureSplit(exposure.byType).unclassifiedFraction,
+                        today = today
+                    ),
+                    purchaseEpochDays = transactions
+                        .filter { it.type == TransactionType.KOP }
+                        .map { it.epochDay }
+                        .distinct()
+                        .sorted()
+                        .toImmutableList(),
+                    navEpochDay = navEpochDay,
+                    feeSummary = PortfolioFeeCalc.compute(enriched, metadataByIsin, today),
+                    portfolioRisk = PortfolioRiskCalc.compute(enriched, metadataByIsin),
+                    riskBase = portfolioRiskSource.base(currentSettings.risk, funds, transactions, exposure.byRiskLevel, metadataByIsin, today),
+                    iskTax = if (currentSettings.accountType == AccountType.ISK_KF) TaxCalc.iskTaxForYear(today.year, today, transactions, historyByFundId) else null
+                )
+            }
+        }.map { HemUiState(portfolio = DetailUiState.Content(it)) }
+            .combine(pendingDecisionsSource.observe()) { state, decisions ->
+                // Egen gren av samma skäl som körstatusen nedan: förslag och bevakningar har ingenting
+                // med innehav, kurser eller inställningar att göra och ska inte kunna räkna om portföljen.
+                // Riskkortets effekt av planen (HEM-17) läggs på här av samma skäl — den beräkningen är liten.
+                state.copy(decisions = decisions, portfolio = state.portfolio.withRisk(decisions))
+            }.combine(backupStatusRepository.reminder.onStart { emit(null) }) { state, reminder ->
+                // Egen gren: påminnelsen (HEM-12) räknas ur backup-kontraktet, inte ur innehav och
+                // kurser, och ska inte kunna räkna om portföljen. `onStart` så Hem inte väntar in
+                // påminnelsens debounce innan något alls visas.
+                state.copy(backupReminder = reminder)
+            }.combine(
+                combine(fundPriceRefreshScheduler.observeRunningWork(), metadataLoading) { running, metadataPending ->
+                    running to metadataPending
+                }
+            ) { state, (running, metadataPending) ->
+                // Eget flöde, inte en femte gren i combinen ovan: körstatusen kommer från
+                // WorkManager och har ingenting med innehav, kurser eller inställningar att göra —
+                // den ska inte kunna räkna om portföljen bara för att ett jobb startade.
+                state.copy(
+                    pricesWorking = BackgroundWork.PRICE_REFRESH in running,
+                    benchmarkWorking = BackgroundWork.BENCHMARK_SCAN in running,
+                    metadataWorking = metadataPending
+                )
+            }
+            // Sist i kedjan: ett läsfel i vilken källa som helst (innehav, kurser, förslag,
+            // påminnelsen) visas som fel i stället för att krascha Hem (NFR-6).
+            .catchAsDetailError { HemUiState(portfolio = it) }
+            .restartOn(retrySignal)
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = HemUiState()
+            )
+
+    /**
+     * Analyserar varje innehav och summerar statusarna (HEM-4). Kurshistoriken kommer från den
+     * gemensamma hämtningen i flödet ovan (lokal cache, Room — ingen nätverksuppdatering) och
+     * når [FundAnalysisCalc.analysisHistoryStart] bakåt, samma fönster som
+     * [se.kodhast.fonder.ui.fond.FondDetaljViewModel] använder för sin egen fond (issue #214).
+     * Fönstret är inte kosmetiskt: S1/S2 och S3 räknas på listan [FundAnalysisCalc] får, så ett
+     * annat fönster hade tyst kunnat ge andra siffror än fondkortet visar. Volatilitet och Sharpe
+     * väljer sitt eget fasta fönster (3 eller 1 år bakåt från senaste NAV, ANA-7) ur listan; att
+     * historiken alltid når minst tre år (+ 45 dagar) bakåt gör att de inte längre beror på när
+     * fonden köptes (issue #195). Periodradernas kronor och "sedan köp" utgår från köpet inne i
+     * [FundAnalysisCalc.analyze].
+     */
+    private fun buildAnalysisSummary(
+        enriched: List<Holding>,
+        transactionsByFundId: Map<String, List<Transaction>>,
+        analysisHistoryByFundId: Map<String, List<FundPrice>>,
+        today: LocalDate
+    ): AnalysisSummary {
+        if (enriched.isEmpty()) return AnalysisSummary()
+
+        val historyByFundId = enriched.associate { holding ->
+            holding.fund.fundId to analysisHistoryByFundId[holding.fund.fundId].orEmpty()
+        }
+
+        // Positionens startdatum ("sedan köp", CAGR) tas ur Holding inne i analyzeAll (issue #194).
+        val byFundId = FundAnalysisCalc.analyzeAll(today, enriched, transactionsByFundId, historyByFundId)
+        val analyses = enriched.mapNotNull { holding -> byFundId[holding.fund.fundId]?.let { FlaggedHolding(holding.fund, it) } }
+
+        return AnalysisSummary(
+            gronCount = analyses.count { it.analysis.status == FundAnalysisCalc.SignalLevel.GRON },
+            gulCount = analyses.count { it.analysis.status == FundAnalysisCalc.SignalLevel.GUL },
+            rodCount = analyses.count { it.analysis.status == FundAnalysisCalc.SignalLevel.ROD },
+            flagged = analyses
+                .filter { it.analysis.status == FundAnalysisCalc.SignalLevel.GUL || it.analysis.status == FundAnalysisCalc.SignalLevel.ROD }
+                .sortedByDescending { it.analysis.status == FundAnalysisCalc.SignalLevel.ROD }
+                .toImmutableList()
+        )
+    }
+
+    /**
+     * Ber bakgrundsjobbet välja referensfond (HEM-10) när ingen är vald än. Bara backstopen
+     * satte tidigare den skanningen, så en ny installation eller uppgradering visade ingen
+     * indexkurva alls förrän en körning råkat passera — upp till ett halvt dygn av "Ingen
+     * indexjämförelse än" utan att något var fel.
+     *
+     * Högst en begäran per ViewModel-livstid, och bara med innehav: skanningen kostar en
+     * källfråga plus en backfill av referensfondens historik, och flödet emitterar om vid varje
+     * kursändring. Misslyckas den (källan nere, ingen global indexfond i katalogen) står
+     * referensblandningen tom och nästa appstart frågar igen — inget tyst förevigat
+     * misslyckande, men heller ingen omförsökssnurra som pollar källan.
+     */
+    private fun requestBenchmarkIfMissing(benchmark: List<BenchmarkComponentRef>, hasHoldings: Boolean) {
+        if (benchmark.isNotEmpty() || !hasHoldings || benchmarkScanRequested) return
+        benchmarkScanRequested = true
+        fundPriceRefreshScheduler.triggerBenchmarkScan()
+    }
+
+    /**
+     * Indexjämförelsen (HEM-10) — skuggportföljen i referensfonden, byggd **enbart ur cachen**.
+     * Referensfonden är vald av bakgrundsjobbet
+     * ([se.kodhast.fonder.worker.FundPriceUpdateWorker.scanBenchmark]) och dess kurshistorik
+     * hämtad där; Hem gör aldrig ett nätverksanrop när det öppnas, av samma skäl som
+     * HEM-6/HEM-8 ligger i workern. `cachedMetadataFor` går per kontrakt aldrig till nätet.
+     *
+     * Null i varje läge där jämförelsen inte kan bli ärlig — ingen historik alls, historik som
+     * inte når tillbaka till första köpet (se [PortfolioReturnSeriesCalc.benchmark]), eller en
+     * fond appen inte kan namnge. Kortet säger då varför, i stället för att rita en halv
+     * jämförelse.
+     */
+    private suspend fun buildBenchmark(
+        refs: List<BenchmarkComponentRef>,
+        transactions: List<Transaction>,
+        unclassifiedFraction: Double,
+        today: LocalDate
+    ): BenchmarkSeries? {
+        if (refs.isEmpty() || transactions.isEmpty()) return null
+        val since = LocalDate.ofEpochDay(transactions.minOf { it.epochDay })
+        val components = refs.map { ref ->
+            PortfolioReturnSeriesCalc.BenchmarkComponent(
+                weight = ref.weight,
+                history = fundPriceRepository.priceHistory(ref.isin, since.toEpochDay(), today.toEpochDay())
+            )
+        }
+        val series = PortfolioReturnSeriesCalc.benchmark(transactions, components) ?: return null
+        if (series.isEmpty) return null
+
+        val names = fundMetadataRepository.cachedMetadataFor(refs.map { it.isin })
+        // Kan appen inte namnge varje del kan den inte heller redovisa blandningen ärligt, och
+        // en teckenförklaring med ett ISIN i vore obegriplig — hellre ingen jämförelse.
+        val labels = refs.map { ref -> names[ref.isin]?.name ?: return null }
+        val label = if (refs.size == 1) {
+            labels.single()
+        } else {
+            refs.zip(labels).joinToString(" / ") { (ref, name) -> "${MoneyFormat.percent(ref.weight)} $name" }
+        }
+        return BenchmarkSeries(fundName = label, points = series.points.toImmutableList(), unclassifiedFraction = unclassifiedFraction)
+    }
+
+    fun onEvent(event: HemEvent) {
+        when (event) {
+            HemEvent.Refresh -> refresh()
+            HemEvent.Retry -> retry()
+        }
+    }
+
+    /** "Försök igen" efter ett läsfel (NFR-6): läser om portföljen, förslagen och påminnelsen från början. */
+    private fun retry() {
+        retrySignal.retry()
+    }
+
+    /**
+     * Dra ned för att uppdatera (UI-11) — forcerar en kursuppdatering, exakt den körning
+     * Inställningars borttagna "Uppdatera nu" startade (SET-2). Kör inte själv: hämtningen hör
+     * hemma i WorkManager med nätverksvillkor, och `REPLACE` under det unika arbetsnamnet gör
+     * att upprepade dragningar aldrig ger två parallella körningar.
+     */
+    private fun refresh() {
+        fundPriceRefreshScheduler.triggerManualRefresh()
+    }
+
+    private data class Settings(
+        /** Riskprofilen och bevakningarna (SET-3, BYT-3) — se [PortfolioRiskSource.observeContext]. */
+        val risk: PortfolioRiskSource.Context,
+        /** Referensblandningen (HEM-10) — härledd cache, satt av bakgrundsjobbet, inte ett användarval. */
+        val benchmark: List<BenchmarkComponentRef>,
+        /** Kontotypen (SET-4) — ISK/KF visar årets schablonskatt (HEM-16). */
+        val accountType: AccountType?
+    )
+}

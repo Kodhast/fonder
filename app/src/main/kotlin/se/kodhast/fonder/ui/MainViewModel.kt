@@ -1,0 +1,25 @@
+package se.kodhast.fonder.ui
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import se.kodhast.fonder.data.datastore.PreferencesRepository
+import se.kodhast.fonder.data.datastore.ThemeMode
+
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    preferences: PreferencesRepository
+) : ViewModel() {
+
+    // null tills DataStore hunnit emit:a — MainActivity håller splash tills värdet finns.
+    val themeMode: StateFlow<ThemeMode?> =
+        preferences.themeMode.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = null
+        )
+}

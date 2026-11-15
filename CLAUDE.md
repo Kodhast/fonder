@@ -178,7 +178,7 @@ till merge, rött CI – står i skill **android:arbetsflode**; Android-delen i
 
 `Compose → ViewModel (StateFlow<UiState>) → Repository → Room/DataStore`.
 Två moduler: `:core` (ren Kotlin/JVM – `domain/model` och de rena use casen i `domain/usecase`) och
-`:app`. Paket under `se/partee71/fonder/`:
+`:app`. Paket under `se/kodhast/fonder/`:
 `data/` (auth, datastore, imports, network, repository, room) · `di/` · `domain/` (model, usecase) ·
 `ui/<feature>/` + `ui/components/` + `ui/diagram/` + `ui/theme/` · `worker/`.
 Detaljer i [ARKITEKTUR.md](ARKITEKTUR.md) (enda källan för paketträd, dataflöde och datamodell).

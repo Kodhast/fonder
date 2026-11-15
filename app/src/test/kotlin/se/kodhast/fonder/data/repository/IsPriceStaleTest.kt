@@ -1,0 +1,62 @@
+package se.kodhast.fonder.data.repository
+
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.model.FundCatalog
+import se.kodhast.fonder.domain.model.FundPrice
+
+/**
+ * Testar [isPriceStale] mot [se.kodhast.fonder.domain.usecase.NavCalendar] direkt (issue #27,
+ * TP-17) — helg och kväll ska inte längre räknas som inaktuellt bara för att kursen inte är från
+ * exakt idag, se [se.kodhast.fonder.domain.usecase.NavCalendarTest] för själva kalenderlogiken.
+ */
+class IsPriceStaleTest {
+
+    private var cachedPrice: FundPrice? = null
+
+    private val fakeRepo = object : FundPriceRepository by FakeCachedPriceRepository() {
+        override suspend fun latestPrice(fundId: String): FundPrice? = cachedPrice
+    }
+
+    @Test
+    fun `ingen cachad kurs alls ar inaktuell`() = runTest {
+        cachedPrice = null
+        assertTrue(fakeRepo.isPriceStale("F1", LocalDateTime.of(2026, 7, 15, 19, 0)))
+    }
+
+    @Test
+    fun `fredagens kurs ar inte inaktuell pa lordagen`() = runTest {
+        // 2026-07-10 är en fredag, 2026-07-11 en lördag.
+        cachedPrice = FundPrice(fundId = "F1", epochDay = LocalDate.of(2026, 7, 10).toEpochDay(), nav = 100.0)
+        val saturday = LocalDateTime.of(2026, 7, 11, 12, 0)
+        assertFalse(fakeRepo.isPriceStale("F1", saturday))
+    }
+
+    @Test
+    fun `gardagens kurs ar inte inaktuell en vardagsmorgon fore publicering`() = runTest {
+        // 2026-07-14 är en tisdag, 2026-07-15 en onsdag.
+        cachedPrice = FundPrice(fundId = "F1", epochDay = LocalDate.of(2026, 7, 14).toEpochDay(), nav = 100.0)
+        val wednesdayMorning = LocalDateTime.of(2026, 7, 15, 8, 0)
+        assertFalse(fakeRepo.isPriceStale("F1", wednesdayMorning))
+    }
+
+    @Test
+    fun `gardagens kurs ar inaktuell en vardagskvall efter publicering`() = runTest {
+        cachedPrice = FundPrice(fundId = "F1", epochDay = LocalDate.of(2026, 7, 14).toEpochDay(), nav = 100.0)
+        val wednesdayEvening = LocalDateTime.of(2026, 7, 15, 19, 0)
+        assertTrue(fakeRepo.isPriceStale("F1", wednesdayEvening))
+    }
+
+    @Test
+    fun `en vecka gammal kurs ar alltid inaktuell`() = runTest {
+        cachedPrice = FundPrice(fundId = "F1", epochDay = LocalDate.of(2026, 7, 1).toEpochDay(), nav = 100.0)
+        assertTrue(fakeRepo.isPriceStale("F1", LocalDateTime.of(2026, 7, 15, 8, 0)))
+    }
+}

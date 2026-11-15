@@ -1,0 +1,77 @@
+package se.kodhast.fonder.ui.navigation
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Test
+import se.kodhast.fonder.R
+
+/**
+ * Regressionstest för NAV-1/NAV-7/NAV-9 — flikradens fyra flikar, startskärmen och att
+ * Inställningar och Facit är skärmar i stacken med egen rubrik. Ren datakontroll av [Screen] och
+ * [titleResFor], inget Compose/Hilt behövs för det.
+ */
+class ScreenTest {
+
+    @Test
+    fun `flikraden har fyra flikar i ratt ordning`() {
+        assertEquals(
+            listOf(OversiktKey, InnehavKey, BeslutKey, HandelserKey),
+            Screen.entries.map { it.key }
+        )
+    }
+
+    @Test
+    fun `oversikt ar startskarm`() {
+        assertEquals(Screen.Oversikt, Screen.START)
+        assertEquals(listOf<AppKey>(OversiktKey), AppBackStack().entries)
+    }
+
+    @Test
+    fun `installningar ar inte en flik men har rubrik, och flikarna har ingen topprad`() {
+        assertNull(Screen.forKey(SettingsKey))
+        assertEquals(R.string.nav_settings, titleResFor(SettingsKey))
+        Screen.entries.forEach { assertNull(titleResFor(it.key)) }
+    }
+
+    @Test
+    fun `en ramskarm ritar sin egen rubrik - skalet har ingen for den`() {
+        assertNull(Screen.forKey(ComponentGalleryKey))
+        assertNull(titleResFor(ComponentGalleryKey))
+    }
+
+    @Test
+    fun `facit ar en skarm i stacken under Beslut med egen rubrik`() {
+        // Sedan 0.61.0 (NAV-9): Beslut är en egen flik och Facit en djupare skärm med bakåtpil.
+        assertNull(Screen.forKey(FacitKey))
+        assertEquals(R.string.facit_title, titleResFor(FacitKey))
+        assertEquals(Screen.Beslut, Screen.forKey(BeslutKey))
+    }
+
+    @Test
+    fun `skarmar med argument har rubrik oavsett argument`() {
+        assertEquals(R.string.switch_watch_title, titleResFor(SwitchWatchKey(7)))
+    }
+
+    @Test
+    fun `fonddetalj ar en ramskarm som ritar sin rubrik sjalv`() {
+        // NAV-2: fondens namn står i detaljramens topprad, oavsett fond.
+        assertEquals(null, titleResFor(FondDetaljKey("SHB0000442")))
+        assertEquals(null, titleResFor(FondDetaljKey("SHB0000999")))
+    }
+
+    @Test
+    fun `fondsokens tre lagen och Handelser ar ramskarmar som ritar sin rubrik sjalva`() {
+        // NAV-3, HEM-10, ANA-13: rubriken står i listramens topprad; Händelser har ramens stora rubrik (NAV-5).
+        assertEquals(null, titleResFor(FundSearchKey))
+        assertEquals(null, titleResFor(BenchmarkPickerKey))
+        assertEquals(null, titleResFor(SwitchWatchPickerKey(7)))
+        assertEquals(null, titleResFor(HandelserKey))
+    }
+
+    @Test
+    fun `transaktionsformularet ar en ramskarm som ritar sin rubrik sjalv`() {
+        // NAV-4, UI-15: rubriken ("Ny transaktion", "Registrera säljet", "Registrera köpet") står i ramens topprad.
+        assertEquals(null, titleResFor(TransactionFormKey()))
+        assertEquals(null, titleResFor(TransactionFormKey.bought(7, "SE_A")))
+    }
+}

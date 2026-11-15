@@ -1,0 +1,36 @@
+package se.kodhast.fonder.data.room.entities
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import se.kodhast.fonder.domain.model.Fund
+
+@Entity(tableName = FundEntity.TABLE_NAME)
+data class FundEntity(
+    @PrimaryKey val fundId: String,
+    val name: String,
+    val currency: String,
+    val isin: String? = null,
+    /** Fondlista-plattformens kod när [fundId] är ett ISIN — se [Fund.fondlistaFundId] (issue #39). */
+    val fondlistaFundId: String? = null
+) {
+    fun toDomain() = Fund(
+        fundId = fundId,
+        name = name,
+        currency = currency,
+        isin = isin,
+        fondlistaFundId = fondlistaFundId
+    )
+
+    companion object {
+        /** Tabellnamnet — ett ställe, så backup-kontraktets ändringssignal (HEM-12) inte kan glida isär från schemat. */
+        const val TABLE_NAME = "funds"
+
+        fun fromDomain(fund: Fund) = FundEntity(
+            fundId = fund.fundId,
+            name = fund.name,
+            currency = fund.currency,
+            isin = fund.isin,
+            fondlistaFundId = fund.fondlistaFundId
+        )
+    }
+}

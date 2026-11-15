@@ -54,7 +54,7 @@ Två moduler, som i ReseApoteket (#171):
   `domain/model` och de rena use casen i `domain/usecase`, med sina tester (`./gradlew :core:test`).
 - **`:app`** (`app/src/`) – Android-appen, med `implementation(project(":core"))`.
 
-Paketnamnen är oförändrade (`se.partee71.fonder.domain.…`). De use case som läser repositories,
+Paketnamnen är oförändrade (`se.kodhast.fonder.domain.…`). De use case som läser repositories,
 DataStore eller schemaläggaren ligger kvar i `:app` i samma paket `domain/usecase`, eftersom
 repository-gränssnitten finns i `data/`: `RecordTransaction`, `SwitchPlanInputs`,
 `TargetLevelPreselection`, `PortfolioRiskSource`, `CachedRiskBaseSource`, `DismissedPlanSource`, `InProgressSwitches`, `SwitchTransitions` +
@@ -64,7 +64,7 @@ och `FacitSummary`. Inget i `:core` beror på Room – Room-entiteterna står i 
 till domänmodellerna i repository-lagret. Nedan visas `domain/` samlat; vilken modul en fil ligger i
 står ovan.
 
-Paket under `se/partee71/fonder/` (`app/src/main/kotlin/…`, `domain/` delvis i `core/src/main/kotlin/…`):
+Paket under `se/kodhast/fonder/` (`app/src/main/kotlin/…`, `domain/` delvis i `core/src/main/kotlin/…`):
 
 ```
 data/
@@ -288,7 +288,7 @@ versionen i tabellen.
 
 | Behov | API | Artefakt:version | Används i | Verifierad |
 |---|---|---|---|---|
-| Expressive-tema | `se.partee71.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`), inre `MaterialExpressiveTheme(shapes = FonderShapes)` | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
+| Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`), inre `MaterialExpressiveTheme(shapes = FonderShapes)` | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
 | Laddningsindikator | `LoadingIndicator()` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |
 | Vågig progress | `LinearWavyProgressIndicator` | `material3:1.5.0-beta01` | `ui/components/ProgressBar.kt` | 2026-10-20 (kompilerad) |
 | Flytande verktygsrad | `HorizontalFloatingToolbar` | `material3:1.5.0-beta01` | `ui/components/AppFloatingToolbar.kt` | 2026-10-20 (kompilerad) |
@@ -317,6 +317,6 @@ versionen i tabellen.
 | Compose | BOM 2026.09.00, `material3` 1.5.0-beta01 | se Verifierade API:er |
 | Kontroller | Konsist (`UiConsistencyTest`), PMD CPD (`cpdCheck`), Spotless/ktlint lokalt | skill `shared-ui-components`, `ci-budget` |
 | Moduler | `:core` (Kotlin/JVM, plugins `kotlin.jvm` + `kotlin.serialization`), `:app` | `settings.gradle.kts`: `include(":core", ":app")`; #171 |
-| android-ui | `se.partee71.ui` 0.9.2 (`ui-components`, med `ui-theme` och `ui-common` transitivt; i test `ui-testing`) | Mats komponentbibliotek ([ParTee71/android-ui](https://github.com/ParTee71/android-ui)), delat med ReseApoteket och Dagboken. GitHub Packages kräver inloggning även för läsning: `GPR_USER`/`GPR_TOKEN` (classic token, `read:packages`) i sessionen; i CI sätter `setup-android` dem från `secrets.GPR_TOKEN`, annars `github.token` med `packages: read`. Temat (`AppTheme`, `Spacing`) sedan #172, listtillstånd och fel (`ListUiState`, `UiError`, `ErrorMapper`) sedan #173 |
+| android-ui | `se.kodhast.ui` 0.9.2 (`ui-components`, med `ui-theme` och `ui-common` transitivt; i test `ui-testing`) | Mats komponentbibliotek ([ParTee71/android-ui](https://github.com/ParTee71/android-ui)), delat med ReseApoteket och Dagboken. GitHub Packages kräver inloggning även för läsning: `GPR_USER`/`GPR_TOKEN` (classic token, `read:packages`) i sessionen; i CI sätter `setup-android` dem från `secrets.GPR_TOKEN`, annars `github.token` med `packages: read`. Temat (`AppTheme`, `Spacing`) sedan #172, listtillstånd och fel (`ListUiState`, `UiError`, `ErrorMapper`) sedan #173 |
 
 Övrig Gradle-uppsättning (plugins, KSP-inställningar, cache) står i skill `android-projekt` → Gradle.

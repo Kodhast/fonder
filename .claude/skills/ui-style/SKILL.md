@@ -9,7 +9,7 @@ description: 'Fonders designspråk — nordisk blå med sparsam kopparaccent i M
 siffror radar upp sig i kolumner. Krav: UI-1 (identitet, fast palett, ljust + mörkt), UI-2
 (Space Grotesk, tabulära siffror), UI-3 (vinst/förlust aldrig enbart färg), UI-4 (Ljust/Mörkt/Auto), UI-12 (M3 Expressive: former, knappgrupper, laddningsindikator).
 
-**Var saker står (enda källor):** temats API kommer från biblioteket android-ui (`se.partee71.ui.theme`:
+**Var saker står (enda källor):** temats API kommer från biblioteket android-ui (`se.kodhast.ui.theme`:
 `AppTheme`, `ExtendedColors`/`Tone`, `AppShapes`, `AppTypography`, `Spacing`); Fonders egna värden står i
 `ui/theme/` – `Color.kt` (paletten, färgscheman, `FonderLight/DarkExtendedColors`, tonerna `Tone.Gain`,
 `Tone.Copper`, `Tone.Tertiary`, `Tone.Neutral`, `Tone.NeutralPrimary`, `Tone.Filled`, `Tone.Error`, `FonderColors`), `Theme.kt` (`FonderTheme`, kortstilarna `flushCardStyle`/`nestedCardStyle`/`ListFrameCards`, `ReturnColors`, `StatusColors`, `ChartSeriesColors`),

@@ -1,0 +1,55 @@
+package se.kodhast.fonder.data.repository
+
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.model.Transaction
+
+/**
+ * In-memory-fake av [TransactionRepository] för läsare av de bevakade fonderna — som
+ * [se.kodhast.fonder.domain.usecase.FacitSummary], som slår upp säljfondens fundId ur [funds].
+ * Den delade fake:n — nya tester ska använda den i stället för att bära en egen inbäddad. Ett test
+ * som redan äger sina flöden skickar in dem; en variant (fel, fördröjning) är en
+ * `object : TransactionRepository by fake { … }`.
+ */
+class FakeTransactionRepository(
+    val funds: MutableStateFlow<List<Fund>> = MutableStateFlow(emptyList()),
+    val transactions: MutableStateFlow<List<Transaction>> = MutableStateFlow(emptyList())
+) : TransactionRepository {
+
+    /** Antal gånger fondlistan begärts — en import ska läsa den en gång, inte per rad. */
+    var fundsReads = 0
+
+    override fun observeFunds(): Flow<List<Fund>> {
+        fundsReads++
+        return funds
+    }
+
+    override fun observeTransactions(): Flow<List<Transaction>> = transactions
+
+    override fun observeTransactionsForFund(fundId: String): Flow<List<Transaction>> = transactions.map { all -> all.filter { it.fundId == fundId } }
+
+    override suspend fun upsertFund(fund: Fund) {
+        funds.value = funds.value.filterNot { it.fundId == fund.fundId } + fund
+    }
+
+    override suspend fun addTransaction(tx: Transaction): Long {
+        val id = (transactions.value.maxOfOrNull { it.id } ?: 0L) + 1
+        transactions.value = transactions.value + tx.copy(id = id)
+        return id
+    }
+
+    override suspend fun correctDate(id: Long, epochDay: Long) {
+        transactions.value = transactions.value.map { if (it.id == id) it.copy(epochDay = epochDay, dateEstimated = false) else it }
+    }
+
+    override suspend fun deleteTransaction(id: Long) {
+        transactions.value = transactions.value.filterNot { it.id == id }
+    }
+
+    override suspend fun clearAll() {
+        funds.value = emptyList()
+        transactions.value = emptyList()
+    }
+}

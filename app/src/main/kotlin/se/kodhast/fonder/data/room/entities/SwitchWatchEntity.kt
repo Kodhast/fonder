@@ -1,0 +1,169 @@
+package se.kodhast.fonder.data.room.entities
+
+import androidx.room.ColumnInfo
+import androidx.room.Embedded
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import androidx.room.Relation
+import se.kodhast.fonder.domain.model.SwitchWatch
+import se.kodhast.fonder.domain.model.SwitchWatchCandidate
+import se.kodhast.fonder.domain.model.SwitchWatchCandidateSource
+import se.kodhast.fonder.domain.model.SwitchWatchCloseReason
+
+/**
+ * Ett pågående byte (ANA-12, issue #114) — se [SwitchWatch] för varför det här är genuin,
+ * backup-bärande användardata och inte cache.
+ */
+@Entity(tableName = SwitchWatchEntity.TABLE_NAME)
+data class SwitchWatchEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val sellIsin: String,
+    val sellFundName: String,
+    val soldAtEpochDay: Long,
+    val proceedsKr: Double?,
+    val targetLevel: Int?,
+    val sourceRecordId: Long?,
+    val closedAtEpochDay: Long?,
+    val boughtIsin: String?,
+    /**
+     * [SwitchWatchCloseReason] som text, null medan bevakningen är öppen — lagrad som `String`
+     * av samma skäl som `SuggestionRecordEntity.kind`: en `TypeConverter` hade lagt en global
+     * konvertering på hela databasen för en enda kolumn. Okänt värde läses som
+     * [SwitchWatchCloseReason.AVBRUTEN]: en fil från en nyare version ska degradera, inte krascha.
+     */
+    val closeReason: String?,
+    /**
+     * Säljtransaktionen bevakningen startades ur (BYT-1, Room 16→17), null för äldre rader och
+     * för bevakningar startade utan transaktion — se [SwitchWatch.sellTransactionId]. Ingen
+     * främmande nyckel: transaktioner raderas via TRX-2 och länken nollas i repositoryt
+     * ([se.kodhast.fonder.data.repository.RoomTransactionRepository.deleteTransaction]); en
+     * `ON DELETE SET NULL` hade krävt en FK-deklaration och ett index på en tabell som inte har
+     * någon, och bevakningen ska ligga kvar oavsett.
+     */
+    val sellTransactionId: Long? = null,
+    /** Köptransaktionen som stängde bevakningen som köpt, se [SwitchWatch.buyTransactionId]. Samma regler som [sellTransactionId]. */
+    val buyTransactionId: Long? = null,
+    /**
+     * Användarens filter "bara indexfonder" för appens förslag (ANA-13, issue #150, Room 17→18).
+     * `defaultValue` deklareras här och inte bara i migreringen, så en nyinstallerad databas och en
+     * migrerad har samma schema och Rooms validering prövar defaulten — se [SwitchWatch.indexOnly].
+     */
+    @ColumnInfo(defaultValue = "0")
+    val indexOnly: Boolean = false
+) {
+    companion object {
+        /** Tabellnamnet — ett ställe, så backup-kontraktets ändringssignal (HEM-12) inte kan glida isär från schemat. */
+        const val TABLE_NAME = "switch_watches"
+    }
+}
+
+/**
+ * En bevakad kandidat (ANA-13). Kaskadraderas med sin bevakning — en kandidat utan bevakning är
+ * inte "data som blev kvar", den är en rad ingen läsare kan tolka.
+ */
+@Entity(
+    tableName = SwitchWatchCandidateEntity.TABLE_NAME,
+    foreignKeys = [
+        ForeignKey(
+            entity = SwitchWatchEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["watchId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("watchId")]
+)
+data class SwitchWatchCandidateEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val watchId: Long,
+    val isin: String,
+    val name: String,
+    val navAtStart: Double?,
+    val navAtStartEpochDay: Long?,
+    /** [SwitchWatchCandidateSource] som text — se [SwitchWatchEntity.closeReason] för varför. */
+    val source: String = SwitchWatchCandidateSource.AUTO.name,
+    val position: Int = 0
+) {
+    fun toDomain() = SwitchWatchCandidate(
+        id = id,
+        watchId = watchId,
+        isin = isin,
+        name = name,
+        navAtStart = navAtStart,
+        navAtStartEpochDay = navAtStartEpochDay,
+        source = runCatching { SwitchWatchCandidateSource.valueOf(source) }
+            .getOrDefault(SwitchWatchCandidateSource.AUTO),
+        position = position
+    )
+
+    companion object {
+        /** Tabellnamnet — ett ställe, så backup-kontraktets ändringssignal (HEM-12) inte kan glida isär från schemat. */
+        const val TABLE_NAME = "switch_watch_candidates"
+
+        fun fromDomain(candidate: SwitchWatchCandidate, watchId: Long = candidate.watchId) = SwitchWatchCandidateEntity(
+            id = candidate.id,
+            watchId = watchId,
+            isin = candidate.isin,
+            name = candidate.name,
+            navAtStart = candidate.navAtStart,
+            navAtStartEpochDay = candidate.navAtStartEpochDay,
+            source = candidate.source.name,
+            position = candidate.position
+        )
+    }
+}
+
+/**
+ * En bevakning med sina kandidater — läsvyn varje skärm använder. Room fyller [candidates] via
+ * [Relation]; ordningen sätts här i stället för i SQL eftersom `@Relation` inte tar en
+ * `ORDER BY` som gäller den nästlade listan.
+ */
+data class SwitchWatchWithCandidates(
+    @Embedded val watch: SwitchWatchEntity,
+    @Relation(parentColumn = "id", entityColumn = "watchId")
+    val candidates: List<SwitchWatchCandidateEntity>
+) {
+    fun toDomain() = SwitchWatch(
+        id = watch.id,
+        sellIsin = watch.sellIsin,
+        sellFundName = watch.sellFundName,
+        soldAtEpochDay = watch.soldAtEpochDay,
+        proceedsKr = watch.proceedsKr,
+        targetLevel = watch.targetLevel,
+        sourceRecordId = watch.sourceRecordId,
+        closedAtEpochDay = watch.closedAtEpochDay,
+        boughtIsin = watch.boughtIsin,
+        closeReason = watch.closeReason?.let { reason ->
+            runCatching { SwitchWatchCloseReason.valueOf(reason) }.getOrDefault(SwitchWatchCloseReason.AVBRUTEN)
+        },
+        candidates = candidates
+            .sortedWith(compareBy({ it.position }, { it.id }))
+            .map(SwitchWatchCandidateEntity::toDomain),
+        sellTransactionId = watch.sellTransactionId,
+        buyTransactionId = watch.buyTransactionId,
+        indexOnly = watch.indexOnly
+    )
+
+    companion object {
+        fun fromDomain(watch: SwitchWatch) = SwitchWatchWithCandidates(
+            watch = SwitchWatchEntity(
+                id = watch.id,
+                sellIsin = watch.sellIsin,
+                sellFundName = watch.sellFundName,
+                soldAtEpochDay = watch.soldAtEpochDay,
+                proceedsKr = watch.proceedsKr,
+                targetLevel = watch.targetLevel,
+                sourceRecordId = watch.sourceRecordId,
+                closedAtEpochDay = watch.closedAtEpochDay,
+                boughtIsin = watch.boughtIsin,
+                closeReason = watch.closeReason?.name,
+                sellTransactionId = watch.sellTransactionId,
+                buyTransactionId = watch.buyTransactionId,
+                indexOnly = watch.indexOnly
+            ),
+            candidates = watch.candidates.map { SwitchWatchCandidateEntity.fromDomain(it, watch.id) }
+        )
+    }
+}

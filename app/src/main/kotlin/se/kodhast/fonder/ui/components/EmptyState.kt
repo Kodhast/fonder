@@ -1,0 +1,122 @@
+package se.kodhast.fonder.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import se.kodhast.fonder.R
+import se.kodhast.ui.common.UiError
+
+/**
+ * android-ui:s tomma läge eller läsfel (`EmptyState`, `LoadErrorState`) mitt på en yta som inte är en
+ * skärmram – flikarna Översikt, Innehav och Beslut, Facit och Fonddetalj (NFR-6). Ytan skrollar när
+ * budskapet och knapparna inte ryms (stor text, liten skärm, UI-5). En ramskärm (`EntityListScreen`)
+ * placerar sina lägen själv.
+ */
+@Composable
+fun CenteredState(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * Fonders äldre tomma läge – kvar på importerna, transaktionsformuläret och Pågående byte tills de går
+ * över till android-ui:s `EmptyState` (skill shared-ui-components). Nya skärmar använder bibliotekets.
+ *
+ * @param icon valfri dekorativ ikon i en rundad primärbehållare ovanför rubriken (UI-12). Null
+ *   (default) ritar bara rubrik och brödtext som tidigare. Ikonen är dekorativ – rubriken bär
+ *   budskapet för skärmläsaren.
+ * @param action valfri väg ur det tomma läget under texten – en [AppButton] (t.ex. "Bevaka en fond" i
+ *   transaktionsformuläret, TRX-6). Null (default) ritar ingen knapp.
+ */
+@Composable
+fun EmptyState(
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    action: (@Composable () -> Unit)? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .padding(bottom = 16.dp)
+                    .size(64.dp)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        if (action != null) {
+            Box(Modifier.padding(top = 16.dp)) { action() }
+        }
+    }
+}
+
+/**
+ * Ett läsfel i stället för innehållet (NFR-6): samma tomma tillstånd, med felets text
+ * ([UiError.message], från den enda felmappningen `AppErrors`) under [title].
+ */
+@Composable
+fun EmptyState(
+    error: UiError,
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.error_load_title)
+) {
+    EmptyState(title = title, body = stringResource(error.message), modifier = modifier)
+}

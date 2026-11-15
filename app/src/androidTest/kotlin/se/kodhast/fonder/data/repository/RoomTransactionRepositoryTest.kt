@@ -1,0 +1,196 @@
+package se.kodhast.fonder.data.repository
+
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import se.kodhast.fonder.data.room.AppDatabase
+import se.kodhast.fonder.data.room.entities.FundEntity
+import se.kodhast.fonder.data.room.entities.FundPriceEntity
+import se.kodhast.fonder.data.room.entities.SuggestionDismissalEntity
+import se.kodhast.fonder.data.room.entities.SuggestionRecordEntity
+import se.kodhast.fonder.data.room.entities.SwitchWatchCandidateEntity
+import se.kodhast.fonder.data.room.entities.SwitchWatchEntity
+import se.kodhast.fonder.data.room.entities.TransactionEntity
+import se.kodhast.fonder.domain.model.Fund
+
+/**
+ * Verifierar [TransactionRepository.clearAll] (SET-1, töm databasen) och att [TransactionRepository.upsertFund]
+ * slår ihop mot lagrad rad i stället för att skriva över den, samt [TransactionRepository.correctDate] (IMP-2, #222).
+ */
+@RunWith(AndroidJUnit4::class)
+class RoomTransactionRepositoryTest {
+
+    private lateinit var db: AppDatabase
+    private lateinit var repository: TransactionRepository
+
+    @Before
+    fun setUp() {
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        ).build()
+        repository = RoomTransactionRepository(
+            db,
+            db.fundDao(),
+            db.transactionDao(),
+            db.fundPriceDao(),
+            db.suggestionRecordDao(),
+            db.switchWatchDao(),
+            db.suggestionDismissalDao()
+        )
+    }
+
+    @After
+    fun tearDown() = db.close()
+
+    @Test
+    fun clearAll_tommer_fonder_transaktioner_kurser_och_inspelade_forslag() = runTest {
+        db.fundDao().upsert(FundEntity(fundId = "SHB0000442", name = "Fond A", currency = "SEK", isin = "SE0000582033"))
+        db.transactionDao().insert(
+            TransactionEntity(fundId = "SHB0000442", type = "KOP", epochDay = 100, shares = 3.0, pricePerShare = 50.0)
+        )
+        db.fundPriceDao().upsertAll(
+            listOf(FundPriceEntity(fundId = "SHB0000442", epochDay = 100, nav = 50.0, currency = "SEK"))
+        )
+        // Inspelade bytesförslag (HEM-8) är användardata, inte cache — de måste med i tömningen,
+        // annars visar Hem råd som prissatts mot en portfölj som inte längre finns.
+        db.suggestionRecordDao().insert(
+            SuggestionRecordEntity(
+                suggestedAtEpochDay = 100,
+                planIndex = 0,
+                sellIsin = "SE0000582033",
+                buyIsin = "SE0001466368",
+                sellNavAtSuggestion = 50.0,
+                buyNavAtSuggestion = 120.0,
+                switchValueKr = 1_000.0,
+                followed = null
+            )
+        )
+
+        // Pågående byten (ANA-12, issue #114) är användardata i samma kategori — och en
+        // bevakning som överlevde tömningen hade pekat på en säljfond som inte finns kvar.
+        val watchId = db.switchWatchDao().insertWatch(
+            SwitchWatchEntity(
+                sellIsin = "SE0000582033", sellFundName = "Fond A", soldAtEpochDay = 100,
+                proceedsKr = 1_000.0, targetLevel = 4, sourceRecordId = null,
+                closedAtEpochDay = null, boughtIsin = null, closeReason = null
+            )
+        )
+        db.switchWatchDao().insertCandidates(
+            listOf(
+                SwitchWatchCandidateEntity(
+                    watchId = watchId,
+                    isin = "SE0001466368",
+                    name = "Kandidat",
+                    navAtStart = 120.0,
+                    navAtStartEpochDay = 100
+                )
+            )
+        )
+
+        // Avståenden (HEM-14) gäller en portfölj som inte längre finns efter tömningen.
+        db.suggestionDismissalDao().upsert(
+            SuggestionDismissalEntity(sellIsin = "SE0000582033", buyIsin = "SE0001466368", kind = "RISK_PLAN", dismissedAtEpochDay = 100)
+        )
+
+        repository.clearAll()
+
+        assertTrue(repository.observeFunds().first().isEmpty())
+        assertTrue(repository.observeTransactions().first().isEmpty())
+        assertTrue(db.fundPriceDao().getRange("SHB0000442", 0, 200).isEmpty())
+        assertTrue(db.suggestionRecordDao().getAll().isEmpty())
+        assertTrue(db.switchWatchDao().getAll().isEmpty())
+        assertTrue(db.suggestionDismissalDao().getAll().isEmpty())
+    }
+
+    @Test
+    fun upsertFund_behaller_lagrat_isin_nar_den_inkommande_fonden_saknar_det() = runTest {
+        // Regression: `@Insert(REPLACE)` skrev hela raden, så en fond från katalogen/sökträffen
+        // (isin = null) raderade ett ISIN användaren själv bekräftat i Fonddetalj (NAV-2) —
+        // och därmed hela kurskedjan via ISIN för den fonden.
+        val fund = Fund(fundId = "SHB0000442", name = "Fond A", currency = "SEK")
+        repository.upsertFund(fund)
+        repository.upsertFund(fund.copy(isin = "SE0000582033", fondlistaFundId = "FL-442"))
+
+        repository.upsertFund(fund)
+
+        val stored = repository.observeFunds().first().single()
+        assertEquals("SE0000582033", stored.isin)
+        assertEquals("FL-442", stored.fondlistaFundId)
+    }
+
+    @Test
+    fun upsertFund_skriver_over_lagrat_isin_med_ett_nytt_ifyllt_varde() = runTest {
+        // Sammanslagningen får inte göra fältet oföränderligt: rättar användaren ett felaktigt
+        // ISIN ska det nya värdet vinna.
+        val fund = Fund(fundId = "SHB0000442", name = "Fond A", currency = "SEK", isin = "SE0000000000")
+        repository.upsertFund(fund)
+
+        repository.upsertFund(fund.copy(isin = "SE0000582033"))
+
+        assertEquals("SE0000582033", repository.observeFunds().first().single().isin)
+    }
+
+    @Test
+    fun deleteTransaction_nollar_bevakningens_lank_men_lamnar_bevakningen_kvar() = runTest {
+        // TRX-2 + BYT-1: transaktionen försvinner, bevakningen är användardata och raderas aldrig
+        // som sidoeffekt — den blir en bevakning utan känd transaktion, som en rad från före 0.67.0.
+        db.fundDao().upsert(FundEntity(fundId = "SHB0000442", name = "Fond A", currency = "SEK", isin = "SE0000582033"))
+        val saleId = db.transactionDao().insert(
+            TransactionEntity(fundId = "SHB0000442", type = "SALJ", epochDay = 100, shares = 3.0, pricePerShare = 50.0)
+        )
+        val watchId = db.switchWatchDao().insertWatch(
+            SwitchWatchEntity(
+                sellIsin = "SE0000582033", sellFundName = "Fond A", soldAtEpochDay = 100,
+                proceedsKr = 150.0, targetLevel = 4, sourceRecordId = null,
+                closedAtEpochDay = null, boughtIsin = null, closeReason = null,
+                sellTransactionId = saleId
+            )
+        )
+
+        repository.deleteTransaction(saleId)
+
+        assertTrue(repository.observeTransactions().first().isEmpty())
+        val watch = db.switchWatchDao().getById(watchId)!!.toDomain()
+        assertNull(watch.sellTransactionId)
+        assertTrue(watch.isOpen)
+        assertEquals(150.0, watch.proceedsKr!!, 1e-9)
+    }
+
+    @Test
+    fun correctDate_satter_datumet_och_rensar_uppskattningen_utan_att_rora_resten() = runTest {
+        // IMP-2, #222: ett uppskattat köpdatum som användaren rättar är inte längre en gissning.
+        db.fundDao().upsert(FundEntity(fundId = "SHB0000442", name = "Fond A", currency = "SEK", isin = "SE0000582033"))
+        val estimated = db.transactionDao().insert(
+            TransactionEntity(fundId = "SHB0000442", type = "KOP", epochDay = 19_000, shares = 12.5, pricePerShare = 101.25, fee = 9.0, dateEstimated = true)
+        )
+        val other = db.transactionDao().insert(
+            TransactionEntity(fundId = "SHB0000442", type = "KOP", epochDay = 19_100, shares = 2.0, pricePerShare = 110.0, dateEstimated = true)
+        )
+
+        repository.correctDate(estimated, epochDay = 18_640)
+        repository.correctDate(id = 9_999, epochDay = 18_000)
+
+        val all = repository.observeTransactions().first().associateBy { it.id }
+        assertEquals(2, all.size)
+        val corrected = all.getValue(estimated)
+        assertEquals(18_640L, corrected.epochDay)
+        assertEquals(false, corrected.dateEstimated)
+        assertEquals(12.5, corrected.shares, 1e-9)
+        assertEquals(101.25, corrected.pricePerShare, 1e-9)
+        assertEquals(9.0, corrected.fee, 1e-9)
+        assertEquals("SHB0000442", corrected.fundId)
+        // En annan rad rörs inte.
+        assertEquals(19_100L, all.getValue(other).epochDay)
+        assertEquals(true, all.getValue(other).dateEstimated)
+    }
+}

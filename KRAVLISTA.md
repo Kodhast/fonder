@@ -3,7 +3,7 @@
 > App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut
 > värde och visa utveckling i tabell och diagram, med molnbackup och Google-inloggning.
 >
-> Version: 0.37.0 · Paket: `se.partee71.fonder` · Språk: Svenska
+> Version: 0.37.0 · Paket: `se.kodhast.fonder` · Språk: Svenska
 
 ---
 
@@ -29,7 +29,7 @@
 
 | ID | Krav |
 |----|------|
-| TP-1 | Android, **minSdk 30**, targetSdk 36, **compileSdk 37** (höjt för Vico-beroendet, issue #7, och för biblioteken i den tekniska uppgraderingen: Kotlin 2.4, AGP 9, Compose BOM 2026.09, material3 1.5), byggs för Java 17 med JDK 21. Paket `se.partee71.fonder`. |
+| TP-1 | Android, **minSdk 30**, targetSdk 36, **compileSdk 37** (höjt för Vico-beroendet, issue #7, och för biblioteken i den tekniska uppgraderingen: Kotlin 2.4, AGP 9, Compose BOM 2026.09, material3 1.5), byggs för Java 17 med JDK 21. Paket `se.kodhast.fonder`. |
 | TP-2 | UI byggt med **Jetpack Compose** + Material 3; navigeringen med **Jetpack Navigation 3** – en bakåtstack per flik (NAV-7) som överlever rotation och processdöd. |
 | TP-3 | Arkitektur: **MVVM** med Hilt (DI), Repository-mönster, ViewModels med `StateFlow`. |
 | TP-4 | Lokal lagring i **Room** (`exportSchema = true`); inställningar i **DataStore (Preferences)**. |
@@ -221,6 +221,7 @@ fäller bygget så länge `app/google-services.json` saknas.
 
 ## Historik
 
+- **Nytt kodpaket (1.0.1, #253):** koden heter `se.kodhast.fonder` och hämtar android-ui 1.0.0 (`se.kodhast.ui`) från Kodhast. Appens id `se.partee71.fonder` står kvar, startikonen bär det gamla namnet genom ett alias, och databasen, backupen och inloggningen är orörda. Kursuppdateringen i bakgrunden köas om när appen öppnas första gången efter uppdateringen. Inget synligt beteende ändras.
 - **Fondnamnet i Fonddetaljs topprad kopierbart (1.0.0, #248):** namnet överst i Fonddetalj var det enda fondnamnet utanför Transaktioner som inte gick att kopiera, eftersom toppraden ägs av android-ui. android-ui 0.10.0 ger toppraden `titleModifier`, och Fonddetalj sätter `copyableFundName` där (**UI-16**).
 - **Bevakningstid går att välja (1.0.0, #244):** "Bevaka alternativ" på ett sälj äldre än 14 dagar öppnade Pågående byte, som stängdes igen efter en sekund — bevakningen var utgången redan när den startades. Nu erbjuds knappen bara för sälj inom bevakningstiden, och tiden väljs i Inställningar (14/30/60/90 dagar, standard 30, **SET-8**, **SLD-5**, **BYT-2**, i säkerhetskopian **NFR-1**).
 - **Kopierbara fondnamn (0.87.0, #245):** fondnamn gick inte att kopiera, t.ex. för att söka på en alternativ fond hos banken. Nu kopierar ett långtryck namnet på alla ställen där en fond visas för sig (**UI-16**).
