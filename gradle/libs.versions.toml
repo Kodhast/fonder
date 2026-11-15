@@ -38,7 +38,7 @@ googleApiServicesDrive  = "v3-rev20260916-2.0.0"
 # Vico 3: modellen byggs synkront (CartesianChartModel, inte modelProducer) så att
 # skärmdumparna blir deterministiska (skill diagram).
 vico                    = "3.3.1"
-# Komponentbiblioteket github.com/ParTee71/android-ui (GitHub Packages, ARKITEKTUR.md → Byggkonfiguration).
+# Komponentbiblioteket github.com/Kodhast/android-ui (GitHub Packages, ARKITEKTUR.md → Byggkonfiguration).
 # Följer samma Compose BOM, material3, Kotlin och AGP som appen.
 androidUi               = "1.0.0"
 shimmer                 = "1.5.0"

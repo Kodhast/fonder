@@ -166,4 +166,23 @@ class AppBackStackTest {
 
         assertEquals(listOf<AppKey>(OversiktKey), AppBackStack.restore(saved).entries)
     }
+
+    /**
+     * Den sparade stacken bär nycklarnas klassnamn (polymorf kotlinx.serialization utan
+     * `@SerialName`), så en stack sparad före bytet av kodpaket (fonder #253) innehåller
+     * `se.partee71.fonder…`. Den ska ge startskärmen, inte en krasch vid start.
+     */
+    @Test
+    fun `en stack sparad med kodpaketet från före bytet ger Översikt`() {
+        val stack = AppBackStack()
+        stack.select(Screen.Innehav)
+        stack.push(FondDetaljKey("SHB0000442"))
+        val saved = stack.save()
+        assertTrue("nycklarna sparas med klassnamn", saved.contains(FondDetaljKey::class.qualifiedName!!))
+
+        val restored = AppBackStack.restore(saved.replace("se.kodhast.fonder", "se.partee71.fonder"))
+
+        assertEquals(listOf<AppKey>(OversiktKey), restored.entries)
+        assertEquals(Screen.Oversikt, restored.currentTab)
+    }
 }

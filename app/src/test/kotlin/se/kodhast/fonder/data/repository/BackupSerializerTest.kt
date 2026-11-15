@@ -519,4 +519,19 @@ class BackupSerializerTest {
 
         assertEquals(BackupFormatException.Reason.UNREADABLE, (error as BackupFormatException).reason)
     }
+
+    /**
+     * En fil skriven av appen **före** bytet av kodpaket till `se.kodhast.fonder` (fonder #253),
+     * genererad med [BackupSerializer] på `master` före bytet ur samma [fullPayload]. Formatet bär
+     * inga klassnamn (ingen polymorf serialisering), så paketbytet får inte tappa något: filen ska
+     * läsas till exakt samma payload som i dag.
+     */
+    @Test
+    fun `en fil fran fore paketbytet lases utan att nagot tappas`() {
+        val text = checkNotNull(javaClass.getResource("/backup/fore-paketbytet-253.json")).readText()
+
+        assertFalse("filen får inte bära klassnamn", text.contains("se.partee71") || text.contains("se.kodhast"))
+        assertEquals(fullPayload(), BackupSerializer.decode(text).getOrThrow())
+        assertEquals(Json.parseToJsonElement(text), Json.parseToJsonElement(BackupSerializer.encode(fullPayload())))
+    }
 }

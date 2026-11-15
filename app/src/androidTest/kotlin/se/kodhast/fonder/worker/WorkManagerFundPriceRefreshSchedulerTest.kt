@@ -246,4 +246,41 @@ class WorkManagerFundPriceRefreshSchedulerTest {
         val infos = workManager.getWorkInfosForUniqueWork(WorkManagerFundPriceRefreshScheduler.PERIODIC_WORK_NAME).get()
         assertEquals(WorkInfo.State.ENQUEUED, infos.single().state)
     }
+
+    @Test
+    fun scheduleBackstop_ersatter_ett_periodiskt_jobb_med_arbetarklassen_fran_fore_paketbytet() {
+        // En installation från före bytet av kodpaket (fonder #253) har backstopen sparad med
+        // arbetarklassens gamla namn, som inte finns längre. Appstarten köar om den med UPDATE:
+        // samma jobb (samma id) ska då bära den nuvarande klassen, annars försöker WorkManager
+        // starta en klass som saknas vid varje körning. Initial fördröjning och nätverkskrav så
+        // att SynchronousExecutor inte kör det gamla jobbet direkt vid enqueue.
+        val legacy = androidx.work.PeriodicWorkRequestBuilder<FundPriceUpdateWorker>(24, java.util.concurrent.TimeUnit.HOURS)
+            .setInitialDelay(1, java.util.concurrent.TimeUnit.DAYS)
+            .setConstraints(
+                androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build()
+            )
+            .build()
+        legacy.workSpec.workerClassName = LEGACY_WORKER_CLASS_NAME
+        workManager.enqueueUniquePeriodicWork(
+            WorkManagerFundPriceRefreshScheduler.PERIODIC_WORK_NAME,
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            legacy
+        ).result.get()
+        assertEquals(LEGACY_WORKER_CLASS_NAME, workerClassNameOf(legacy.id))
+
+        scheduler.scheduleBackstop()
+
+        val infos = workManager.getWorkInfosForUniqueWork(WorkManagerFundPriceRefreshScheduler.PERIODIC_WORK_NAME).get()
+        assertEquals(legacy.id, infos.single().id)
+        assertEquals(WorkInfo.State.ENQUEUED, infos.single().state)
+        assertEquals(FundPriceUpdateWorker::class.java.name, workerClassNameOf(legacy.id))
+    }
+
+    private fun workerClassNameOf(id: java.util.UUID): String? = androidx.work.impl.WorkManagerImpl
+        .getInstance(ApplicationProvider.getApplicationContext())
+        .workDatabase.workSpecDao().getWorkSpec(id.toString())?.workerClassName
+
+    private companion object {
+        const val LEGACY_WORKER_CLASS_NAME = "se.partee71.fonder.worker.FundPriceUpdateWorker"
+    }
 }

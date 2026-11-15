@@ -1,0 +1,202 @@
+{
+    "formatVersion": 1,
+    "exportedAtEpochMillis": 1754300000000,
+    "funds": [
+        {
+            "fundId": "SHB0000442",
+            "name": "Fond A",
+            "currency": "SEK",
+            "isin": "SE0000582033",
+            "fondlistaFundId": "SHB0000442"
+        },
+        {
+            "fundId": "LU0055631609",
+            "name": "Fond utan koder",
+            "currency": "USD",
+            "isin": null,
+            "fondlistaFundId": null
+        }
+    ],
+    "transactions": [
+        {
+            "id": 7,
+            "fundId": "SHB0000442",
+            "type": "KOP",
+            "epochDay": 19000,
+            "shares": 12.5,
+            "pricePerShare": 178.25,
+            "fee": 25.0,
+            "dateEstimated": true
+        },
+        {
+            "id": 8,
+            "fundId": "SHB0000442",
+            "type": "SALJ",
+            "epochDay": 19500,
+            "shares": 4.0,
+            "pricePerShare": 201.5,
+            "fee": 0.0,
+            "dateEstimated": false
+        }
+    ],
+    "suggestionRecords": [
+        {
+            "id": 3,
+            "suggestedAtEpochDay": 19800,
+            "planIndex": 0,
+            "sellIsin": "SE0000582033",
+            "buyIsin": "SE0001466368",
+            "sellNavAtSuggestion": 201.5,
+            "buyNavAtSuggestion": 95.25,
+            "switchValueKr": 4200.0,
+            "followed": true,
+            "batchEpochMillis": 1754200000000,
+            "kind": "RISK_PLAN",
+            "navEpochDay": 19798,
+            "candidates": [
+                {
+                    "id": 21,
+                    "recordId": 3,
+                    "isin": "SE0000709123",
+                    "name": "Alternativ Global",
+                    "position": 0,
+                    "totalFee": 0.25,
+                    "risk": 4,
+                    "category": "Globalfond",
+                    "fundType": "Aktiefond",
+                    "companyName": "Fondbolaget AB",
+                    "developmentOneYear": 0.083
+                },
+                {
+                    "id": 22,
+                    "recordId": 3,
+                    "isin": "SE0000709124",
+                    "name": "Alternativ utan fakta",
+                    "position": 1,
+                    "totalFee": null,
+                    "risk": null,
+                    "category": null,
+                    "fundType": null,
+                    "companyName": null,
+                    "developmentOneYear": null
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "suggestedAtEpochDay": 19800,
+            "planIndex": 1,
+            "sellIsin": "SE0000582033",
+            "buyIsin": "SE0004617590",
+            "sellNavAtSuggestion": 201.5,
+            "buyNavAtSuggestion": 55.0,
+            "switchValueKr": null,
+            "followed": false,
+            "batchEpochMillis": 1754200000000,
+            "kind": "RISK_PLAN",
+            "navEpochDay": null,
+            "candidates": []
+        },
+        {
+            "id": 5,
+            "suggestedAtEpochDay": 19400,
+            "planIndex": 0,
+            "sellIsin": "SE0000582033",
+            "buyIsin": "SE0005991445",
+            "sellNavAtSuggestion": 190.0,
+            "buyNavAtSuggestion": 70.0,
+            "switchValueKr": 1000.0,
+            "followed": null,
+            "batchEpochMillis": 0,
+            "kind": "FEE",
+            "navEpochDay": null,
+            "candidates": []
+        }
+    ],
+    "switchWatches": [
+        {
+            "id": 2,
+            "sellIsin": "SE0000582033",
+            "sellFundName": "Fond A",
+            "soldAtEpochDay": 19900,
+            "proceedsKr": 12500.0,
+            "targetLevel": 4,
+            "sourceRecordId": 3,
+            "closedAtEpochDay": null,
+            "boughtIsin": null,
+            "closeReason": null,
+            "candidates": [
+                {
+                    "id": 5,
+                    "watchId": 2,
+                    "isin": "SE0001466368",
+                    "name": "Kandidat A",
+                    "navAtStart": 95.25,
+                    "navAtStartEpochDay": 19900,
+                    "source": "AUTO",
+                    "position": 0
+                },
+                {
+                    "id": 6,
+                    "watchId": 2,
+                    "isin": "SE0004617590",
+                    "name": "Kandidat B",
+                    "navAtStart": null,
+                    "navAtStartEpochDay": null,
+                    "source": "MANUELL",
+                    "position": 1
+                }
+            ],
+            "sellTransactionId": 8,
+            "buyTransactionId": null,
+            "indexOnly": true
+        },
+        {
+            "id": 3,
+            "sellIsin": "SE0005991445",
+            "sellFundName": "Fond C",
+            "soldAtEpochDay": 19500,
+            "proceedsKr": null,
+            "targetLevel": null,
+            "sourceRecordId": null,
+            "closedAtEpochDay": 19505,
+            "boughtIsin": "SE0001466368",
+            "closeReason": "KOPT",
+            "candidates": [],
+            "sellTransactionId": null,
+            "buyTransactionId": 7,
+            "indexOnly": false
+        }
+    ],
+    "suggestionDismissals": [
+        {
+            "sellIsin": "SE0000582033",
+            "buyIsin": "SE0001466368",
+            "kind": "RISK_PLAN",
+            "dismissedAtEpochDay": 19810
+        },
+        {
+            "sellIsin": "SE0000582033",
+            "buyIsin": "SE0005991445",
+            "kind": "FEE",
+            "dismissedAtEpochDay": 19420
+        }
+    ],
+    "riskProfile": {
+        "targetAllocation": {
+            "3": 0.25,
+            "4": 0.5,
+            "5": 0.25
+        },
+        "answers": {
+            "horizon": "SJU_TILL_15_AR",
+            "reaction": "KOPER_MER",
+            "goal": "MAXIMAL_TILLVAXT"
+        },
+        "targetRiskLevel": 4
+    },
+    "accountType": "ISK_KF",
+    "themeMode": "DARK",
+    "chosenBenchmarkIsin": "SE0011527613",
+    "switchWatchTtlDays": 60
+}
