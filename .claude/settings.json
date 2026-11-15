@@ -53,7 +53,7 @@
     "claude-android": {
       "source": {
         "source": "github",
-        "repo": "ParTee71/claude-android"
+        "repo": "Kodhast/claude-android"
       }
     }
   },
