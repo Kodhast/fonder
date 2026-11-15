@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.0.1 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.1.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.1.0 | Avsändaren Kodhäst syns: signaturen "En kodhäst-app" sist i Inställningar, ordmärket på startskärmen (Android 12+), hästen i tomma lägen, två prickar före avsnittsrubriker och två kopparprickar i appikonen. Fonders färger och laddning är desamma (#252). |
 | 1.0.1 | Nytt kodpaket `se.kodhast.fonder` och android-ui 1.0.0 från Kodhast. Inget nytt för användaren: appens id är detsamma, så appen uppdateras ovanpå den gamla och ikonen ligger kvar. **Öppna appen en gång efter uppdateringen**, för först då köas kursuppdateringen i bakgrunden om (#253). |
 | 1.0.0 | Bevakningstiden för pågående byten går att välja i Inställningar (14, 30, 60 eller 90 dagar, standard 30). "Bevaka alternativ" i Händelser visas bara för sälj inom den tiden, så Pågående byte hoppar inte längre tillbaka efter en sekund (#244). Fondnamnet i Fonddetaljs topprad går också att kopiera med långtryck (#248). |
 | 0.87.0 | Fondnamn går att kopiera: håll fingret på namnet i infokortet, bevakningen, Fonddetaljs byten och alternativ, Portföljen, Översikten och Fondsök (Transaktioner undantaget, där långtryck tar bort). |

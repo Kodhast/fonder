@@ -20,11 +20,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.components.BrandMark
+import se.kodhast.ui.components.LocalAppBrandStyle
 
 /**
  * android-ui:s tomma läge eller läsfel (`EmptyState`, `LoadErrorState`) mitt på en yta som inte är en
@@ -54,7 +57,8 @@ fun CenteredState(modifier: Modifier = Modifier, content: @Composable () -> Unit
  *
  * @param icon valfri dekorativ ikon i en rundad primärbehållare ovanför rubriken (UI-12). Null
  *   (default) ritar bara rubrik och brödtext som tidigare. Ikonen är dekorativ – rubriken bär
- *   budskapet för skärmläsaren.
+ *   budskapet för skärmläsaren. Med `AppBrandStyle.emptyStateMark` ritar rutan Kodhästs märke
+ *   ([BrandMark]) i stället för ikonen (UI-17); utan ruta ritas inget märke.
  * @param action valfri väg ur det tomma läget under texten – en [AppButton] (t.ex. "Bevaka en fond" i
  *   transaktionsformuläret, TRX-6). Null (default) ritar ingen knapp.
  */
@@ -82,12 +86,20 @@ fun EmptyState(
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(28.dp)
-                )
+                // Kodhäst-igenkänningen (UI-17): hästen i rutan när temat slagit på stilen.
+                if (LocalAppBrandStyle.current.emptyStateMark) {
+                    BrandMark(
+                        Modifier.size(28.dp).testTag(EMPTY_STATE_MARK_TAG),
+                        horseColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                } else {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
         }
         Text(
@@ -120,3 +132,6 @@ fun EmptyState(
 ) {
     EmptyState(title = title, body = stringResource(error.message), modifier = modifier)
 }
+
+/** Märket i ikonrutan i Fonders [EmptyState] (UI-17), för tester. */
+internal const val EMPTY_STATE_MARK_TAG = "fonder-empty-state-mark"

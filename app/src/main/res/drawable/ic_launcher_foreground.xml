@@ -10,8 +10,12 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000"
-        android:pathData="M36,66 L48,58 L60,64 L72,44" />
+        android:pathData="M37,74 L49,66 L61,72 L73,52" />
     <path
         android:fillColor="#FFB59A"
-        android:pathData="M72,40 l6,10 l-12,0 z" />
+        android:pathData="M73,48 l6,10 l-12,0 z" />
+    <!-- Kodhästs två prickar uppe till vänster (UI-17); yttre kanten 32,3 från mitten, säkra zonen 33 -->
+    <path
+        android:fillColor="#FFB59A"
+        android:pathData="M31.2,33 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0 z M43.7,33 a4.3,4.3 0 1,0 8.6,0 a4.3,4.3 0 1,0 -8.6,0 z" />
 </vector>

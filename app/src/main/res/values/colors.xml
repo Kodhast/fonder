@@ -3,4 +3,9 @@
     <!-- Nordisk blå — identitetsfärger för launcher och splash (UI-1) -->
     <color name="brand_splash">#1F4E79</color>
     <color name="ic_launcher_background">#1F4E79</color>
+
+    <!-- Kodhästs ordmärke på startskärmen (UI-17): ljus text och kopparprickar mot den blå bottnen,
+         som är blå i båda lägena. Ersätter android-ui:s standard; samma värden i values-night. -->
+    <color name="kodhast_branding_text">#FFE0E2E8</color>
+    <color name="kodhast_branding_dots">#FFFFB59A</color>
 </resources>
