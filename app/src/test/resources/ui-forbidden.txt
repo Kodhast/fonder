@@ -27,9 +27,9 @@
 \b(fontSize|lineHeight|letterSpacing)\s*=	MaterialTheme.typography (FonderTypography) / MonoAmountStyle
 \.shadow\(	AppCard (android-ui)
 \.(height|requiredHeight|heightIn)\(\s*[0-9]+(\.[0-9]+)?\.dp	komponentens parametrar (ingen literal höjd i feature-kod)
-\bpadding\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.partee71.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
-\bPaddingValues\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.partee71.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
-\bspacedBy\(\s*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.partee71.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
+\bpadding\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
+\bPaddingValues\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
+\bspacedBy\(\s*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
 \bSurface\s*[({]	AppCard (android-ui)
 \b(Elevated|Outlined)?Card\s*[({]	AppCard (android-ui; tone, style = flushCardStyle)
 \bListItem\s*[({]	ItemRow (android-ui)

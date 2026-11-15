@@ -9,13 +9,13 @@
   },
   "hint": "Använd den delade komponenten eller temat (skill shared-ui-components). Behövs en variant: utöka den delade delen med en parameter.",
   "examples": {
-    "ok": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt", "expect": "ok" },
-    "stopp": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt", "expect": "stopp" },
-    "komponent-ok": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/components/X.kt", "expect": "ok" },
-    "komponent-stopp": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/diagram/X.kt", "expect": "stopp" },
-    "diagram-ok": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/diagram/X.kt", "expect": "ok" },
-    "diagram-stopp": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/components/X.kt", "expect": "stopp" },
-    "allowlist": { "file": "app/src/main/kotlin/se/partee71/fonder/ui/hem/HemRow.kt" }
+    "ok": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt", "expect": "ok" },
+    "stopp": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt", "expect": "stopp" },
+    "komponent-ok": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/components/X.kt", "expect": "ok" },
+    "komponent-stopp": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/diagram/X.kt", "expect": "stopp" },
+    "diagram-ok": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/diagram/X.kt", "expect": "ok" },
+    "diagram-stopp": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/components/X.kt", "expect": "stopp" },
+    "allowlist": { "file": "app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemRow.kt" }
   },
   "baseline": "baslinje 2026-10 – rättas i skärm-PR:erna"
 }

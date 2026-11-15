@@ -1,0 +1,585 @@
+package se.kodhast.fonder.ui.settings
+
+import android.app.PendingIntent
+import android.content.Context
+import androidx.compose.runtime.Immutable
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.auth.AuthRepository
+import se.kodhast.fonder.data.auth.AuthUser
+import se.kodhast.fonder.data.auth.SignInException
+import se.kodhast.fonder.data.common.AppErrors
+import se.kodhast.fonder.data.common.DataError
+import se.kodhast.fonder.data.datastore.PreferencesRepository
+import se.kodhast.fonder.data.datastore.ThemeMode
+import se.kodhast.fonder.data.repository.BackupFormatException
+import se.kodhast.fonder.data.repository.BackupRepository
+import se.kodhast.fonder.data.repository.BackupStatusRepository
+import se.kodhast.fonder.data.repository.DriveBackupRepository
+import se.kodhast.fonder.data.repository.DriveResult
+import se.kodhast.fonder.data.repository.FundMetadataRepository
+import se.kodhast.fonder.data.repository.FundPriceRepository
+import se.kodhast.fonder.data.repository.RestoreSummary
+import se.kodhast.fonder.data.repository.TransactionRepository
+import se.kodhast.fonder.domain.model.AccountType
+import se.kodhast.fonder.domain.model.BackupRecord
+import se.kodhast.fonder.domain.model.BackupTarget
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
+import se.kodhast.fonder.worker.BackgroundWork
+import se.kodhast.fonder.worker.FundPriceRefreshScheduler
+import se.kodhast.ui.common.UiError
+
+/**
+ * Utfallet av en export eller återställning (SET-6) — en **händelse** som kvitteras bort, aldrig
+ * ett bestående tillstånd (samma lärdom som "databasen tömd", issue #78).
+ */
+sealed interface BackupMessage {
+    data object Exported : BackupMessage
+    data class Restored(val summary: RestoreSummary) : BackupMessage
+
+    /** Molnbackupen lyckades (SET-7). */
+    data object DriveSaved : BackupMessage
+
+    /** Ingen kopia fanns i Drive att återställa från. */
+    data object DriveEmpty : BackupMessage
+
+    /**
+     * Exporten, återställningen eller Drive misslyckades — orsaken (`DataError.BackupExportFailed`,
+     * `BackupUnsupportedVersion`/`BackupUnreadable` för "nyare app" respektive "trasig fil",
+     * `DriveSignedOut`/`DriveFailed`) och texten kommer ur den enda felmappningen (NFR-6), så
+     * olika åtgärder för användaren får olika besked.
+     */
+    data class Failed(val error: UiError) : BackupMessage
+}
+
+/** Kontodelen av tillståndet (TP-6) — se [SettingsViewModel.uiState] för varför den combine:as in separat. */
+private data class AccountState(
+    val user: AuthUser? = null,
+    val signInInProgress: Boolean = false,
+    val signInError: UiError? = null
+)
+
+@Immutable
+data class SettingsUiState(
+    val themeMode: ThemeMode = ThemeMode.AUTO,
+    val databaseCleared: Boolean = false,
+    /** Epoch-millisekunder för senaste lyckade kursuppdatering, null om ingen skett än (SET-2, issue #27). */
+    val lastPriceSyncEpochMillis: Long? = null,
+    /** Kontotypen fondinnehaven ligger i, null om inget val gjorts (SET-4, issue #70) — styr om bytesplanen (HEM-8) ges alls. */
+    val accountType: AccountType? = null,
+    /** Bevakningstiden för pågående byten (SET-8, issue #244). */
+    val switchWatchTtlDays: Long = SwitchWatchCalc.DEFAULT_WATCH_TTL_DAYS,
+    /** Sant medan en export eller återställning pågår — knapparna släcks, se [SettingsViewModel.export] (SET-6, issue #82). */
+    val backupInProgress: Boolean = false,
+    val backupMessage: BackupMessage? = null,
+    /**
+     * Namnet på den referens användaren själv valt för Hems indexjämförelse (HEM-10, issue
+     * #102), null när appens automatiska blandning gäller. Namnet läses ur metadatacachen —
+     * går det inte att slå upp visas ISIN:et, så raden aldrig ser tom ut för ett gjort val.
+     */
+    val chosenBenchmarkName: String? = null,
+    /**
+     * Sant när den senast valda fonden inte gick att använda: katalogens träffar saknar ISIN,
+     * och utan ISIN kan kursen varken hämtas eller cachas. Raden säger det i stället för att
+     * tyst behålla den gamla referensen.
+     */
+    val benchmarkPickFailed: Boolean = false,
+    /** Inloggad Google-användare, null när ingen är inloggad (TP-6). */
+    val googleUser: AuthUser? = null,
+    /** Sant medan kontoväljaren är uppe — knappen släcks, samma princip som [backupInProgress]. */
+    val signInInProgress: Boolean = false,
+    /**
+     * Varför senaste inloggningsförsök misslyckades (`DataError.SignInNoCredential`/`SignInFailed`
+     * via den enda felmappningen, NFR-6), null när inget fel finns att visa. Ett avbrutet kontoval
+     * hamnar aldrig här: att stänga kontoväljaren är ett val, inte ett fel.
+     */
+    val signInError: UiError? = null,
+    /** Senaste lyckade säkerhetskopia eller återställning, till Drive eller fil — null om ingen gjorts (SET-7, HEM-12). */
+    val lastBackup: BackupRecord? = null,
+    /** Sant när Drive-scopet saknas — kortet erbjuder då knappen som löser det (SET-7). */
+    val driveBackupNeedsAuth: Boolean = false,
+    /** En kursuppdatering kör just nu ([BackgroundWork.PRICE_REFRESH]) — kurskortets väntesnurra (NAV-6). */
+    val priceRefreshWorking: Boolean = false
+)
+
+/** Referensvalets del av tillståndet — se [SettingsViewModel.uiState] för varför den combine:as in separat. */
+private data class BenchmarkState(val chosenName: String? = null, val pickFailed: Boolean = false)
+
+/** Backup-delen av tillståndet, hållen för sig så [SettingsViewModel.uiState] kan `combine`:a in den. */
+private data class BackupState(
+    val inProgress: Boolean = false,
+    val message: BackupMessage? = null,
+    val lastBackup: BackupRecord? = null,
+    val driveNeedsAuth: Boolean = false
+)
+
+/** Användarens handlingar på Inställningar, till [SettingsViewModel.onEvent]. */
+sealed interface SettingsEvent {
+    /** Temat: system, ljust eller mörkt. */
+    data class SetThemeMode(val mode: ThemeMode) : SettingsEvent
+
+    /** Fonden som referens för Hems indexjämförelse (HEM-10). */
+    data class ChooseBenchmark(val fund: Fund) : SettingsEvent
+
+    /** Rensar det egna referensvalet. */
+    data object ClearBenchmark : SettingsEvent
+
+    /** Kontotypen (SET-4). */
+    data class SetAccountType(val type: AccountType) : SettingsEvent
+
+    /** Användaren valde bevakningstid för pågående byten (SET-8). */
+    data class SetSwitchWatchTtl(val days: Long) : SettingsEvent
+
+    /** Tömmer hela databasen (SET-1). */
+    data object ClearDatabase : SettingsEvent
+
+    /** Kvitterar "databasen tömd"-meddelandet. */
+    data object ClearedMessageDismissed : SettingsEvent
+
+    /** Exporterar säkerhetskopian; [write] skriver JSON:en dit användaren valt (SET-6). */
+    data class Export(val write: suspend (String) -> Unit) : SettingsEvent
+
+    /** Återställer från en säkerhetskopia som [read] läser (SET-6). */
+    data class Restore(val read: suspend () -> String?) : SettingsEvent
+
+    /** Kvitterar backup-meddelandet. */
+    data object BackupMessageDismissed : SettingsEvent
+
+    /** Loggar in med Google (TP-6); [activityContext] måste vara aktivitetens. */
+    data class SignIn(val activityContext: Context) : SettingsEvent
+
+    /** Loggar ut. */
+    data object SignOut : SettingsEvent
+
+    /** Säkerhetskopierar till Drive nu (SET-7). */
+    data class BackupToDrive(val onNeedsAuthorization: (PendingIntent) -> Unit) : SettingsEvent
+
+    /** Återställer från den senaste kopian i Drive (SET-7). */
+    data class RestoreFromDrive(val onNeedsAuthorization: (PendingIntent) -> Unit) : SettingsEvent
+
+    /** Användaren har kommit tillbaka från Googles ruta för Drive-tillåtelsen. */
+    data object DriveAuthorizationResolved : SettingsEvent
+
+    /** Kvitterar inloggningsfelet. */
+    data object SignInErrorDismissed : SettingsEvent
+}
+
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val preferences: PreferencesRepository,
+    private val transactionRepository: TransactionRepository,
+    private val fundPriceRefreshScheduler: FundPriceRefreshScheduler,
+    private val backupRepository: BackupRepository,
+    private val fundPriceRepository: FundPriceRepository,
+    private val fundMetadataRepository: FundMetadataRepository,
+    private val authRepository: AuthRepository,
+    private val driveBackupRepository: DriveBackupRepository,
+    private val backupStatusRepository: BackupStatusRepository
+) : ViewModel() {
+
+    private val databaseCleared = MutableStateFlow(false)
+    private val backupProgress = MutableStateFlow(BackupState())
+
+    /**
+     * "Senaste säkerhetskopia" bor i DataStore och inte i [backupProgress]: Hems påminnelse
+     * (HEM-12) läser samma post, och en lokal spegling hade kunnat visa ett annat datum här än
+     * det Hem räknar med.
+     */
+    private val backupState: Flow<BackupState> = combine(
+        backupProgress,
+        backupStatusRepository.lastBackup,
+        preferences.driveBackupNeedsAuth
+    ) { progress, lastBackup, needsAuth ->
+        progress.copy(lastBackup = lastBackup, driveNeedsAuth = needsAuth)
+    }
+    private var backupJob: Job? = null
+    private val benchmarkPickFailed = MutableStateFlow(false)
+    private val signInInProgress = MutableStateFlow(false)
+    private val signInError = MutableStateFlow<UiError?>(null)
+    private var signInJob: Job? = null
+
+    /** Egen gren av samma skäl som [benchmarkState]: `combine` tar högst fem flöden. */
+    private val accountState: Flow<AccountState> =
+        combine(authRepository.currentUser, signInInProgress, signInError) { user, inProgress, error ->
+            AccountState(user = user, signInInProgress = inProgress, signInError = error)
+        }
+
+    /**
+     * Egen gren, inte en sjätte flöde i combinen nedan: `combine` tar högst fem, och
+     * referensvalet har ingenting med tema, backup eller kontotyp att göra — det ska inte kunna
+     * räkna om resten av inställningarna bara för att ett namn slogs upp.
+     */
+    private val benchmarkState: Flow<BenchmarkState> =
+        combine(preferences.chosenBenchmarkIsin, benchmarkPickFailed) { isin, failed ->
+            BenchmarkState(
+                chosenName = isin?.let { fundMetadataRepository.cachedMetadataFor(listOf(it))[it]?.name ?: it },
+                pickFailed = failed
+            )
+        }
+
+    val uiState: StateFlow<SettingsUiState> =
+        combine(
+            preferences.themeMode,
+            databaseCleared,
+            preferences.lastPriceSyncEpochMillis,
+            preferences.accountType,
+            backupState
+        ) { themeMode, cleared, lastSync, accountType, backup ->
+            SettingsUiState(
+                themeMode = themeMode,
+                databaseCleared = cleared,
+                lastPriceSyncEpochMillis = lastSync,
+                accountType = accountType,
+                backupInProgress = backup.inProgress,
+                backupMessage = backup.message,
+                lastBackup = backup.lastBackup,
+                driveBackupNeedsAuth = backup.driveNeedsAuth
+            )
+        }.combine(preferences.switchWatchTtlDays) { state, ttlDays ->
+            state.copy(switchWatchTtlDays = ttlDays)
+        }.combine(benchmarkState) { state, benchmark ->
+            state.copy(
+                chosenBenchmarkName = benchmark.chosenName,
+                benchmarkPickFailed = benchmark.pickFailed
+            )
+        }.combine(accountState) { state, account ->
+            state.copy(
+                googleUser = account.user,
+                signInInProgress = account.signInInProgress,
+                signInError = account.signInError
+            )
+        }.combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
+            // Eget led i kedjan av samma skäl som grenarna ovan: körstatusen kommer från
+            // WorkManager och ska inte kunna räkna om tema, kontotyp eller backup-tillstånd.
+            state.copy(priceRefreshWorking = BackgroundWork.PRICE_REFRESH in running)
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = SettingsUiState()
+        )
+
+    fun onEvent(event: SettingsEvent) {
+        when (event) {
+            is SettingsEvent.SetThemeMode -> setThemeMode(event.mode)
+            is SettingsEvent.ChooseBenchmark -> chooseBenchmark(event.fund)
+            SettingsEvent.ClearBenchmark -> clearBenchmark()
+            is SettingsEvent.SetAccountType -> setAccountType(event.type)
+            is SettingsEvent.SetSwitchWatchTtl -> setSwitchWatchTtl(event.days)
+            SettingsEvent.ClearDatabase -> clearDatabase()
+            SettingsEvent.ClearedMessageDismissed -> onClearedMessageDismissed()
+            is SettingsEvent.Export -> export(event.write)
+            is SettingsEvent.Restore -> restore(event.read)
+            SettingsEvent.BackupMessageDismissed -> onBackupMessageDismissed()
+            is SettingsEvent.SignIn -> signIn(event.activityContext)
+            SettingsEvent.SignOut -> signOut()
+            is SettingsEvent.BackupToDrive -> backupToDrive(event.onNeedsAuthorization)
+            is SettingsEvent.RestoreFromDrive -> restoreFromDrive(event.onNeedsAuthorization)
+            SettingsEvent.DriveAuthorizationResolved -> onDriveAuthorizationResolved()
+            SettingsEvent.SignInErrorDismissed -> onSignInErrorDismissed()
+        }
+    }
+
+    private fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { preferences.setThemeMode(mode) }
+    }
+
+    /**
+     * Sparar [fund] som referens för Hems indexjämförelse (HEM-10, issue #102). Katalogens
+     * träffar saknar ISIN, så det slås upp när det behövs — hela jämförelsekedjan är
+     * ISIN-nycklad, från kurscachen till skuggportföljen.
+     *
+     * Går ISIN:et inte att slå upp **sparas ingenting** och raden säger varför: ett sparat
+     * fond-id som inget annat lager kan använda hade gett ett val som såg gjort ut men aldrig
+     * gav en kurva.
+     *
+     * Ett sparat val startar en skanning direkt, samma princip som en ändrad riskprofil gör för
+     * bytesplanen (issue #88) — annars hade den valda fondens historik dröjt till nästa
+     * backstop, alltså upp till ett halvt dygn.
+     */
+    private fun chooseBenchmark(fund: Fund) {
+        viewModelScope.launch {
+            val isin = fund.isin ?: fundPriceRepository.lookupIsin(fund.fundId)
+            if (isin == null) {
+                benchmarkPickFailed.value = true
+                return@launch
+            }
+            benchmarkPickFailed.value = false
+            preferences.setChosenBenchmarkIsin(isin)
+            fundPriceRefreshScheduler.triggerBenchmarkScan()
+        }
+    }
+
+    /** Rensar det egna valet — appens automatiska referens (issue #101) gäller då igen. */
+    private fun clearBenchmark() {
+        viewModelScope.launch {
+            benchmarkPickFailed.value = false
+            preferences.clearChosenBenchmarkIsin()
+            fundPriceRefreshScheduler.triggerBenchmarkScan()
+        }
+    }
+
+    /**
+     * Sparar kontotypen (SET-4) och, vid byte **till** ISK/KF, ber om en omräkning av
+     * bytesplanen (HEM-8, issue #88): SET-4-gaten gör att ingen plan alls ges i depå/AF, så
+     * det är först i och med bytet hit som en plan kan finnas — utan triggern dröjer den till
+     * nästa backstop, upp till 12 timmar bort.
+     *
+     * Bara vid faktiskt byte: att välja samma kontotyp igen ska inte kosta en skanning. Byte
+     * *till* depå/AF triggar ingenting alls — där ges ingen plan att räkna om.
+     */
+    private fun setAccountType(type: AccountType) {
+        viewModelScope.launch {
+            val previous = preferences.accountType.first()
+            preferences.setAccountType(type)
+            if (type == AccountType.ISK_KF && previous != AccountType.ISK_KF) {
+                fundPriceRefreshScheduler.triggerSwitchPlanScan()
+            }
+        }
+    }
+
+    /**
+     * Sparar bevakningstiden (SET-8) och, vid ett faktiskt byte, begär en omräkning: bakgrundskörningen
+     * stänger då öppna byten som passerat den nya tiden och räknar om likviden på väg (BYT-3) — annars
+     * hade Beslut och planen visat olika gränser tills nästa schemalagda körning.
+     */
+    private fun setSwitchWatchTtl(days: Long) {
+        if (days !in SwitchWatchCalc.ALLOWED_WATCH_TTL_DAYS) return
+        viewModelScope.launch {
+            val previous = preferences.switchWatchTtlDays.first()
+            if (previous == days) return@launch
+            preferences.setSwitchWatchTtlDays(days)
+            fundPriceRefreshScheduler.triggerSwitchPlanScan()
+        }
+    }
+
+    /**
+     * Tömmer hela databasen (fonder, transaktioner, cachade kurser) — irreversibelt, se SET-1.
+     * Tom-markören för bytesplanen (HEM-8) nollställs med: den pekar på en körning som inte
+     * längre finns, och hade annars dolt den första planen efter en nystart tills nästa tomma körning.
+     */
+    private fun clearDatabase() {
+        viewModelScope.launch {
+            transactionRepository.clearAll()
+            preferences.clearSwitchPlanEmptiedAt()
+            databaseCleared.update { true }
+        }
+    }
+
+    /**
+     * Kvitterar "databasen tömd"-meddelandet. Tömningen är en **händelse**, inte ett
+     * tillstånd: utan kvittering låg flaggan kvar sann för ViewModel:ens livstid, och eftersom
+     * uiState är `WhileSubscribed` kom meddelandet tillbaka vid varje rotation och vid varje
+     * återbesök i Inställningar efter fem sekunder (issue #78).
+     */
+    private fun onClearedMessageDismissed() {
+        databaseCleared.update { false }
+    }
+
+    /**
+     * Exporterar hela backup-kontraktet och lämnar JSON:en till [write], som skriver den dit
+     * användaren valt (SET-6). Filen och `Uri`:n hör hemma i skärmen — ViewModel:en känner bara
+     * till strängen, precis som [se.kodhast.fonder.data.repository.BackupRepository] gör.
+     *
+     * Misslyckas [write] (I/O-fel, användaren valde en plats appen inte får skriva till) räknas
+     * det som ett misslyckat export, inte som ett tyst lyckat.
+     */
+    private fun export(write: suspend (String) -> Unit) {
+        if (backupJob?.isActive == true) return
+        backupJob = viewModelScope.launch {
+            backupProgress.update { it.copy(inProgress = true, message = null) }
+            val result = backupRepository.export().mapCatching { json ->
+                write(json)
+                json
+            }
+            result.onSuccess { json -> recordBackup(json, BackupTarget.FILE) }
+            backupProgress.update {
+                it.copy(
+                    inProgress = false,
+                    message = if (result.isSuccess) BackupMessage.Exported else exportFailed()
+                )
+            }
+        }
+    }
+
+    /**
+     * Läser en säkerhetskopia via [read] och **ersätter** kontraktets data med den (SET-6).
+     * [read] ger null när filen inte gick att läsa alls — samma utfall som en trasig fil.
+     *
+     * Spärrad mot dubbeltryck av samma skäl som importflödena (issue #75): en återställning ger
+     * ingen synlig återkoppling förrän den är klar, och två samtidiga skulle skriva samma rader
+     * två gånger.
+     */
+    private fun restore(read: suspend () -> String?) {
+        if (backupJob?.isActive == true) return
+        backupJob = viewModelScope.launch {
+            backupProgress.update { it.copy(inProgress = true, message = null) }
+            val json = runCatching { read() }.getOrNull()
+            val message = if (json == null) {
+                BackupMessage.Failed(AppErrors.map(DataError.BackupUnreadable))
+            } else {
+                restoreMessage(json, BackupTarget.FILE)
+            }
+            backupProgress.update { it.copy(inProgress = false, message = message) }
+        }
+    }
+
+    /**
+     * Återställer [json] och — när det lyckas — antecknar att enhetens data nu är lika med en
+     * kopia på [target], så Hem inte påminner om en ändring som bara är återställningen själv
+     * (HEM-12). Delad av fil- och Drive-återställningen.
+     */
+    private suspend fun restoreMessage(json: String, target: BackupTarget): BackupMessage = backupRepository.restore(json).fold(
+        onSuccess = {
+            recordBackup(json, target)
+            BackupMessage.Restored(it)
+        },
+        onFailure = { error ->
+            // Bara formatfelen skiljer "nyare app" från "trasig fil"; allt annat är en fil som
+            // inte gick att läsa.
+            BackupMessage.Failed(AppErrors.map(if (error is BackupFormatException) error else DataError.BackupUnreadable))
+        }
+    )
+
+    /**
+     * Antecknar en lyckad kopia (SET-7, HEM-12) ur exakt den sträng som skrevs eller lästes. Ett fel här får inte göra den lyckade kopian
+     * till ett misslyckande i användarens ögon — värsta utfallet är att Hem påminner en gång för
+     * mycket.
+     */
+    private suspend fun recordBackup(json: String, target: BackupTarget) {
+        runCatching { backupStatusRepository.recordBackup(json, target) }
+    }
+
+    /** Kvitterar backup-meddelandet — en händelse, inte ett tillstånd (samma princip som [onClearedMessageDismissed]). */
+    private fun onBackupMessageDismissed() {
+        backupProgress.update { it.copy(message = null) }
+    }
+
+    /**
+     * Loggar in med Google (TP-6). [activityContext] måste vara aktivitetens — Credential Manager
+     * ritar kontoväljaren ovanpå den aktiva aktiviteten och kan inte använda applikationens
+     * context. Därför tar den här metoden ett context, till skillnad från resten av ViewModel:en.
+     *
+     * Den inloggade användaren sätts inte här: den kommer via [AuthRepository.currentUser], som
+     * också fångar ändringar appen inte själv startat (utgången token, konto borttaget på
+     * enheten). En lokal spegling hade kunnat visa en inloggad användare som inte längre finns.
+     *
+     * Ett avbrutet val (`CANCELLED`) lämnar inget felmeddelande — användaren stängde rutan med
+     * flit och vet redan varför ingen inloggning skedde.
+     */
+    private fun signIn(activityContext: Context) {
+        if (signInJob?.isActive == true) return
+        signInJob = viewModelScope.launch {
+            signInInProgress.value = true
+            signInError.value = null
+            val result = authRepository.signInWithGoogle(activityContext)
+            signInInProgress.value = false
+            result.onFailure { error ->
+                val cancelled = (error as? SignInException)?.reason == SignInException.Reason.CANCELLED
+                signInError.value = if (cancelled) null else AppErrors.map(error as? SignInException ?: DataError.SignInFailed)
+            }
+        }
+    }
+
+    private fun signOut() {
+        viewModelScope.launch {
+            signInError.value = null
+            authRepository.signOut()
+        }
+    }
+
+    /**
+     * Säkerhetskopierar till Drive nu (SET-7) — det enda sättet, det finns ingen automatisk
+     * körning (HEM-12). Kör i förgrunden så användaren får ett kvitto direkt.
+     *
+     * [onNeedsAuthorization] får den `PendingIntent` som måste startas från aktiviteten när
+     * `drive.appdata` inte är beviljat. Den vägen kan inte gå via tillståndet: en `PendingIntent`
+     * är en engångsåtgärd, inte något som ska ligga kvar och kunna spelas upp vid rotation.
+     */
+    private fun backupToDrive(onNeedsAuthorization: (PendingIntent) -> Unit) {
+        if (backupJob?.isActive == true) return
+        backupJob = viewModelScope.launch {
+            backupProgress.update { it.copy(inProgress = true, message = null) }
+            val message = backupRepository.export().fold(
+                onSuccess = { json ->
+                    val upload = driveBackupRepository.upload(json)
+                    if (upload is DriveResult.Success) recordBackup(json, BackupTarget.DRIVE)
+                    driveMessage(upload, onNeedsAuthorization)
+                },
+                onFailure = { exportFailed() }
+            )
+            backupProgress.update { it.copy(inProgress = false, message = message) }
+        }
+    }
+
+    /**
+     * Återställer från den senaste kopian i Drive (SET-7). **Ersätter** data, precis som
+     * filåterställningen — anropas därför bara bakom samma bekräftelsedialog.
+     */
+    private fun restoreFromDrive(onNeedsAuthorization: (PendingIntent) -> Unit) {
+        if (backupJob?.isActive == true) return
+        backupJob = viewModelScope.launch {
+            backupProgress.update { it.copy(inProgress = true, message = null) }
+            val download = driveBackupRepository.downloadLatest()
+            val message = if (download is DriveResult.Success) {
+                restoreMessage(download.value, BackupTarget.DRIVE)
+            } else {
+                driveMessage(download, onNeedsAuthorization)
+            }
+            backupProgress.update { it.copy(inProgress = false, message = message) }
+        }
+    }
+
+    /**
+     * Översätter ett [DriveResult] till ett meddelande, och lämnar ifrån sig
+     * auktoriseringsintentet på vägen. `NeedsAuthorization` ger **inget** felmeddelande —
+     * användaren möts av Googles ruta i stället, och en röd rad bakom den vore förvirrande.
+     */
+    private suspend fun driveMessage(
+        result: DriveResult<*>,
+        onNeedsAuthorization: (PendingIntent) -> Unit
+    ): BackupMessage? = when (result) {
+        is DriveResult.Success -> BackupMessage.DriveSaved
+
+        DriveResult.NoBackupFound -> BackupMessage.DriveEmpty
+
+        // Ingen inloggad och ett fel från Drive är olika åtgärder — orsaken skiljer dem (NFR-6).
+        DriveResult.NoAccount, is DriveResult.Error -> BackupMessage.Failed(AppErrors.map(DataError.of(result) ?: DataError.DriveFailed))
+
+        is DriveResult.NeedsAuthorization -> {
+            preferences.setDriveBackupNeedsAuth(true)
+            onNeedsAuthorization(result.pendingIntent)
+            null
+        }
+    }
+
+    /**
+     * Kvitterar att Drive-auktoriseringen är löst. Anropas när användaren kommit tillbaka från
+     * Googles ruta — utfallet där rapporteras inte tillförlitligt, så flaggan rensas och nästa
+     * körning får avgöra. Ett kvarliggande "behöver tillåtelse" efter ett beviljande vore värre
+     * än ett som dyker upp igen.
+     */
+    private fun onDriveAuthorizationResolved() {
+        viewModelScope.launch { preferences.setDriveBackupNeedsAuth(false) }
+    }
+
+    /** Exporten gick inte att skapa eller skriva — samma besked oavsett orsak (SET-6). */
+    private fun exportFailed(): BackupMessage = BackupMessage.Failed(AppErrors.map(DataError.BackupExportFailed))
+
+    /** Kvitterar inloggningsfelet — en händelse, inte ett tillstånd (samma princip som [onBackupMessageDismissed]). */
+    private fun onSignInErrorDismissed() {
+        signInError.value = null
+    }
+}

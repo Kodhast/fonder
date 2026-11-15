@@ -1,0 +1,81 @@
+package se.kodhast.fonder.domain
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import se.kodhast.fonder.domain.usecase.MoneyFormat
+
+class MoneyFormatTest {
+
+    @Test
+    fun `kr formaterar med tva decimaler komma och kr-suffix`() {
+        val out = MoneyFormat.kr(1234.5)
+        // sv-SE: decimalkomma och kr-suffix (tusentalsavgränsaren kan vara vanligt/hårt blanksteg).
+        assertTrue("fick: $out", out.contains("234,50"))
+        assertTrue("fick: $out", out.trim().endsWith("kr"))
+    }
+
+    @Test
+    fun `percentSigned ger plus for positiv avkastning`() {
+        val out = MoneyFormat.percentSigned(0.1234)
+        assertTrue("fick: $out", out.startsWith("+"))
+        assertTrue("fick: $out", out.contains("12,3"))
+    }
+
+    @Test
+    fun `krSigned ger plus for inflode och akta minustecken for utflode`() {
+        assertEquals("+2 140,00 kr", MoneyFormat.krSigned(2140.0).replace('\u00A0', ' ').replace('\u202F', ' '))
+        assertEquals("−50,00 kr", MoneyFormat.krSigned(-50.0).replace('\u00A0', ' ').replace('\u202F', ' '))
+    }
+
+    @Test
+    fun `percentSigned ger minustecken for negativ avkastning`() {
+        assertTrue(MoneyFormat.percentSigned(-0.05).startsWith("−"))
+    }
+
+    @Test
+    fun `percent ger osignerad procent med en decimal`() {
+        val out = MoneyFormat.percent(0.182)
+        assertTrue("fick: $out", out.contains("18,2"))
+        assertTrue("fick: $out", out.trim().endsWith("%"))
+        assertTrue("fick: $out", !out.startsWith("+")) // aldrig tecken (volatilitet är aldrig negativ)
+    }
+
+    @Test
+    fun `decimal ger tva decimaler och akta minustecken`() {
+        assertTrue("fick: ${MoneyFormat.decimal(0.8)}", MoneyFormat.decimal(0.8).contains("0,80"))
+        assertTrue(MoneyFormat.decimal(-0.4).startsWith("−"))
+    }
+
+    @Test
+    fun `feePercent formaterar en avgift med tva decimaler, tar emot procentsiffran direkt`() {
+        // Källans totalFee är redan en procentsiffra (0.73 = 0,73 %), ingen fraction (issue #59).
+        val out = MoneyFormat.feePercent(0.73)
+        assertTrue("fick: $out", out.contains("0,73"))
+        assertTrue("fick: $out", out.trim().endsWith("%"))
+    }
+
+    @Test
+    fun `feePercent behaller bada decimalerna for smaskillnader`() {
+        // En decimal (som percent()) hade avrundat bort just den här skillnaden.
+        assertTrue(MoneyFormat.feePercent(0.21).contains("0,21"))
+        assertTrue(MoneyFormat.feePercent(0.20).contains("0,20"))
+    }
+
+    private fun plain(text: String) = text.replace('\u00A0', ' ').replace('\u202F', ' ')
+
+    @Test
+    fun `krWhole avrundar till hela kronor med akta minustecken`() {
+        assertEquals("−2 130 kr", plain(MoneyFormat.krWhole(-2129.6)))
+        assertEquals("250 000 kr", plain(MoneyFormat.krWhole(250_000.0)))
+        assertEquals("0 kr", plain(MoneyFormat.krWhole(-0.4)))
+    }
+
+    @Test
+    fun `rate visar hogst tva decimaler utan avslutande nollor`() {
+        assertEquals("3,55 %", MoneyFormat.rate(0.0355))
+        assertEquals("0,4 %", MoneyFormat.rate(0.004))
+        assertEquals("30 %", MoneyFormat.rate(0.3))
+        assertEquals("1,25 %", MoneyFormat.rate(0.0125))
+    }
+}

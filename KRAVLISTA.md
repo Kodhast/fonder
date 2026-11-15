@@ -3,7 +3,7 @@
 > App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut
 > värde och visa utveckling i tabell och diagram, med molnbackup och Google-inloggning.
 >
-> Version: 0.37.0 · Paket: `se.partee71.fonder` · Språk: Svenska
+> Version: 0.37.0 · Paket: `se.kodhast.fonder` · Språk: Svenska
 
 ---
 
@@ -29,7 +29,7 @@
 
 | ID | Krav |
 |----|------|
-| TP-1 | Android, **minSdk 30**, targetSdk 36, **compileSdk 37** (höjt för Vico-beroendet, issue #7, och för biblioteken i den tekniska uppgraderingen: Kotlin 2.4, AGP 9, Compose BOM 2026.09, material3 1.5), byggs för Java 17 med JDK 21. Paket `se.partee71.fonder`. |
+| TP-1 | Android, **minSdk 30**, targetSdk 36, **compileSdk 37** (höjt för Vico-beroendet, issue #7, och för biblioteken i den tekniska uppgraderingen: Kotlin 2.4, AGP 9, Compose BOM 2026.09, material3 1.5), byggs för Java 17 med JDK 21. Paket `se.kodhast.fonder`. |
 | TP-2 | UI byggt med **Jetpack Compose** + Material 3; navigeringen med **Jetpack Navigation 3** – en bakåtstack per flik (NAV-7) som överlever rotation och processdöd. |
 | TP-3 | Arkitektur: **MVVM** med Hilt (DI), Repository-mönster, ViewModels med `StateFlow`. |
 | TP-4 | Lokal lagring i **Room** (`exportSchema = true`); inställningar i **DataStore (Preferences)**. |

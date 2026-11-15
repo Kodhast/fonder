@@ -45,12 +45,19 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/Theme.Fonder.Splash">
+            android:theme="@style/Theme.Fonder.Splash" />
+
+        <!-- Startikonen bär MainActivitys namn från före bytet till se.kodhast.fonder, så att
+             hemskärmens genväg ligger kvar efter uppdateringen (fonder #253). -->
+        <activity-alias
+            android:name="se.partee71.fonder.MainActivity"
+            android:targetActivity=".MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
     </application>
 

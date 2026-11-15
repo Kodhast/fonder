@@ -1,0 +1,101 @@
+package se.kodhast.fonder.data.repository
+
+import kotlinx.serialization.Serializable
+import se.kodhast.fonder.data.datastore.ThemeMode
+import se.kodhast.fonder.domain.model.AccountType
+import se.kodhast.fonder.domain.model.Fund
+import se.kodhast.fonder.domain.model.RiskProfile
+import se.kodhast.fonder.domain.model.SuggestionDismissal
+import se.kodhast.fonder.domain.model.SuggestionRecord
+import se.kodhast.fonder.domain.model.SwitchWatch
+import se.kodhast.fonder.domain.model.Transaction
+
+/**
+ * Filformatet för en säkerhetskopia (SET-6, issue #82) — hela backup-kontraktet (NFR-1) i en
+ * serialiserbar form.
+ *
+ * Byggd på **domänmodellerna**, inte Room-entiteterna, med flit: entiteterna följer schemat och
+ * ändras av migreringar, och filformatet ska inte tyst ändra sig med dem. Ett fält som byter
+ * kolumnnamn i Room ska kräva ett medvetet beslut här, inte glida med.
+ *
+ * Innehåller **bara genuin användardata**. `fund_prices`, `fx_rates` och `fund_metadata` ligger
+ * utanför: de är härledd cache som hämtas om från källan (se `FundMetadataEntity`s KDoc), och
+ * skulle mångdubbla filen utan att skydda något som inte går att återskapa. Samma gräns som
+ * [se.kodhast.fonder.data.datastore.PreferencesRepository.lastPriceSyncEpochMillis],
+ * `fundFilterVocabulary` och `switchPlanEmptiedAtEpochMillis` (skanningen räknar fram den igen),
+ * som medvetet inte är med.
+ *
+ * @param formatVersion filformatets version, [FORMAT_VERSION] när den skrevs. En fil med *högre*
+ *   version avvisas av [BackupSerializer.decode] i stället för att läsas in med de fält den här
+ *   versionen råkar känna igen — en delvis inläst säkerhetskopia är värre än ingen.
+ * @param themeMode användarens temaval — ett val, inte cache, och därför med. Till skillnad från
+ *   resten är det billigt att sätta om för hand, men gränsen går vid "härledd ur en källa".
+ */
+@Serializable
+data class BackupPayload(
+    val formatVersion: Int = FORMAT_VERSION,
+    val exportedAtEpochMillis: Long,
+    val funds: List<Fund> = emptyList(),
+    val transactions: List<Transaction> = emptyList(),
+    /**
+     * Inspelade förslag, med sina sparade köpkandidater inbäddade (`SuggestionRecord.candidates`,
+     * issue #239). Kandidaterna har default `emptyList()`, så en fil från före 0.85.0 läses som
+     * förslag utan alternativ — och en äldre app hoppar över den okända nyckeln
+     * ([BackupSerializer]: `ignoreUnknownKeys`), därför ingen ny [FORMAT_VERSION].
+     */
+    val suggestionRecords: List<SuggestionRecord> = emptyList(),
+    /**
+     * Pågående och avslutade byten med sina bevakade alternativ (ANA-12, issue #114). Genuin
+     * användardata av samma skäl som [suggestionRecords]: säljdagen, beloppet, uppsättningen
+     * bevakade alternativ och deras ankrade nollpunkt går inte att räkna fram ur NAV-historiken
+     * i efterhand — kandidaterna ligger per definition inte i kurscachen (ANA-11). Sedan 0.67.0
+     * (BYT-1) bär raden även `sellTransactionId`/`buyTransactionId`, kopplingen till den sälj-
+     * respektive köptransaktion som startade och stängde bytet; fälten följer [SwitchWatch] med
+     * default null, så en äldre fil läses som "okopplade bevakningar" utan att [FORMAT_VERSION]
+     * höjs. Transaktions-id:n bevaras vid återställning, så länken pekar rätt efteråt. Sedan 0.71.0
+     * (issue #150) bär raden även `indexOnly`, användarens filter för förslagen, och `targetLevel` kan
+     * vara användarens eget val på skärmen; en äldre fil utan `indexOnly` läses som falskt (alla
+     * fonder — vad den bevakningen faktiskt visade), också utan att [FORMAT_VERSION] höjs.
+     */
+    val switchWatches: List<SwitchWatch> = emptyList(),
+    /**
+     * Bytesförslag användaren avstått från på Beslut (HEM-14), per fondpar och sort. Ett val som
+     * inte går att räkna fram i efterhand — tappas det dyker varje avstått förslag upp igen efter
+     * en återställning. Default tom lista, så en fil skriven före 0.63.0 läses som "inga
+     * avståenden" utan att [FORMAT_VERSION] höjs.
+     */
+    val suggestionDismissals: List<SuggestionDismissal> = emptyList(),
+    val riskProfile: RiskProfile? = null,
+    val accountType: AccountType? = null,
+    val themeMode: ThemeMode = ThemeMode.AUTO,
+    /**
+     * Referensfonden användaren själv valt för Hems indexjämförelse (HEM-10, issue #102), null
+     * om appen väljer. Ett **val**, inte något härlett — därför med, till skillnad från den
+     * automatiskt valda blandningen (`PreferencesRepository.benchmark`), som är cache i samma
+     * kategori som `fundFilterVocabulary`.
+     */
+    val chosenBenchmarkIsin: String? = null,
+    /**
+     * Bevakningstiden användaren valt för pågående byten (SET-8, issue #244), null om inget val
+     * gjorts — ett **val**, därför med. Default null, så en fil från före 1.0.0 läses som
+     * standardtiden utan att [FORMAT_VERSION] höjs.
+     */
+    val switchWatchTtlDays: Long? = null
+) {
+    companion object {
+        /**
+         * Nuvarande filformatversion. **Höj den bara** när ett fält tas bort eller byter
+         * betydelse — ett *tillagt* fält med defaultvärde läses av äldre appversioner utan
+         * problem (okända nycklar ignoreras, se [BackupSerializer]).
+         */
+        const val FORMAT_VERSION = 1
+    }
+}
+
+/** Vad en återställning faktiskt skrev — visas som kvittens, så "klart" inte betyder "tomt". */
+data class RestoreSummary(
+    val funds: Int,
+    val transactions: Int,
+    val suggestionRecords: Int,
+    val switchWatches: Int = 0
+)

@@ -14,7 +14,7 @@ länkar hit – de kopierar dem inte. Komponenter som inte är byggda står **ba
 *Planerade delade delar*.
 
 ```
-Grep i app/src/main/kotlin/se/partee71/fonder/ui/components/ och ui/diagram/ först
+Grep i app/src/main/kotlin/se/kodhast/fonder/ui/components/ och ui/diagram/ först
 ```
 
 Utseendet följer Fonders designspråk – nordisk blå, kopparaccent, M3 Expressive, Space Grotesk, tabulära
@@ -120,7 +120,7 @@ bygger dem (med mockup, test och skärmdump ljust + mörkt).
 | Handelsdagar | `NavCalendar` |
 | Externa källor | `data/network/` – en klient + en parser per källa (Avanza, Handelsbanken, Riksbanken) |
 | Backup-format | `BackupPayload` + `BackupSerializer` (skill `data-safety-backup`) |
-| Listans tillstånd (laddning, tomt, fel, innehåll) | android-ui:s `ListUiState` (`se.partee71.ui:ui-common`, transitivt via `ui-components`) som fält i skärmens tillstånd – Händelser, Beslut, Facit, Fondsök, Portfölj (NFR-6). Raderna med `toListUiState()`, `itemsOrEmpty()`/`errorOrNull()` och ett fel i källan med `catchAsListError` (`ui/common/ListStates.kt`). Detaljskärmarna (Hem, Fonddetalj, Pågående byte) har det lästa som `DetailUiState`-fält på samma sätt, med `valueOrNull()`/`errorOrNull()` och `catchAsDetailError` (`ui/common/DetailStates.kt`); Riskprofilen `EditorState`/`EditorLoader`. `shownAfter` finns i samma modul men används inte än (den skulle fördröja dagens indikatorer) – bygg ingen egen |
+| Listans tillstånd (laddning, tomt, fel, innehåll) | android-ui:s `ListUiState` (`se.kodhast.ui:ui-common`, transitivt via `ui-components`) som fält i skärmens tillstånd – Händelser, Beslut, Facit, Fondsök, Portfölj (NFR-6). Raderna med `toListUiState()`, `itemsOrEmpty()`/`errorOrNull()` och ett fel i källan med `catchAsListError` (`ui/common/ListStates.kt`). Detaljskärmarna (Hem, Fonddetalj, Pågående byte) har det lästa som `DetailUiState`-fält på samma sätt, med `valueOrNull()`/`errorOrNull()` och `catchAsDetailError` (`ui/common/DetailStates.kt`); Riskprofilen `EditorState`/`EditorLoader`. `shownAfter` finns i samma modul men används inte än (den skulle fördröja dagens indikatorer) – bygg ingen egen |
 | Fel från datalagret | `DataError` + `DataError.of` (Room/SQLite → `Database`, I/O → `Network`, importernas fel) och `AppErrors : ErrorMapper` i `data/common/`; texten `DataError.toMessage()` i `ui/common/DataErrorMessage.kt`. Inloggningens, backupens och Drive-svarens fel (`SignInException.Reason`, `BackupFormatException.Reason`, `DriveResult`) går också via `DataError.of`. `suspendRunCatching` gör ett `Result` av en suspend-åtgärd utan att svälja avbrott. Ett `UiError` visas med `EmptyState(error)` eller dess `message` |
 | Drive-filnamn och gallring | `DriveBackupFiles` |
 | Test-fakes | skill `testing-strategy` |

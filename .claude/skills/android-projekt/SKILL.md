@@ -15,7 +15,7 @@ security rules – `android:firebase-security-rules-auditor` gäller inte här.
 ## Baslinje (android:android-dev)
 
 - Två moduler: `:core` (ren Kotlin/JVM: `domain/model` och de rena use casen i `domain/usecase`,
-  #171) och `:app`. Paket under `se/partee71/fonder/`: `data/` (auth, datastore, imports, network,
+  #171) och `:app`. Paket under `se/kodhast/fonder/`: `data/` (auth, datastore, imports, network,
   repository, room) · `di/` · `domain/` (model, usecase – ren Kotlin utan Android-importer; use
   case som läser repositories ligger kvar i `:app` i samma paket) · `ui/<feature>/` +
   `ui/components/` + `ui/diagram/` + `ui/theme/` · `worker/`.
@@ -145,9 +145,9 @@ Versioner och SDK-nivåer: KRAVLISTA TP-1 (minSdk 30, targetSdk 36, compileSdk 3
 `gradle/libs.versions.toml` (AGP 9.4.1, Kotlin 2.4.21, Gradle 9.8.1). En höjning som ändrar
 SDK-nivåer uppdaterar TP-1 i samma PR.
 
-- **android-ui** (`se.partee71.ui` 0.5.0) från GitHub Packages: `implementation` av `ui-components`
+- **android-ui** (`se.kodhast.ui` 0.5.0) från GitHub Packages: `implementation` av `ui-components`
   (drar in `ui-theme` och `ui-common`) och `testImplementation` av `ui-testing`. Repot står i
-  `settings.gradle.kts` med `includeGroup("se.partee71.ui")`; inloggningen kommer från
+  `settings.gradle.kts` med `includeGroup("se.kodhast.ui")`; inloggningen kommer från
   `GPR_USER`/`GPR_TOKEN` (pluginens hook `android-start` säger om token saknas). I CI sätter
   `.github/actions/setup-android` dem från `secrets.GPR_TOKEN || github.token` och stoppar direkt om
   token inte når paketen. Detaljer i ARKITEKTUR.md → Byggkonfiguration och pluginens skill.
@@ -353,7 +353,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
   motivet till att det är cache.
 - **Integritet och tillgänglighet i DoD:** logga aldrig innehav, belopp, tokens eller hela
   HTTP-svar; `contentDescription` och 48 dp där det är relevant.
-- **Berörda filer** under `app/src/main/kotlin/se/partee71/fonder/…`.
+- **Berörda filer** under `app/src/main/kotlin/se/kodhast/fonder/…`.
 - **Testplanens nivåer:** enhet i `app/src/test` (ViewModel med MockK/Turbine, Robolectric,
   Roborazzi-skärmdumpar, `UiConsistencyTest`); instrument i `app/src/androidTest` (Compose, DAO,
   migrering, rundtur; i Actions bara i PR som rör koden).
