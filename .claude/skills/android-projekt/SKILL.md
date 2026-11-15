@@ -299,7 +299,7 @@ Stegen står i pluginen; det här är Fonders delar.
   och `ci-ok` fäller PR:en om det blir rött eller avbryts; ett överhoppat jobb fäller inte (skill
   `ci-budget`).
 - **APK-länken:** har en körning gett en installerbar APK – debug-snapshoten
-  (`release-debug.yml`, https://github.com/ParTee71/fonder/releases/tag/debug-snapshot), en
+  (`release-debug.yml`, https://github.com/Kodhast/fonder/releases/tag/debug-snapshot), en
   signerad release eller en artifact – avslutas svaret med länken, commit och `versionName`
   (CLAUDE.md → Bygg & test). "Bygget är grönt" utan länk när en APK byggts är ett anti-mönster.
 
@@ -334,7 +334,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
 ## Issues (android:refine-issue)
 
 - **Repo:** owner `ParTee71`, repo `fonder`; dubblettsökning med `mcp__github__search_issues`
-  (`repo:ParTee71/fonder <ord>`).
+  (`repo:Kodhast/fonder <ord>`).
 - **Extra undersökningspunkter:**
   - **Skärmar:** `ui/hem`, `ui/portfolj`, `ui/fond`, `ui/fondsok`, `ui/beslut`,
     `ui/transaktioner`, `ui/imports`, `ui/facit`, `ui/bytesfonster`, `ui/riskprofil`,
@@ -417,7 +417,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
   `-PversionNameOverride`) bygger en debug-APK, signerad med den incheckade `app/debug.keystore`,
   och publicerar den som rullande pre-release under taggen `debug-snapshot`, som skrivs över vid
   varje körning (artifact `fonder-debug`). Ingen versionshöjning, ingen tagg `v*`. Länka
-  https://github.com/ParTee71/fonder/releases/tag/debug-snapshot med commit och `versionName`.
+  https://github.com/Kodhast/fonder/releases/tag/debug-snapshot med commit och `versionName`.
 - **APK:n** heter `fonder-<versionName>-<tidsstämpel>.apk`; sammanfattningen börjar
   `Släppt: Fonder v<version>`.
 - **Lokal reserv:** `./gradlew :app:assembleRelease` kräver `fonder.jks` i `app/` och
