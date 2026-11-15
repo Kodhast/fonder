@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Samma som values/colors.xml: startskärmens botten är blå även i mörkt läge, och android-ui har
+         egna värden i values-night som annars skulle gälla där (UI-17). -->
+    <color name="kodhast_branding_text">#FFE0E2E8</color>
+    <color name="kodhast_branding_dots">#FFFFB59A</color>
+</resources>

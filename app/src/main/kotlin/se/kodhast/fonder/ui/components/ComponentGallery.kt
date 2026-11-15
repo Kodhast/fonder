@@ -73,6 +73,7 @@ import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.components.LocalTopBarStatus
+import se.kodhast.ui.components.MakerMark
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SectionHeader
 import se.kodhast.ui.components.SwitchRow
@@ -176,6 +177,9 @@ private fun ColumnScope.Buttons() {
 private fun ColumnScope.CardsAndRows() {
     Label("SectionHeader (android-ui) · CardTitleRow")
     SectionHeader(title = "Byten", count = "2 väntar på dig", working = true, workingDescription = "Uppdaterar Byten")
+    SectionHeader(title = "Tema")
+    Label("MakerMark (android-ui) – Kodhästs signatur sist i Inställningar")
+    MakerMark()
     Label("AppCard (android-ui, Fonders kortstil)")
     AppCard(modifier = Modifier.fillMaxWidth()) {
         CardTitleRow(title = "Fondavgifter per år", working = true, style = AppTheme.typography.itemTitle)

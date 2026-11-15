@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -51,6 +52,7 @@ import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.ConfirmDialog
 import se.kodhast.ui.components.FieldError
 import se.kodhast.ui.components.ItemRowText
+import se.kodhast.ui.components.MakerMark
 import se.kodhast.ui.components.SectionHeader
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -462,6 +464,9 @@ fun SettingsContent(
                 variant = ButtonVariant.Destructive
             )
         }
+
+        // Kodhästs signatur sist i Inställningar (SET-9).
+        MakerMark(Modifier.align(Alignment.CenterHorizontally).padding(top = Spacing.xl))
     }
 
     if (showClearConfirm) {

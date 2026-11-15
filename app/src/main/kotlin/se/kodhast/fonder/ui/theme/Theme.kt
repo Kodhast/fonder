@@ -12,9 +12,11 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import se.kodhast.ui.components.AppBrandStyle
 import se.kodhast.ui.components.AppButtonStyle
 import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.IconButtonVariant
+import se.kodhast.ui.components.LocalAppBrandStyle
 import se.kodhast.ui.components.LocalAppButtonStyle
 import se.kodhast.ui.components.LocalAppCardStyle
 import se.kodhast.ui.components.LocalTopBarBackStyle
@@ -64,12 +66,19 @@ fun FonderTheme(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
             LocalAppButtonStyle provides FonderButtonStyle,
             LocalAppCardStyle provides if (darkTheme) FonderDarkCardStyle else FonderLightCardStyle,
-            LocalTopBarBackStyle provides FonderBackStyle
+            LocalTopBarBackStyle provides FonderBackStyle,
+            LocalAppBrandStyle provides FonderBrandStyle
         ) {
             MaterialExpressiveTheme(shapes = FonderShapes, content = content)
         }
     }
 }
+
+/**
+ * Kodhäst-igenkänningen (UI-17): hästen i tomma lägens ikonruta och prickarna före sektionsrubriker
+ * utan ikonruta. Prickarna som laddning står av – Fonder behåller sin formskiftande laddning (UI-12).
+ */
+private val FonderBrandStyle = AppBrandStyle(sectionDots = true, emptyStateMark = true)
 
 /**
  * Fonders knappstil för android-ui:s knappar: Material 3:s 40 dp, Expressive-formmorf och den tonade
