@@ -31,7 +31,6 @@ import se.kodhast.fonder.ui.components.ApproxTaxRow
 import se.kodhast.fonder.ui.components.CardTitleRow
 import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.PeriodRow
-import se.kodhast.fonder.ui.components.PullToRefreshContainer
 import se.kodhast.fonder.ui.components.ReminderRow
 import se.kodhast.fonder.ui.components.ReminderRowTone
 import se.kodhast.fonder.ui.components.RiskCard
@@ -45,6 +44,7 @@ import se.kodhast.fonder.ui.diagram.FundLineChart
 import se.kodhast.fonder.ui.theme.Filled
 import se.kodhast.fonder.ui.theme.nestedCardStyle
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
@@ -135,10 +135,10 @@ fun HemContent(
 
         // Dra ned uppdaterar (UI-11) — bara här, inte i tomt-tillståndet ovan: utan innehav
         // finns ingen kurs att hämta, och en gest som inte gör något är värre än ingen gest.
-        else -> PullToRefreshContainer(
+        else -> AppPullToRefresh(
             refreshing = state.pricesWorking,
             onRefresh = onRefresh,
-            modifier = modifier
+            modifier = modifier.fillMaxSize()
         ) {
             // Ordningen enligt Översiktens mockup: värdet, det som väntar på beslut, jämförelsen
             // mot index och påminnelsen om säkerhetskopia; resten av Hems kort under dem.

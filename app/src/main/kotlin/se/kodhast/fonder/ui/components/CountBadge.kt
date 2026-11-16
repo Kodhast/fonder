@@ -16,12 +16,12 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
-/** Storleken på [CountBadge]: liten bredvid en flikikon, stor som ledande element i en rad. */
+/** Storleken på [CountBadge]: liten bredvid en text eller ikon, stor som ledande element i en rad. */
 enum class CountBadgeSize { Small, Large }
 
 /**
- * Kopparmärket med ett antal (UI-14) – på Beslut-fliken i [AppFloatingToolbar] och i Översiktens
- * "Att besluta"-rad ([ReminderRow] med `count`). Rund, i sekundärfärgen (koppar) med text i
+ * Kopparmärket med ett antal (UI-14) i Översiktens "Att besluta"-rad ([ReminderRow] med `count`);
+ * Beslut-flikens märke ritas av android-ui:s `AppFloatingToolbar` (`ToolbarItem.badgeCount`). Rund, i sekundärfärgen (koppar) med text i
  * `onSecondary`; växer på bredden för tvåsiffriga tal.
  *
  * Dekorativt för skärmläsaren: antalet ska alltid också stå i omgivande text eller beskrivning

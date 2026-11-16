@@ -29,8 +29,8 @@ import se.kodhast.fonder.domain.usecase.PendingDecisions
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.SwitchRow
 import se.kodhast.fonder.ui.components.FundFacts
-import se.kodhast.fonder.ui.components.PULL_TO_REFRESH_TEST_TAG
 import se.kodhast.fonder.ui.theme.FonderTheme
+import se.kodhast.ui.components.ENTITY_REFRESH_TAG
 
 /**
  * Instrumenterat test av fliken Beslut (NAV-9) mot [BeslutContent] med handskrivet tillstånd.
@@ -206,9 +206,9 @@ class BeslutScreenTest {
             FonderTheme { BeslutContent(state = stateWith(plan = listOf(dyrTillBillig()), canRecompute = true), onRefresh = { refreshes++ }) }
         }
 
-        composeRule.onNodeWithTag(PULL_TO_REFRESH_TEST_TAG).performTouchInput { swipeDown() }
+        composeRule.onNodeWithTag(ENTITY_REFRESH_TAG).performTouchInput { swipeDown() }
 
-        // waitUntil: callbacken kommer först när utdragningen animerat klart (se PullToRefreshContainerTest).
+        // waitUntil: callbacken kommer först när utdragningen animerat klart (se android-ui:s AppPullToRefresh).
         composeRule.waitUntil(timeoutMillis = 5_000) { refreshes == 1 }
         assertEquals(1, refreshes)
     }
@@ -218,7 +218,7 @@ class BeslutScreenTest {
         // Depå/AF — ingen gest som lovar något SET-4-gaten vägrar infria.
         show(stateWith(plan = listOf(dyrTillBillig()), canRecompute = false))
 
-        composeRule.onNodeWithTag(PULL_TO_REFRESH_TEST_TAG).assertDoesNotExist()
+        composeRule.onNodeWithTag(ENTITY_REFRESH_TAG).assertDoesNotExist()
         composeRule.onNodeWithText("Byten föreslås när du satt ett mål och kontotypen ISK/KF.").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("Räkna om bytesplanen").assertDoesNotExist()
     }

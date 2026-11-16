@@ -1,10 +1,10 @@
 package se.kodhast.fonder.ui.components
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import se.kodhast.fonder.R
+import se.kodhast.ui.components.CheckRow
 
 /**
  * "Genomförd"-markeringen för ett inspelat bytesförslag (SET-5, issue #80) — delad mellan Hems
@@ -13,7 +13,8 @@ import se.kodhast.fonder.R
  * hade varit tre ställen att glömma när träffytan eller skärmläsartexten ändras (regel 4,
  * issue #90).
  *
- * En [CheckRow] med kvitteringens etikett: hela raden är klickbar, en nod med rollen kryssruta
+ * android-ui:s [CheckRow] med kvitteringens etikett, utan överstruken eller tonad rad (kryss betyder
+ * "gjort", inte "klar att stryka"): hela raden är klickbar, en nod med rollen kryssruta
  * (UI-3).
  *
  * Markeringen utför aldrig ett byte — den **registrerar** att användaren gjorde det, så facit
@@ -27,10 +28,11 @@ fun FollowedToggleRow(
     modifier: Modifier = Modifier
 ) {
     CheckRow(
+        title = stringResource(R.string.facit_followed_label),
         checked = followed,
         onCheckedChange = onFollowedChange,
-        label = stringResource(R.string.facit_followed_label),
-        labelStyle = MaterialTheme.typography.bodySmall,
-        modifier = modifier
+        modifier = modifier,
+        done = false,
+        tinted = false
     )
 }

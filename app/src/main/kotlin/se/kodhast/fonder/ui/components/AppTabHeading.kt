@@ -7,49 +7,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import se.kodhast.fonder.R
-import se.kodhast.ui.components.AppIconButton
-import se.kodhast.ui.components.R as UiR
-
-/**
- * Topprad för en skärm **djupare** i stacken (UI-8, UI-14): bakåtpil och rubrik, med valfria
- * [actions] till höger (chromets `WorkerStatusIcon`, NAV-6). Flikarna har ingen topprad – de har
- * [AppTabHeading].
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AppTopBar(
-    title: String,
-    onBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    TopAppBar(
-        title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        modifier = modifier,
-        navigationIcon = {
-            AppIconButton(
-                // Samma pil som ramarnas topprad (android-ui), genomskinlig som LocalTopBarBackStyle i FonderTheme.
-                icon = UiR.drawable.ic_arrow_back,
-                contentDescription = stringResource(R.string.back),
-                onClick = onBack
-            )
-        },
-        actions = actions
-    )
-}
 
 /**
  * Flikens stora rubrik överst i innehållet (NAV-7, UI-14) — i stället för en topprad: rubriken i

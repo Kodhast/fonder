@@ -30,7 +30,6 @@ import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.components.ChoiceChipRow
-import se.kodhast.fonder.ui.components.EmptyState
 import se.kodhast.fonder.ui.components.ImportCompleteDialog
 import se.kodhast.fonder.ui.components.LoadingDialog
 import se.kodhast.fonder.ui.transaktioner.labelRes
@@ -87,11 +86,8 @@ fun ImportHoldingsScreen(
             )
         }
 
-        error != null -> EmptyState(
-            error = error,
-            title = stringResource(R.string.import_title),
-            modifier = modifier
-        )
+        // Filen gick inte att läsa: "Försök igen" väljer en ny fil (NFR-6).
+        error != null -> ImportError(stringResource(R.string.import_title), error, onPickAgain = { filePicker.launch(IMPORT_MIME_TYPES) }, modifier = modifier)
 
         else -> Column(modifier = modifier.fillMaxSize()) {
             LazyColumn(modifier = Modifier.weight(1f)) {

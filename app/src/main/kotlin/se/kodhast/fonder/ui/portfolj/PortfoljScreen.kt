@@ -31,7 +31,6 @@ import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.ExposureBar
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.components.ProfitTakeBadge
-import se.kodhast.fonder.ui.components.PullToRefreshContainer
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.StatusDot
 import se.kodhast.fonder.ui.components.TotalCard
@@ -42,6 +41,7 @@ import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
 import se.kodhast.fonder.ui.transaktioner.firstTransactionActions
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.theme.Spacing
@@ -107,10 +107,10 @@ fun PortfoljContent(
         // inte allihop under en enda icke-lazy `Column`, så `onNodeWithText(...).performScrollTo()`
         // hittar aldrig en rad som ännu inte komponerats (issue #66).
         // Dra ned uppdaterar (UI-11) — bara med innehav: utan dem finns ingen kurs att hämta.
-        else -> PullToRefreshContainer(
+        else -> AppPullToRefresh(
             refreshing = state.pricesWorking || state.refreshingFundIds.isNotEmpty(),
             onRefresh = onRefresh,
-            modifier = modifier
+            modifier = modifier.fillMaxSize()
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize().testTag(PORTFOLJ_LIST_TEST_TAG)) {
                 item(contentType = "total") {

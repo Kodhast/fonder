@@ -19,21 +19,20 @@ val saved: Boolean = false,
 LaunchedEffect(state.saved) { if (state.saved) { onSaved(); viewModel.onSavedHandled() } }
 withContext(io) {
 import kotlinx.coroutines.Dispatchers
-EmptyState(title = "Ingen portfölj ännu", body = "")
+EmptyState(icon = R.drawable.ic_search, title = "Ingen portfölj ännu", message = "")
 CardTitleRow(title = "Värde")
 PeriodRow(label = "1 år", amount = null, percent = 4.2)
 ValueAsOfRow(date)
 ExposureBar(segments)
 ExpandableSection(title = "Analys") { }
 ExpandableInfoRow(title = "Avgift")
-FollowedToggleRow(checked = true, onCheckedChange = {})
+FollowedToggleRow(followed = true, onFollowedChange = {})
 RiskBadge(level = 5)
 ProfitTakeBadge(state)
 StatusDot(status)
 ChoiceChipRow(options, selected, onSelect = {})
 SelectField(label = "Fond", options = options)
 DateField(label = "Datum", date = date, onDateChange = {})
-PullToRefreshContainer(refreshing = false, onRefresh = {}) { }
 WorkingIndicator()
 ImportCompleteDialog(onDismiss = {})
 FundLineChart(series)
@@ -60,7 +59,7 @@ AppTextField(value = text, onValueChange = {}, label = "Belopp")
 ConfirmDialog(title = "Ta bort?", message = "", confirmLabel = "Ta bort", onConfirm = {}, onDismiss = {})
 ConfirmDialog(title = "Klart", message = "", confirmLabel = "Stäng", onConfirm = {}, onDismiss = {}, dismissLabel = null)
 LoadingDialog(title = "Importerar", body = "")
-CheckRow(checked = true, onCheckedChange = {}, label = "Ta med")
+CheckRow(title = "Ta med", checked = true, onCheckedChange = {}, done = false, tinted = false)
 SwitchRow(title = "Bara indexfonder", checked = true, onCheckedChange = {})
 RiskLevelPicker(selected = 4, onSelect = {}, marked = 6)
 ProgressBar()
@@ -69,9 +68,9 @@ InfoPill(text = "Sålt", tone = Tone.Copper, shape = AppTheme.shapes.smallTile)
 SectionHeader(title = "Byten", count = "2 väntar på dig", working = true)
 AppDivider()
 AppDivider(Modifier.padding(top = Spacing.s))
-AppFloatingToolbar(tabs = tabs, selectedIndex = 0, onSelect = {})
-AppFabMenu(expanded = false, onExpandedChange = {}, items = items)
-AppTopBar(title = "Fond", onBack = {})
+AppFloatingToolbar(items = tabs, selectedIndex = 0, onSelect = {}, action = ToolbarAction("Lägg till", UiR.drawable.ic_add, menu))
+AppTopBar(title = "Fond", size = TopBarSize.Small, onBack = {})
+AppPullToRefresh(refreshing = false, onRefresh = {}) { }
 AppTabHeading(title = "Översikt") { }
 import androidx.compose.material3.Card
 // Card(modifier) i en kommentar
@@ -189,7 +188,7 @@ app/src/main/kotlin/se/kodhast/fonder/ui/hem/notes.md
 app/src/test/kotlin/X.kt
 app/src/main/kotlin/se/kodhast/fonder/data/repository/FundRepository.kt	component-only,vico,dispatchers
 app/src/main/kotlin/se/kodhast/fonder/ui/theme/Theme.kt	component-only,vico,dispatchers,events
-app/src/main/kotlin/se/kodhast/fonder/ui/components/PullToRefreshContainer.kt	vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/components/CenteredState.kt	vico,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/diagram/FundLineChart.kt	component-only,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemScreen.kt	feature,component-only,vico,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/navigation/AppNavigation.kt	feature,component-only,vico,dispatchers,events

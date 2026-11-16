@@ -7,14 +7,18 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import java.time.LocalDate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import se.kodhast.fonder.data.common.AppErrors
+import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.ImportedOrderTransaction
 import se.kodhast.fonder.domain.model.TransactionType
@@ -136,5 +140,18 @@ class ImportOrdersScreenTest {
     @Test
     fun `skärmdump granskning med bytesväljare`() = composeRule.captureLightAndDark("ImportOrders_review") {
         Review(state)
+    }
+
+    @Test
+    fun `ett läsfel visas under importens rubrik och Försök igen öppnar filväljaren igen (NFR-6)`() {
+        var picks = 0
+        composeRule.setContent {
+            FonderTheme { ImportError("Importera avräkningsnotor", AppErrors.map(DataError.ImportNoTransactions), onPickAgain = { picks++ }) }
+        }
+
+        composeRule.onNodeWithText("Importera avräkningsnotor").assertIsDisplayed()
+        composeRule.onNodeWithText("Försök igen").performClick()
+
+        assertEquals(1, picks)
     }
 }

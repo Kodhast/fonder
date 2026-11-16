@@ -14,7 +14,7 @@
 # Avståndsmönstren stannar vid första ')' och går rad för rad: Spacer-bredder, dp efter en inre parentes och
 # anrop över flera rader fångas inte (skill ui-style → Avstånd).
 # Scaffold är fortfarande tillåten i AppNavigation (skalet runt NavDisplay); topprad, flikrad och plusknapp
-# har sina delade komponenter sedan M3 Expressive-steg 3a.
+# har sina delade komponenter i android-ui (AppTopBar, AppFloatingToolbar med ToolbarAction).
 # Importrader och kommentarer kontrolleras inte.
 # Regexarna ska fungera både i JavaScript och Kotlin (ingen lookbehind).
 
@@ -39,20 +39,20 @@
 \b(Filter|Assist|Suggestion|Input)Chip\s*[({]	ChoiceChipRow / InfoPill (android-ui)
 \b[A-Za-z]*ProgressIndicator\s*[({]	WorkingIndicator / CardTitleRow / ProgressBar / LoadingDialog
 \bBadge\s*[({]	InfoPill (android-ui) / RiskBadge / ProfitTakeBadge / StatusDot
-\bCheckbox\s*[({]	CheckRow / FollowedToggleRow
+\bCheckbox\s*[({]	CheckRow (android-ui) / FollowedToggleRow
 \bSwitch\s*[({]	SwitchRow (android-ui)
 \b(Text|Outlined|Elevated|Filled|FilledTonal)?Button\s*[({]	AppButton (android-ui, ButtonVariant)
 \b(Outlined|Filled|FilledTonal)?IconButton\s*[({]	AppIconButton (android-ui)
 \b(Outlined|Basic)?TextField\s*[({]	AppTextField (android-ui)
 \bDialog\s*[({]	ConfirmDialog (android-ui) / LoadingDialog
-\b(Short|Flexible)?NavigationBar(Item)?\s*[({]	AppFloatingToolbar
-\b(Horizontal|Vertical)FloatingToolbar\s*[({]	AppFloatingToolbar
-\b[A-Za-z]*FloatingActionButton(Menu|MenuItem)?\s*[({]	AppFabMenu
-\b(CenterAligned|Medium|Large)?(Flexible)?TopAppBar\s*[({]	AppTopBar / AppTabHeading
+\b(Short|Flexible)?NavigationBar(Item)?\s*[({]	AppFloatingToolbar (android-ui)
+\b(Horizontal|Vertical)FloatingToolbar\s*[({]	AppFloatingToolbar (android-ui)
+\b[A-Za-z]*FloatingActionButton(Menu|MenuItem)?\s*[({]	AppFloatingToolbar med ToolbarAction (android-ui)
+\b(CenterAligned|Medium|Large)?(Flexible)?TopAppBar\s*[({]	AppTopBar (android-ui) / AppTabHeading
 \b(Horizontal|Vertical)?Divider\s*[({]	AppDivider (android-ui)
 
 [component-only]
-\bPullToRefreshBox\b	PullToRefreshContainer
+\bPullToRefreshBox\b	AppPullToRefresh (android-ui)
 \bExposedDropdownMenuBox\b	SelectField
 \bModalBottomSheet\b	AppBottomSheet (android-ui)
 \b(Local)?Clipboard(Manager)?\b	Modifier.copyableFundName (ui/components)

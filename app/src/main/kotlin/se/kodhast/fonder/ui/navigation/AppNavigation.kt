@@ -1,6 +1,5 @@
 package se.kodhast.fonder.ui.navigation
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -12,17 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -37,13 +34,7 @@ import se.kodhast.fonder.ui.beslut.BeslutScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchEvent
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchViewModel
-import se.kodhast.fonder.ui.components.AppFabMenu
-import se.kodhast.fonder.ui.components.AppFabMenuDefaults
-import se.kodhast.fonder.ui.components.AppFabMenuItem
-import se.kodhast.fonder.ui.components.AppFloatingToolbar
 import se.kodhast.fonder.ui.components.AppTabHeading
-import se.kodhast.fonder.ui.components.AppToolbarTab
-import se.kodhast.fonder.ui.components.AppTopBar
 import se.kodhast.fonder.ui.components.ComponentGallery
 import se.kodhast.fonder.ui.components.WorkerStatusIcon
 import se.kodhast.fonder.ui.facit.FacitScreen
@@ -60,9 +51,16 @@ import se.kodhast.fonder.ui.settings.SettingsViewModel
 import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
+import se.kodhast.ui.components.AppFloatingToolbar
 import se.kodhast.ui.components.AppIconButton
+import se.kodhast.ui.components.AppMenuItem
+import se.kodhast.ui.components.AppTopBar
 import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.LocalTopBarStatus
+import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.components.ToolbarAction
+import se.kodhast.ui.components.ToolbarItem
+import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
 
@@ -94,12 +92,15 @@ fun AppNavigation(
     )
 }
 
+/** Testtagg för flikraden – gör "raden döljs på djupare skärmar" (NAV-7) adresserbart i tester. */
+const val APP_FLOATING_TOOLBAR_TAG = "app_floating_toolbar"
+
 /**
  * Skalet runt `NavDisplay` (NAV-7, NAV-8, UI-14): på en flik en stor rubrik överst
- * ([AppTabHeading]), den flytande flikraden ([AppFloatingToolbar]) och plusmenyn ([AppFabMenu])
- * längs nederkanten; på en skärm djupare i stacken i stället en topprad med bakåtpil
- * ([AppTopBar]) och varken flikrad eller plusmeny. [beslutBadgeCount] är kopparmärket på Beslut
- * (NAV-9) – 0 ritar inget. [entryProvider] ger skärmarna – i appen [fonderEntries], i testerna
+ * ([AppTabHeading]) och android-ui:s flytande flikrad ([AppFloatingToolbar]) längs nederkanten, med
+ * plusknappen i kopparen sist i raden ([ToolbarAction] med meny); på en skärm djupare i stacken i
+ * stället bibliotekets lilla topprad med bakåtpil ([AppTopBar]) och varken flikrad eller plusknapp.
+ * [beslutBadgeCount] är kopparmärket på Beslut (NAV-9) – 0 ritar inget. [entryProvider] ger skärmarna – i appen [fonderEntries], i testerna
  * enkla ersättare.
  *
  * Varje fliks stack dekoreras för sig (sparat tillstånd och ViewModels per post), så en flik som
@@ -125,11 +126,6 @@ fun AppNavigationShell(
         { WorkerStatusIcon(isRunning = isWorkerRunning) }
     }
 
-    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    // Menyn hör till flikarna: lämnas fliken (även via systemets bakåt) stängs den. Efter en
-    // rotation återställs stacken innan effekten körs, så en öppen meny på en flik står kvar (UI-9).
-    LaunchedEffect(currentKey) { if (currentTab == null) fabMenuExpanded = false }
-
     val decorators = listOf(
         rememberSaveableStateHolderNavEntryDecorator<AppKey>(),
         rememberViewModelStoreNavEntryDecorator<AppKey>()
@@ -141,105 +137,80 @@ fun AppNavigationShell(
         .filter { it == Screen.START || it == backStack.currentTab }
         .flatMap { decoratedStacks.getValue(it) }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Scaffold(
-            topBar = {
-                when {
-                    // Ramskärmen ritar sin egen topprad (ramens AppTopBar) – annars två rubriker.
-                    isFrame -> Unit
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        topBar = {
+            when {
+                // Ramskärmen ritar sin egen topprad (ramens AppTopBar) – annars två rubriker.
+                isFrame -> Unit
 
-                    currentTab != null -> TabHeading(currentTab, isWorkerRunning, backStack)
+                currentTab != null -> TabHeading(currentTab, isWorkerRunning, backStack)
 
-                    // Varje skärm djupare i stacken har rubrik och bakåtpil (UI-8, issue #78).
-                    else -> titleResFor(currentKey)?.let { title ->
-                        AppTopBar(title = stringResource(title), onBack = { backStack.pop() }) {
-                            WorkerStatusIcon(isRunning = isWorkerRunning)
-                        }
-                    }
-                }
-            },
-            bottomBar = {
-                if (currentTab != null) {
-                    // Flikraden centreras på plusknappens mittlinje och lämnar plats för den till höger.
-                    val toolbarVertical = AppFabMenuDefaults.ButtonCenterFromBottom - TOOLBAR_HALF_HEIGHT
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(
-                                start = Spacing.s,
-                                end = AppFabMenuDefaults.ReservedEndWidth,
-                                top = toolbarVertical,
-                                bottom = toolbarVertical
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val tabs = Screen.entries.map { tab ->
-                            AppToolbarTab(
-                                label = stringResource(tab.labelRes),
-                                icon = tab.icon,
-                                badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
-                            )
-                        }
-                        AppFloatingToolbar(
-                            tabs = tabs,
-                            selectedIndex = Screen.entries.indexOf(currentTab),
-                            onSelect = { index -> backStack.select(Screen.entries[index]) }
-                        )
-                    }
+                // Varje skärm djupare i stacken har rubrik och bakåtpil (UI-8, issue #78).
+                else -> titleResFor(currentKey)?.let { title ->
+                    AppTopBar(title = stringResource(title), size = TopBarSize.Small, onBack = { backStack.pop() }, status = topBarStatus)
                 }
             }
-        ) { innerPadding ->
-            // imePadding på ett ställe i stället för per skärm (regel 4): appen kör
-            // enableEdgeToEdge, och Scaffolds standardinsets är bara systemBars — tangentbordet
-            // låg därför **över** ISIN-fältet i Fonddetalj
-            // och sökfältet i Fondsök. `adjustResize` räcker inte edge-to-edge på API 30+, där
-            // IME är en inset appen själv måste konsumera (issue #78). En ramskärm har sin egen
-            // Scaffold med imePadding och systemfältens insets – skalets marginal räknas då som
-            // förbrukad, så att varken tangentbordet eller statusraden läggs på två gånger.
-            val contentModifier = if (isFrame) {
-                Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
-            } else {
-                Modifier.padding(innerPadding).imePadding()
-            }
-            CompositionLocalProvider(LocalTopBarStatus provides topBarStatus) {
-                NavDisplay(
-                    entries = shownEntries,
-                    modifier = contentModifier,
-                    transitionSpec = Transitions.forward,
-                    popTransitionSpec = Transitions.back,
-                    predictivePopTransitionSpec = Transitions.predictiveBack,
-                    onBack = { backStack.pop() }
+        },
+        bottomBar = {
+            if (currentTab != null) {
+                val tabs = Screen.entries.map { tab ->
+                    ToolbarItem(
+                        label = stringResource(tab.labelRes),
+                        icon = tab.icon,
+                        badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
+                    )
+                }
+                // Plusknappens meny (NAV-8): samma fyra val i samma ordning som tidigare FAB-menyn.
+                // Ett val eller bakåt stänger menyn; den hör till flikraden och försvinner med den.
+                val addMenu = listOf(
+                    AppMenuItem(stringResource(R.string.transaktioner_add), { backStack.push(TransactionFormKey()) }),
+                    AppMenuItem(stringResource(R.string.fab_import_orders), { backStack.push(ImportOrdersKey) }),
+                    AppMenuItem(stringResource(R.string.fab_import_holdings), { backStack.push(ImportHoldingsKey) }),
+                    AppMenuItem(stringResource(R.string.fab_watch_fund), { backStack.push(FundSearchKey) })
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(vertical = Spacing.m),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AppFloatingToolbar(
+                        items = tabs,
+                        selectedIndex = Screen.entries.indexOf(currentTab),
+                        onSelect = { index -> backStack.select(Screen.entries[index]) },
+                        modifier = Modifier.testTag(APP_FLOATING_TOOLBAR_TAG),
+                        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu)
+                    )
+                }
             }
-            // Bakåt stänger en öppen plusmeny i stället för att lämna fliken – menyns enda bakåthanterare
-            // (AppFabMenu får handleBack = false). Den senast registrerade hanteraren tas först, och
-            // NavDisplays registreras i Scaffolds subkomposition, alltså efter allt i skalets egen
-            // komposition – även efter en rotation. Därför ligger den här efter NavDisplay, i samma
-            // subkomposition, och inte i AppFabMenu.
-            BackHandler(enabled = fabMenuExpanded && currentTab != null) { fabMenuExpanded = false }
         }
-        if (currentTab != null) {
-            AppFabMenu(
-                expanded = fabMenuExpanded,
-                onExpandedChange = { fabMenuExpanded = it },
-                items = listOf(
-                    AppFabMenuItem(stringResource(R.string.transaktioner_add), { backStack.push(TransactionFormKey()) }),
-                    AppFabMenuItem(stringResource(R.string.fab_import_orders), { backStack.push(ImportOrdersKey) }),
-                    AppFabMenuItem(stringResource(R.string.fab_import_holdings), { backStack.push(ImportHoldingsKey) }),
-                    AppFabMenuItem(stringResource(R.string.fab_watch_fund), { backStack.push(FundSearchKey) })
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding(),
-                handleBack = false
+    ) { innerPadding ->
+        // imePadding på ett ställe i stället för per skärm (regel 4): appen kör
+        // enableEdgeToEdge, och Scaffolds standardinsets är bara systemBars — tangentbordet
+        // låg därför **över** ISIN-fältet i Fonddetalj
+        // och sökfältet i Fondsök. `adjustResize` räcker inte edge-to-edge på API 30+, där
+        // IME är en inset appen själv måste konsumera (issue #78). En ramskärm har sin egen
+        // Scaffold med imePadding och systemfältens insets – skalets marginal räknas då som
+        // förbrukad, så att varken tangentbordet eller statusraden läggs på två gånger.
+        val contentModifier = if (isFrame) {
+            Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
+        } else {
+            Modifier.padding(innerPadding).imePadding()
+        }
+        CompositionLocalProvider(LocalTopBarStatus provides topBarStatus) {
+            NavDisplay(
+                entries = shownEntries,
+                modifier = contentModifier,
+                transitionSpec = Transitions.forward,
+                popTransitionSpec = Transitions.back,
+                predictivePopTransitionSpec = Transitions.predictiveBack,
+                onBack = { backStack.pop() }
             )
         }
     }
 }
-
-/** Halva flikradens höjd (M3:s flytande verktygsrad, 64 dp). */
-private val TOOLBAR_HALF_HEIGHT = 32.dp
 
 /**
  * Flikens rubrik med dess egna åtgärder: Inställningar på Översikt (NAV-7). Chromets

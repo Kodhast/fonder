@@ -160,7 +160,7 @@ class TransaktionerScreenTest {
     fun `en saljrad laser upp om den ar ihopfalld eller utfalld`() {
         composeRule.setContent { FonderTheme { TransaktionerContent(state = state(HandelseFilter.SALJ)) } }
 
-        val row = composeRule.onNode(hasText("Sälj · förlust −520,00 kr", substring = true).and(hasStateDescription("Ihopfälld")), useUnmergedTree = false)
+        val row = composeRule.onNode(hasText("Sälj · förlust −520,00 kr", substring = true).and(hasStateDescription("Hopfälld")), useUnmergedTree = false)
         row.assertExists().performClick()
         composeRule.onNode(hasText("Sälj · förlust −520,00 kr", substring = true).and(hasStateDescription("Utfälld"))).assertExists()
     }
@@ -271,7 +271,7 @@ class TransaktionerScreenTest {
     fun `utfällt köp med känt datum har ingen rättning`() {
         composeRule.setContent { FonderTheme { TransaktionerContent(state = estimatedState()) } }
         // Det vanliga köpet i Sverige Småbolag (det andra köpet är det uppskattade).
-        composeRule.onNode(hasText("Sverige Småbolag") and hasText("Köp", substring = true) and hasStateDescription("Ihopfälld")).performClick()
+        composeRule.onNode(hasText("Sverige Småbolag") and hasText("Köp", substring = true) and hasStateDescription("Hopfälld")).performClick()
         composeRule.onNode(hasText("Sverige Småbolag") and hasText("Köp", substring = true) and hasStateDescription("Utfälld")).assertExists()
         composeRule.onNodeWithText("Importen uppskattade datumet", substring = true).assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Rätta datum", substring = true).assertDoesNotExist()

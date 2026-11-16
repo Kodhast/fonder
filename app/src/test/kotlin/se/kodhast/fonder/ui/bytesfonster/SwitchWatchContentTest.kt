@@ -2,6 +2,8 @@ package se.kodhast.fonder.ui.bytesfonster
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,5 +37,30 @@ class SwitchWatchContentTest {
         composeRule.onNodeWithText("Kunde inte visa innehållet").assertExists()
         composeRule.onNodeWithText("Appens data gick inte att läsa. Lämna skärmen och försök igen.").assertExists()
         composeRule.onNodeWithText("Bevakningen finns inte").assertDoesNotExist()
+    }
+
+    @Test
+    fun `Försök igen efter ett läsfel anropar onRetry (NFR-6)`() {
+        var retries = 0
+        composeRule.setContent {
+            FonderTheme {
+                SwitchWatchContent(
+                    state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.map(DataError.Database))),
+                    onRetry = { retries++ }
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Försök igen").performClick()
+
+        assertEquals(1, retries)
+    }
+
+    @Test
+    fun `en bevakning som inte finns har ingen Försök igen`() {
+        composeRule.setContent {
+            FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound()))) }
+        }
+        composeRule.onNodeWithText("Försök igen").assertDoesNotExist()
     }
 }

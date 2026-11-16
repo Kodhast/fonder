@@ -13,14 +13,9 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import se.kodhast.ui.components.AppBrandStyle
-import se.kodhast.ui.components.AppButtonStyle
 import se.kodhast.ui.components.AppCardStyle
-import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.LocalAppBrandStyle
-import se.kodhast.ui.components.LocalAppButtonStyle
 import se.kodhast.ui.components.LocalAppCardStyle
-import se.kodhast.ui.components.LocalTopBarBackStyle
-import se.kodhast.ui.components.TopBarBackStyle
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
@@ -42,12 +37,10 @@ private val LocalFonderColors = staticCompositionLocalOf { FonderLightColors }
  * [FonderShapes] ovanpå och ärver färger, typografi och rörelse, så att M3-komponenterna behåller
  * sina hörn.
  *
- * [FonderButtonStyle] ges till bibliotekets knappar ([LocalAppButtonStyle]) här, en gång, så att
- * ramarnas och dialogernas knappar (t.ex. `EntityEditScreen`) ser ut som Fonders egna `AppButton`.
+ * Knapparna och tillbakapilen har bibliotekets standard (UI-13, UI-14): 56 dp knappar utan formmorf
+ * och den tonade pilplattan, samma som ReseApoteket och Dagboken – Fonder sätter ingen egen stil.
  * [FonderLightCardStyle]/[FonderDarkCardStyle] ger bibliotekets kort ([LocalAppCardStyle]) Fonders kontur (1 dp `outlineVariant`) och
  * 16 dp luft – även mellan ett korts bitar ([se.kodhast.ui.components.CardSegment]) – utan extra mellanrum mellan innehållets delar (UI-13).
- * [FonderBackStyle] ger ramarnas topprad ([LocalTopBarBackStyle]) Fonders genomskinliga tillbakapil,
- * samma som Fonders egen `AppTopBar` (UI-8).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -64,9 +57,7 @@ fun FonderTheme(
     ) {
         CompositionLocalProvider(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
-            LocalAppButtonStyle provides FonderButtonStyle,
             LocalAppCardStyle provides if (darkTheme) FonderDarkCardStyle else FonderLightCardStyle,
-            LocalTopBarBackStyle provides FonderBackStyle,
             LocalAppBrandStyle provides FonderBrandStyle
         ) {
             MaterialExpressiveTheme(shapes = FonderShapes, content = content)
@@ -79,12 +70,6 @@ fun FonderTheme(
  * utan ikonruta. Prickarna som laddning står av – Fonder behåller sin formskiftande laddning (UI-12).
  */
 private val FonderBrandStyle = AppBrandStyle(sectionDots = true, emptyStateMark = true)
-
-/**
- * Fonders knappstil för android-ui:s knappar: Material 3:s 40 dp, Expressive-formmorf och den tonade
- * knappen i primärbehållaren (ljusblå) – samma som Fonders egna `AppButton` (UI-13).
- */
-private val FonderButtonStyle = AppButtonStyle(minHeight = 40.dp, morph = true, secondaryTone = Tone.Primary)
 
 /**
  * Fonders kortstil för android-ui:s kort: 1 dp kontur i `outlineVariant`, 16 dp luft och inget extra
@@ -122,9 +107,6 @@ fun ListFrameCards(content: @Composable (cardStyle: AppCardStyle) -> Unit) {
 }
 
 private val ListFrameCardStyle = AppCardStyle()
-
-/** Fonders tillbakapil i ramarnas topprad: genomskinlig ikonknapp, inte bibliotekets tonade platta (UI-8). */
-private val FonderBackStyle = TopBarBackStyle(variant = IconButtonVariant.Plain)
 
 /** Semantiska avkastningsfärger. Får aldrig bäras av enbart färg — para med tecken/pil. */
 object ReturnColors {

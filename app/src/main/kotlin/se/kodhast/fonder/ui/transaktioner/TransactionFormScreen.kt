@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,8 +26,8 @@ import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwedishNumberFormat
 import se.kodhast.fonder.domain.usecase.SwitchOption
+import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.ChoiceChipRow
-import se.kodhast.fonder.ui.components.EmptyState
 import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.navigation.TransactionFormKey
 import se.kodhast.fonder.ui.theme.Filled
@@ -41,6 +39,8 @@ import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.components.EmptyAction
+import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityEditScreen
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.Spacing
@@ -246,13 +246,14 @@ private fun OwnedSharesRow(owned: Double, onSellAll: () -> Unit) {
 private fun NoFunds(title: String, fundLookupFailed: Boolean, onClose: () -> Unit, onWatchFund: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxSize()) {
         LibraryTopBar(title, size = TopBarSize.Small, onBack = onClose)
-        EmptyState(
-            title = stringResource(R.string.transaktionsform_no_funds_title),
-            body = stringResource(if (fundLookupFailed) R.string.transaktionsform_fund_not_found_no_funds else R.string.transaktionsform_no_funds_body),
-            modifier = Modifier.weight(1f),
-            icon = Icons.Outlined.Search,
-            action = { AppButton(stringResource(R.string.transaktionsform_watch_fund), onWatchFund) }
-        )
+        CenteredState(Modifier.weight(1f)) {
+            EmptyState(
+                icon = R.drawable.ic_search,
+                title = stringResource(R.string.transaktionsform_no_funds_title),
+                message = stringResource(if (fundLookupFailed) R.string.transaktionsform_fund_not_found_no_funds else R.string.transaktionsform_no_funds_body),
+                actions = listOf(EmptyAction(stringResource(R.string.transaktionsform_watch_fund), onWatchFund))
+            )
+        }
     }
 }
 

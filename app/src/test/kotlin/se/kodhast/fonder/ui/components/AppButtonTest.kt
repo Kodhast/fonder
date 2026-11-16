@@ -33,10 +33,10 @@ import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.theme.Tone
 
 /**
- * android-ui:s [AppButton] och [AppIconButton] under [FonderTheme] (UI-13) i JVM: Fonders knappstil
- * (40 dp, formmorf, tonad = primärbehållaren) ges av temat, varje variant är en knapp för skärmläsaren
- * med 48 dp tryckyta, ett tryck anropar `onClick`, en avstängd knapp gör ingenting, och ikonknappen
- * läses med sin beskrivning (UI-3).
+ * android-ui:s [AppButton] och [AppIconButton] under [FonderTheme] (UI-13) i JVM: temat sätter ingen
+ * egen knappstil (bibliotekets 56 dp utan formmorf, som ReseApoteket och Dagboken), varje variant är en
+ * knapp för skärmläsaren med minst 48 dp tryckyta, ett tryck anropar `onClick`, en avstängd knapp gör
+ * ingenting, och ikonknappen läses med sin beskrivning (UI-3).
  */
 @RunWith(RobolectricTestRunner::class)
 class AppButtonTest {
@@ -45,17 +45,17 @@ class AppButtonTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `FonderTheme ger knapparna 40 dp, formmorf och den tonade i primärbehållaren`() {
+    fun `FonderTheme ger knapparna bibliotekets standard – 56 dp utan formmorf`() {
         var style: AppButtonStyle? = null
         composeRule.setContent { FonderTheme { style = LocalAppButtonStyle.current } }
 
-        assertEquals(40.dp, style?.minHeight)
-        assertEquals(true, style?.morph)
-        assertEquals(Tone.Primary, style?.secondaryTone)
+        assertEquals(AppButtonStyle(), style)
+        assertEquals(56.dp, style?.minHeight)
+        assertEquals(false, style?.morph)
     }
 
     @Test
-    fun `varje variant är en knapp med 48 dp tryckyta som anropar onClick`() {
+    fun `varje variant är en knapp med 56 dp tryckyta som anropar onClick`() {
         val clicked = mutableListOf<ButtonVariant>()
         composeRule.setContent {
             FonderTheme {
@@ -70,7 +70,7 @@ class AppButtonTest {
         ButtonVariant.entries.forEach { variant ->
             composeRule.onNodeWithText(variant.name)
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
-                .assertTouchHeightIsEqualTo(48.dp)
+                .assertTouchHeightIsEqualTo(56.dp)
                 .performClick()
         }
 

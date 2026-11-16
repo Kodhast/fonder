@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
  * och en pil till höger fäller ut/ihop en pedagogisk [explanation] under.
  *
  * Ett tunt skal ovanpå [ExpandableSection] (issue #85): själva utfällningsmekaniken — klickbar
- * rad med ≥48 dp träffyta, pil med `contentDescription` (UI-3) och `rememberSaveable`-läge
+ * rad med ≥48 dp träffyta som läses som knapp med utfällt-läget (UI-3) och `rememberSaveable`-läge
  * (UI-9) — bor där, så samma mönster ser likadant ut oavsett om det som fälls ut är en mening
  * eller en hel sektion.
  *

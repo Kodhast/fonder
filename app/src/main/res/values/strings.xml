@@ -6,7 +6,6 @@
     <string name="save">Spara</string>
     <string name="delete">Ta bort</string>
     <string name="cancel">Avbryt</string>
-    <string name="back">Tillbaka</string>
     <string name="close">Stäng</string>
     <string name="edit">Redigera</string>
     <string name="add">Lägg till</string>
@@ -35,11 +34,9 @@
     <string name="nav_innehav">Innehav</string>
     <string name="nav_beslut">Beslut</string>
     <string name="nav_handelser">Händelser</string>
-    <string name="format_toolbar_tab_badge">%1$s, %2$d nya</string>
     <string name="fab_menu_open">Lägg till</string>
-    <string name="fab_menu_close">Stäng meny</string>
     <string name="state_expanded">Utfälld</string>
-    <string name="state_collapsed">Ihopfälld</string>
+    <string name="state_collapsed">Hopfälld</string>
     <string name="fab_import_orders">Importera avräkningsnota</string>
     <string name="fab_import_holdings">Importera innehav</string>
     <string name="fab_watch_fund">Bevaka ny fond</string>
@@ -293,8 +290,6 @@
     <string name="format_analys_profit_take_description">Orealiserad vinst %1$s mot GAV</string>
 
     <!-- Pedagogiskt lager: förklaringar, kontext och ordlista (issue #22, ANA-5/ANA-6) -->
-    <string name="info_expand">Visa förklaring</string>
-    <string name="info_collapse">Dölj förklaring</string>
     <!-- Neutral kontext härledd ur analysen (AnalysisGuidance) — aldrig ett köp-/säljråd (ANA-3) -->
     <string name="analys_guidance_plus_mot_gav">Fonden ligger under sin topp, men du är fortfarande i plus mot ditt snittpris (GAV) — du har alltså inte förlorat pengar på innehavet, även om det tappat från toppen.</string>
     <string name="analys_guidance_minus_mot_gav">Fonden ligger under sin topp och under ditt snittpris (GAV) — innehavet är alltså i minus just nu. Ett orealiserat minus blir en förlust först när du säljer; hur länge du tänkt spara spelar större roll än dagens kurs.</string>

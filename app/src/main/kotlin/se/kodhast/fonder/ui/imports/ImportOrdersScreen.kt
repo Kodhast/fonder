@@ -28,7 +28,6 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.ImportedOrderTransaction
 import se.kodhast.fonder.domain.usecase.SwitchOption
-import se.kodhast.fonder.ui.components.EmptyState
 import se.kodhast.fonder.ui.components.ImportCompleteDialog
 import se.kodhast.fonder.ui.components.LoadingDialog
 import se.kodhast.fonder.ui.transaktioner.SwitchDecisionField
@@ -78,11 +77,8 @@ fun ImportOrdersScreen(
             )
         }
 
-        error != null -> EmptyState(
-            error = error,
-            title = stringResource(R.string.import_orders_title),
-            modifier = modifier
-        )
+        // Filen gick inte att läsa: "Försök igen" väljer en ny fil (NFR-6).
+        error != null -> ImportError(stringResource(R.string.import_orders_title), error, onPickAgain = { filePicker.launch(arrayOf("application/pdf")) }, modifier = modifier)
 
         else -> ImportOrdersReview(
             state = state,

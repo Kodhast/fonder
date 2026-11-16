@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -498,6 +499,33 @@ class SwitchWatchViewModelTest {
         assertEquals(DataError.Database, state!!.error?.cause)
         assertTrue(state!!.error!!.retryable)
         assertFalse(state!!.canChangeSelection)
+    }
+
+    @Test
+    fun `Försök igen läser om bevakningen efter ett läsfel (NFR-6)`() = runTest(dispatcher) {
+        val watchId = startWatch()
+        var fails = true
+        val flaky = object : SwitchWatchRepository by switchWatchRepo {
+            override fun observe(id: Long): Flow<SwitchWatch?> = flow {
+                if (fails) throw DataError.Database
+                emitAll(switchWatchRepo.observe(id))
+            }
+        }
+        val vm = viewModel(watchId = watchId, watches = flaky)
+        vm.uiState.test {
+            awaitItem()
+            advanceUntilIdle()
+            assertEquals(DataError.Database, expectMostRecentItem().error?.cause)
+
+            fails = false
+            vm.onEvent(SwitchWatchEvent.Retry)
+            advanceUntilIdle()
+
+            val state = expectMostRecentItem()
+            assertNull(state.error)
+            assertEquals("Såld fond", state.content.sellFundName)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     // --- Målnivå och indexfilter på skärmen (issue #150) ---
