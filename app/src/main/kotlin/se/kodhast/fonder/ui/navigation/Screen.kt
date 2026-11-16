@@ -1,11 +1,6 @@
 package se.kodhast.fonder.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.PieChart
-import androidx.compose.material.icons.outlined.TaskAlt
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.DrawableRes
 import se.kodhast.fonder.R
 
 /**
@@ -13,11 +8,11 @@ import se.kodhast.fonder.R
  * flikens egen bakåtstack ([AppBackStack]). Beslut (NAV-9) är en egen flik, och Facit en skärm i
  * stacken under den ([FacitKey]).
  */
-enum class Screen(val key: TabKey, val icon: ImageVector, val labelRes: Int) {
-    Oversikt(OversiktKey, Icons.Outlined.Home, R.string.nav_oversikt),
-    Innehav(InnehavKey, Icons.Outlined.PieChart, R.string.nav_innehav),
-    Beslut(BeslutKey, Icons.Outlined.TaskAlt, R.string.nav_beslut),
-    Handelser(HandelserKey, Icons.AutoMirrored.Outlined.List, R.string.nav_handelser);
+enum class Screen(val key: TabKey, @param:DrawableRes val icon: Int, val labelRes: Int) {
+    Oversikt(OversiktKey, R.drawable.ic_overview, R.string.nav_oversikt),
+    Innehav(InnehavKey, R.drawable.ic_holdings, R.string.nav_innehav),
+    Beslut(BeslutKey, R.drawable.ic_decisions, R.string.nav_beslut),
+    Handelser(HandelserKey, R.drawable.ic_receipt, R.string.nav_handelser);
 
     companion object {
         val START = Oversikt

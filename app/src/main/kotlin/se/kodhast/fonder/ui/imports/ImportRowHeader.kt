@@ -9,16 +9,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.Fund
-import se.kodhast.fonder.ui.components.CheckRow
 import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
+import se.kodhast.ui.components.CheckRow
 import se.kodhast.ui.theme.Spacing
 
 /** Under denna träffsäkerhet visas "osäker matchning" under fondvalet (IMP-serien). */
 private const val UNCERTAIN_MATCH_CONFIDENCE = 0.75
 
 /**
- * Början av en importrad, gemensam för innehavs- och orderimporten: kryssruta med fondnamn,
+ * Början av en importrad, gemensam för innehavs- och orderimporten: android-ui:s kryssrad med fondnamn,
  * radens detaljtext, fondvalet ur katalogen och varningarna för osäker matchning och misslyckad
  * kurshämtning. Resten av kortet (datum, andelar, tillfällen) är importens eget.
  */
@@ -35,12 +35,14 @@ internal fun ColumnScope.ImportRowHeader(
     priceFetchFailed: Boolean,
     onFundOverride: (Fund?) -> Unit
 ) {
+    // Kryss betyder "ta med", inte "klar": ingen överstruken eller tonad rad (bibliotekets done/tinted).
     CheckRow(
+        title = fundName,
         checked = included,
         onCheckedChange = onIncludedChange,
-        label = fundName,
-        supportingText = supportingText,
-        labelStyle = MaterialTheme.typography.titleSmall
+        subtitle = supportingText,
+        done = false,
+        tinted = false
     )
     Text(
         detail,

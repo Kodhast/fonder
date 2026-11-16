@@ -44,9 +44,9 @@ import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.SwitchRow
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.components.FundFacts
-import se.kodhast.fonder.ui.components.PULL_TO_REFRESH_TEST_TAG
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.ListUiState
+import se.kodhast.ui.components.ENTITY_REFRESH_TAG
 
 /**
  * Fliken Beslut (NAV-9, issue #240) i JVM med Robolectric: riskkortet med "Ändra mål", råden (BYT-4)
@@ -226,7 +226,7 @@ class BeslutScreenTest {
 
         composeRule.onNodeWithText("Räkna om bytesplanen").assertDoesNotExist()
         composeRule.onNodeWithText("Byten föreslås", substring = true).assertDoesNotExist()
-        composeRule.onNodeWithTag(PULL_TO_REFRESH_TEST_TAG).assertExists()
+        composeRule.onNodeWithTag(ENTITY_REFRESH_TAG).assertExists()
     }
 
     @Test

@@ -9,9 +9,14 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -23,6 +28,7 @@ import androidx.compose.ui.test.performClick
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavEntry
+import androidx.test.espresso.Espresso
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
@@ -31,15 +37,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.testing.captureLightAndDark
-import se.kodhast.fonder.ui.components.APP_FLOATING_TOOLBAR_TAG
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.TopBarSize
 
 /**
- * Navigeringsskalet (NAV-7, NAV-8, UI-8) i JVM med Robolectric – riktiga flikrad, plusmeny,
- * toppradsval och `NavDisplay`, men enkla ersättare för skärmarna så att testet inte behöver Hilt:
- * fyra flikar med Översikt som start, plusmenyn på varje flik som öppnar sina skärmar, Inställningar
+ * Navigeringsskalet (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s flikrad med plusknapp
+ * och meny, toppradsval och `NavDisplay`, men enkla ersättare för skärmarna så att testet inte behöver
+ * Hilt: fyra flikar med Översikt som start, plusknappens meny på varje flik med de fyra valen i
+ * ordning, som öppnar sina skärmar, bakåt som stänger menyn, Inställningar
  * bakom ikonen på Översikt, ingen länk till Sålda fonder på Händelser (SLD-1), flikraden och
  * plusmenyn borta på en djupare skärm, bakåt från en annan flik till Översikt, att en flik behåller
  * sitt tillstånd och sin ViewModel vid flikbyte, att stacken återställs efter rotation, och att en
@@ -107,6 +113,13 @@ class AppNavigationShellTest {
         composeRule.runOnUiThread { composeRule.activity.onBackPressedDispatcher.onBackPressed() }
     }
 
+    private fun assertMenu(expanded: Boolean) {
+        composeRule.onNodeWithContentDescription("Lägg till")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, if (expanded) "Utfälld" else "Hopfälld"))
+        val first = composeRule.onAllNodesWithText("Ny transaktion")
+        if (expanded) first.assertCountEquals(1) else first.assertCountEquals(0)
+    }
+
     private fun assertTabChrome(visible: Boolean) {
         if (visible) {
             composeRule.onNodeWithTag(APP_FLOATING_TOOLBAR_TAG).assertIsDisplayed()
@@ -133,14 +146,28 @@ class AppNavigationShellTest {
             assertOnScreen(route)
             composeRule.onNodeWithContentDescription(label).assertIsSelected()
             // Flikens rubrik i innehållet, ingen bakåtpil – Händelser är en ramskärm och ritar sin egen.
+            // (Den valda fliken i flikraden visar också namnet, men är ingen rubrik.)
             if (Screen.forKey(backStack.current)?.key is FrameKey) {
-                composeRule.onAllNodesWithText(label).assertCountEquals(0)
+                composeRule.onAllNodes(hasText(label) and isHeading()).assertCountEquals(0)
             } else {
-                composeRule.onNodeWithText(label).assertIsDisplayed()
+                composeRule.onNode(hasText(label) and isHeading()).assertIsDisplayed()
             }
             composeRule.onNodeWithContentDescription("Tillbaka").assertDoesNotExist()
             assertTabChrome(visible = true)
         }
+    }
+
+    @Test
+    fun `plusknappen fäller ut en meny med de fyra valen i ordning`() {
+        setShell()
+        assertMenu(expanded = false)
+
+        composeRule.onNodeWithContentDescription("Lägg till").performClick()
+
+        assertMenu(expanded = true)
+        val tops = listOf("Ny transaktion", "Importera avräkningsnota", "Importera innehav", "Bevaka ny fond")
+            .map { composeRule.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertEquals(tops.sorted(), tops)
     }
 
     @Test
@@ -169,15 +196,14 @@ class AppNavigationShellTest {
     fun `plusmenyn stängs när man lämnar fliken och är stängd när man kommer tillbaka`() {
         setShell()
         composeRule.onNodeWithContentDescription("Lägg till").performClick()
-        composeRule.onNodeWithContentDescription("Stäng meny").assertIsDisplayed()
+        assertMenu(expanded = true)
 
         composeRule.runOnUiThread { backStack.push(SettingsKey) }
         assertOnScreen("settings")
         composeRule.onNodeWithContentDescription("Tillbaka").performClick()
 
         assertOnScreen("hem")
-        composeRule.onNodeWithContentDescription("Lägg till").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Stäng meny").assertDoesNotExist()
+        assertMenu(expanded = false)
     }
 
     @Test
@@ -304,16 +330,18 @@ class AppNavigationShellTest {
         setShell()
         composeRule.onNodeWithContentDescription("Innehav").performClick()
         composeRule.onNodeWithContentDescription("Lägg till").performClick()
-        composeRule.onNodeWithContentDescription("Stäng meny").assertIsDisplayed()
+        assertMenu(expanded = true)
 
-        pressBack()
+        // Menyn är ett eget fönster: systemets bakåt går dit, inte till aktivitetens bakåthanterare.
+        composeRule.waitForIdle()
+        Espresso.pressBack()
 
-        composeRule.onNodeWithContentDescription("Lägg till").assertIsDisplayed()
+        assertMenu(expanded = false)
         assertOnScreen("portfolj")
     }
 
     @Test
-    fun `stacken och en öppen plusmeny överlever att skärmen återskapas`() {
+    fun `stacken överlever att skärmen återskapas`() {
         val restoration = StateRestorationTester(composeRule)
         restoration.setContent {
             FonderTheme {
@@ -321,17 +349,12 @@ class AppNavigationShellTest {
             }
         }
         composeRule.onNodeWithContentDescription("Innehav").performClick()
-        composeRule.onNodeWithContentDescription("Lägg till").performClick()
 
         restoration.emulateSavedInstanceStateRestore()
 
         assertOnScreen("portfolj")
         composeRule.onNodeWithContentDescription("Innehav").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Stäng meny").assertIsDisplayed()
-        // Bakåt stänger först menyn (även efter återskapandet), sedan lämnas fliken för Översikt.
-        pressBack()
-        composeRule.onNodeWithContentDescription("Lägg till").assertIsDisplayed()
-        assertOnScreen("portfolj")
+        assertTabChrome(visible = true)
         pressBack()
         assertOnScreen("hem")
     }
@@ -375,7 +398,7 @@ class AppNavigationShellTest {
     }
 
     @Test
-    fun `Händelser är en ramskärm på en flik med egen rubrik och skalets flikrad och plusmeny`() {
+    fun `Händelser är en ramskärm på en flik med egen rubrik och skalets flikrad och plusknapp`() {
         composeRule.mainClock.autoAdvance = false
         composeRule.setContent {
             FonderTheme { AppNavigationShell(isWorkerRunning = true, backStack = backStack, entryProvider = ::frameEntry) }
@@ -385,7 +408,7 @@ class AppNavigationShellTest {
 
         // Ramens rubrik och chromets indikator i den, en gång – ingen flikrubrik från skalet.
         composeRule.onNodeWithText("ram:transaktioner").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Händelser").assertCountEquals(0)
+        composeRule.onAllNodes(hasText("Händelser") and isHeading()).assertCountEquals(0)
         composeRule.onAllNodesWithContentDescription(WORKER_RUNNING).assertCountEquals(1)
         composeRule.onAllNodesWithContentDescription("Tillbaka").assertCountEquals(0)
         // Flikraden och plusmenyn står kvar (NAV-7, NAV-8).

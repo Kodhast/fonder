@@ -155,10 +155,11 @@ ui/
 ├── navigation/   AppNavigation (Navigation 3: NavDisplay, en dekorerad stack per flik) · AppBackStack (stack per
 │                 flik, sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
 │                 Transitions · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
-├── components/   Delade komponenter (EmptyState, SelectField, LoadingDialog, PeriodRow, AnalysisStatusBanner/StatusDot,
+├── components/   Delade komponenter (CenteredState, SelectField, LoadingDialog, PeriodRow, AnalysisStatusBanner/StatusDot,
 │                 ExposureBar — proportionell radlista, POR-9/#66 · ChoiceChipRow — val-chiprad, #68 ·
 │                 ExpandableSection/ExpandableInfoRow — utfällning, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
-│                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0)
+│                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0;
+│                 topprad, flikrad med plusknapp, kryssrad, tomt läge och dra ned sedan 1.2.0)
 ├── diagram/      Delade diagram (FundLineChart — en eller flera indexerade serier, ANA-11/#85)
 └── theme/        Fonders värden till android-ui:s AppTheme: palett, former, Space Grotesk-typskala, ReturnColors/StatusColors (#16, #172)
 worker/           FundPriceUpdateWorker (daglig kursuppdatering + inkrementell jämförelseifyllnad, HEM-6/#61 ·
@@ -291,10 +292,10 @@ versionen i tabellen.
 | Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`), inre `MaterialExpressiveTheme(shapes = FonderShapes)` | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
 | Laddningsindikator | `LoadingIndicator()` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |
 | Vågig progress | `LinearWavyProgressIndicator` | `material3:1.5.0-beta01` | `ui/components/ProgressBar.kt` | 2026-10-20 (kompilerad) |
-| Flytande verktygsrad | `HorizontalFloatingToolbar` | `material3:1.5.0-beta01` | `ui/components/AppFloatingToolbar.kt` | 2026-10-20 (kompilerad) |
-| FAB-meny | `FloatingActionButtonMenu` | `material3:1.5.0-beta01` | `ui/components/AppFabMenu.kt` | 2026-10-20 (kompilerad) |
+| Flytande verktygsrad | android-ui:s `AppFloatingToolbar(items, selectedIndex, onSelect, action)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
+| Plusknapp med meny | android-ui:s `ToolbarAction(label, icon, menu: List<AppMenuItem>)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Växlingsknapp | `ToggleButton` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |
-| Dra för att uppdatera | `PullToRefreshBox` | `material3:1.5.0-beta01` | `ui/components/PullToRefreshContainer.kt` | 2026-10-20 (kompilerad) |
+| Dra för att uppdatera | android-ui:s `AppPullToRefresh(refreshing, onRefresh, modifier, content)` | `ui-components:1.2.0` | Hem, Innehav, Beslut, Facit, Pågående byte | 2026-11-16 (kompilerad) |
 | Navigering | `NavDisplay`, `rememberSaveableStateHolderNavEntryDecorator()` | `navigation3-ui`/`-runtime:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-10-20 (kompilerad) |
 | ViewModel per nav-post | `rememberViewModelStoreNavEntryDecorator()` | `lifecycle-viewmodel-navigation3:2.11.0` | `ui/navigation/AppNavigation.kt` | 2026-10-20 (kompilerad) |
 | Diagram | `CartesianChartHost` | `vico:3.3.1` | `ui/diagram` (skill `diagram`) | 2026-10-20 (kompilerad) |

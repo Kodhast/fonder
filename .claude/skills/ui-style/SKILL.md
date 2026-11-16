@@ -44,7 +44,9 @@ komponent som används för vad → skill `shared-ui-components`. Koden är faci
 | `Tone.NeutralPrimary` (Fonders) | `surfaceVariant` + `primary` (Översiktens kugghjul, `AppIconButton` Tonal) |
 | `Tone.Filled` (Fonders) | `surfaceContainerHigh` + `onSurface` (kort inne i ett kort, `AppCard(tone = Tone.Filled)`) |
 | `Tone.Error` (Fonders) | `errorContainer` + `onErrorContainer` (farozonen i Inställningar) |
-| `LocalAppButtonStyle` / `LocalAppCardStyle` | 40 dp, morf, tonad = `Tone.Primary` / 1 dp `outlineVariant`-kontur, 16 dp luft, 0 dp innehållsmellanrum (`FonderTheme`) |
+| `LocalAppButtonStyle` / `LocalAppCardStyle` | ingen egen – bibliotekets standard (56 dp, kompakt 40 dp, ingen morf, Material 3:s tonade) sedan 1.2.0 / 1 dp `outlineVariant`-kontur, 16 dp luft, 0 dp innehållsmellanrum (`FonderTheme`, behålls tills kortdjupet finns) |
+| `LocalTopBarBackStyle` | ingen egen – bibliotekets tonade runda platta sedan 1.2.0 |
+| Flikrad och plusknapp | ingen egen – android-ui:s `AppFloatingToolbar`: vald flik fylld i `primary`, plusknappen i `secondary` (koppar) sist i raden |
 | `ExtendedColors.accents` | `primary`, `secondary` (diagramseriernas kulörer) |
 | `AppShapes` | kort och rad 18 dp, fält och meny 12 dp, `smallTile` 8 dp, `iconTile` 18 dp, sheet 28 dp upptill, pill rund |
 | `AppTypography` | `AppTypography.from(FonderTypography)` (bibliotekets standardindelning) |

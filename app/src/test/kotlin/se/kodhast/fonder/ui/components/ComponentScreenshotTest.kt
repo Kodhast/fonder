@@ -3,12 +3,8 @@ package se.kodhast.fonder.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -202,27 +198,8 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun `EmptyState med ikon`() = composeRule.captureLightAndDark("EmptyState_icon") {
-        EmptyState(
-            title = "Inga transaktioner än",
-            body = "Lägg till ett köp eller importera en avräkningsnota.",
-            icon = Icons.AutoMirrored.Outlined.List,
-            modifier = Modifier.height(320.dp)
-        )
-    }
-
-    @Test
     fun `ImportCompleteDialog`() = composeRule.captureLightAndDark("ImportCompleteDialog_default", screen = true) {
         ImportCompleteDialog(importedCount = 12, onDismiss = {})
-    }
-
-    @Test
-    fun `PullToRefreshContainer under uppdatering`() = composeRule.captureLightAndDark("PullToRefreshContainer_refreshing", animated = true) {
-        PullToRefreshContainer(refreshing = true, onRefresh = {}, modifier = Modifier.height(160.dp)) {
-            Column {
-                PeriodRow(label = "Idag", amount = 1_284.0, fraction = 0.0031)
-            }
-        }
     }
 
     private companion object {

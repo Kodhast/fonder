@@ -28,9 +28,8 @@ import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.ui.components.CardTitleRow
-import se.kodhast.fonder.ui.components.EmptyState
+import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.PeriodRow
-import se.kodhast.fonder.ui.components.PullToRefreshContainer
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.RiskLevelPicker
 import se.kodhast.fonder.ui.components.WorkingIndicator
@@ -40,7 +39,11 @@ import se.kodhast.fonder.ui.diagram.FundLineChart
 import se.kodhast.ui.common.UiError
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
+import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.LoadErrorState
+import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SwitchRow
 import se.kodhast.ui.theme.Spacing
 
@@ -86,6 +89,7 @@ fun SwitchWatchScreen(
         onCancel = { viewModel.onEvent(SwitchWatchEvent.Cancel) },
         onMessageShow = { viewModel.onEvent(SwitchWatchEvent.MessageShown) },
         onRetryAutoFill = { viewModel.onEvent(SwitchWatchEvent.RetryAutoFill) },
+        onRetry = { viewModel.onEvent(SwitchWatchEvent.Retry) },
         onSelectTargetLevel = { viewModel.onEvent(SwitchWatchEvent.SelectTargetLevel(it)) },
         onIndexOnlyChange = { viewModel.onEvent(SwitchWatchEvent.IndexOnlyChanged(it)) },
         modifier = modifier
@@ -104,12 +108,13 @@ fun SwitchWatchContent(
     onCancel: () -> Unit = {},
     onMessageShow: () -> Unit = {},
     onRetryAutoFill: () -> Unit = {},
+    onRetry: () -> Unit = {},
     onSelectTargetLevel: (Int) -> Unit = {},
     onIndexOnlyChange: (Boolean) -> Unit = {}
 ) {
     val error = state.error
     if (error != null) {
-        SwitchWatchError(error = error, modifier = modifier)
+        SwitchWatchError(error = error, onRetry = onRetry, modifier = modifier)
     } else {
         SwitchWatchList(
             state = state,
@@ -129,17 +134,19 @@ fun SwitchWatchContent(
 
 /** Bevakningen gick inte att läsa eller finns inte. */
 @Composable
-private fun SwitchWatchError(error: UiError, modifier: Modifier = Modifier) {
+private fun SwitchWatchError(error: UiError, onRetry: () -> Unit, modifier: Modifier = Modifier) {
     // Bevakningen finns inte (raderad, eller en gammal länk) — skärmen säger det i stället för
-    // att visa tomt; ett läsfel visas som fel (NFR-6).
-    if (error.cause == DataError.NotFound) {
-        EmptyState(
-            title = stringResource(R.string.switch_watch_missing_title),
-            body = stringResource(R.string.switch_watch_missing_body),
-            modifier = modifier
-        )
-    } else {
-        EmptyState(error = error, modifier = modifier)
+    // att visa tomt; ett läsfel visas som fel med "Försök igen" (NFR-6).
+    CenteredState(modifier) {
+        if (error.cause == DataError.NotFound) {
+            EmptyState(
+                icon = UiR.drawable.ic_box,
+                title = stringResource(R.string.switch_watch_missing_title),
+                message = stringResource(R.string.switch_watch_missing_body)
+            )
+        } else {
+            LoadErrorState(stringResource(R.string.error_load_title), error, onRetry)
+        }
     }
 }
 
@@ -163,10 +170,10 @@ private fun SwitchWatchList(
     // Dra ned hämtar om kandidaternas kurvor och säljfondens historik (UI-11). Kandidaterna
     // ligger inte i kurscachen (ANA-11), så det är den enda vägen till färskare tal än de som
     // hämtades när skärmen öppnades.
-    PullToRefreshContainer(
+    AppPullToRefresh(
         refreshing = state.chartWorking,
         onRefresh = onRefresh,
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) {
         LazyColumn(modifier = Modifier.fillMaxSize().testTag(SWITCH_WATCH_LIST_TEST_TAG)) {
             item(contentType = "header") { HeaderCard(state) }

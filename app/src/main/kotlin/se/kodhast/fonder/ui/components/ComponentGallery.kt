@@ -1,7 +1,6 @@
 package se.kodhast.fonder.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -13,11 +12,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.PieChart
-import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -59,15 +53,19 @@ import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppDivider
+import se.kodhast.ui.components.AppFloatingToolbar
 import se.kodhast.ui.components.AppIconButton
+import se.kodhast.ui.components.AppMenuItem
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.CardSegment
+import se.kodhast.ui.components.CheckRow
 import se.kodhast.ui.components.ConfirmDialog
 import se.kodhast.ui.components.DateField
 import se.kodhast.ui.components.EmptyAction
-import se.kodhast.ui.components.EmptyState as LibraryEmptyState
+import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
@@ -77,6 +75,8 @@ import se.kodhast.ui.components.MakerMark
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SectionHeader
 import se.kodhast.ui.components.SwitchRow
+import se.kodhast.ui.components.ToolbarAction
+import se.kodhast.ui.components.ToolbarItem
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -154,7 +154,7 @@ private fun Label(name: String) {
 
 @Composable
 private fun ColumnScope.Buttons() {
-    Label("AppButton (android-ui, Fonders knappstil)")
+    Label("AppButton (android-ui, bibliotekets standard: 56 dp, ingen formmorf)")
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
         AppButton("Spara", {})
         AppButton("Välj fond", {}, variant = ButtonVariant.Secondary)
@@ -290,7 +290,7 @@ private fun ColumnScope.Fields() {
     ChoiceChipRow(options = listOf("Ljust", "Mörkt", "Auto"), selected = mode, optionLabel = { it }, onSelect = { mode = it })
     RiskLevelPicker(selected = level, onSelect = { level = it }, marked = 5, markedDescription = "Säljfondens nivå")
     Label("CheckRow · SwitchRow (android-ui) · FollowedToggleRow")
-    CheckRow(checked, { checked = it }, label = "Global Indexfond A", supportingText = "120,5 andelar")
+    CheckRow("Global Indexfond A", checked, { checked = it }, subtitle = "120,5 andelar", done = false, tinted = false)
     SwitchRow("Bara indexfonder", indexOnly, { indexOnly = it }, subtitle = "Föreslå bara indexfonder")
     SwitchRow("Låst reglage", true, {}, enabled = false)
     FollowedToggleRow(followed = followed, onFollowedChange = { followed = it })
@@ -344,15 +344,12 @@ private fun ColumnScope.Status() {
     }
     ProgressBar(modifier = Modifier.fillMaxWidth())
     ProgressBar(modifier = Modifier.fillMaxWidth(), progress = { 0.6f })
-    Label("PullToRefreshContainer")
-    PullToRefreshContainer(refreshing = true, onRefresh = {}, modifier = Modifier.height(120.dp)) {
+    Label("AppPullToRefresh (android-ui)")
+    AppPullToRefresh(refreshing = true, onRefresh = {}, modifier = Modifier.height(GALLERY_REFRESH_HEIGHT)) {
         PeriodRow(label = "Sedan köp", amount = 18_420.0, fraction = 0.091)
     }
-    Label("EmptyState (Fonders, kvar på importerna, formuläret och Pågående byte)")
-    EmptyState(title = "Inga fonder hittades", body = "Prova ett annat namn eller fondbolag.", icon = Icons.Outlined.PieChart)
-    EmptyState(error = AppErrors.map(DataError.Network))
-    Label("android-ui EmptyState med knappar · LoadErrorState (CenteredState på flikarna)")
-    LibraryEmptyState(
+    Label("EmptyState med knappar · LoadErrorState (android-ui, CenteredState utanför ramarna)")
+    EmptyState(
         icon = R.drawable.ic_holdings,
         title = "Inga innehav ännu",
         message = "Lägg till din första fondtransaktion för att se värde och utveckling.",
@@ -367,31 +364,25 @@ private fun ColumnScope.Status() {
 @Composable
 private fun ColumnScope.Navigation() {
     var tab by remember { mutableIntStateOf(2) }
-    var menuOpen by remember { mutableStateOf(false) }
-    Label("AppTabHeading · AppTopBar")
+    Label("AppTabHeading")
     AppTabHeading(title = "Innehav") { WorkerStatusIcon(isRunning = true) }
-    AppTopBar(title = "Fond", onBack = {})
-    Label("AppFloatingToolbar · AppFabMenu")
-    Box(Modifier.fillMaxWidth().height(FAB_AREA_HEIGHT)) {
-        AppFloatingToolbar(
-            tabs = listOf(
-                AppToolbarTab("Översikt", Icons.Outlined.Home),
-                AppToolbarTab("Innehav", Icons.Outlined.PieChart),
-                AppToolbarTab("Beslut", Icons.Outlined.TaskAlt, badgeCount = 2),
-                AppToolbarTab("Händelser", Icons.AutoMirrored.Outlined.List)
-            ),
-            selectedIndex = tab,
-            onSelect = { tab = it },
-            modifier = Modifier.align(Alignment.BottomStart)
+    Label("AppFloatingToolbar med plusknapp och meny (android-ui)")
+    AppFloatingToolbar(
+        items = listOf(
+            ToolbarItem("Översikt", R.drawable.ic_overview),
+            ToolbarItem("Innehav", R.drawable.ic_holdings),
+            ToolbarItem("Beslut", R.drawable.ic_decisions, badgeCount = 2),
+            ToolbarItem("Händelser", R.drawable.ic_receipt)
+        ),
+        selectedIndex = tab,
+        onSelect = { tab = it },
+        modifier = Modifier.align(Alignment.CenterHorizontally),
+        action = ToolbarAction(
+            "Lägg till",
+            UiR.drawable.ic_add,
+            listOf(AppMenuItem("Ny transaktion", {}), AppMenuItem("Bevaka ny fond", {}))
         )
-        AppFabMenu(
-            expanded = menuOpen,
-            onExpandedChange = { menuOpen = it },
-            items = listOf(AppFabMenuItem("Ny transaktion", {}), AppFabMenuItem("Bevaka ny fond", {})),
-            modifier = Modifier.align(Alignment.BottomEnd),
-            handleBack = false
-        )
-    }
+    )
 }
 
 @Composable
@@ -447,7 +438,7 @@ private enum class GalleryDialog(val label: String) {
 
 @Composable
 private fun ColumnScope.Library() {
-    Label("AppTopBar (ramarnas topprad) · LocalTopBarStatus")
+    Label("AppTopBar (liten, tonad pil – skalets och ramarnas topprad) · LocalTopBarStatus")
     CompositionLocalProvider(LocalTopBarStatus provides { WorkerStatusIcon(isRunning = true) }) {
         LibraryTopBar("Riskprofil", size = TopBarSize.Small, onBack = {})
     }
@@ -478,8 +469,8 @@ private const val CHIPS_PER_ROW = 3
 /** Så länge väntedialogen visas innan den stänger sig själv. */
 private const val LOADING_DIALOG_MS = 2_000L
 
-/** Plats för flikraden och plusmenyn i utfällt läge. */
-private val FAB_AREA_HEIGHT = 280.dp
+/** Höjden på exemplet med dra för att uppdatera. */
+private val GALLERY_REFRESH_HEIGHT = 120.dp
 
 /** Fonders toner för märkena, med namnen galleriet visar. */
 private val galleryTones = listOf(

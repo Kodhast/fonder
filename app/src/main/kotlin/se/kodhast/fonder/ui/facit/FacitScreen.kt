@@ -42,9 +42,9 @@ import se.kodhast.fonder.ui.components.CardTitleRow
 import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.FollowedToggleRow
 import se.kodhast.fonder.ui.components.PeriodRow
-import se.kodhast.fonder.ui.components.PullToRefreshContainer
 import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.theme.AppTheme
@@ -101,10 +101,10 @@ fun FacitContent(
         // Dra ned startar bytesplansskanningen (UI-11) — den körning som spelar in nya rader
         // och fyller på utfallens NAV. Utan inspelade förslag (tomt-tillståndet ovan) finns
         // ingenting att mäta, och då erbjuds ingen gest.
-        PullToRefreshContainer(
+        AppPullToRefresh(
             refreshing = state.switchPlanWorking,
             onRefresh = onRefresh,
-            modifier = modifier
+            modifier = modifier.fillMaxSize()
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize().testTag(FACIT_LIST_TEST_TAG)) {
                 item(contentType = "summary") { SummaryCard(state = state) }

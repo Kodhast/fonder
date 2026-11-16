@@ -44,7 +44,6 @@ import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.FundFactsCard
 import se.kodhast.fonder.ui.components.FundFactsRow
-import se.kodhast.fonder.ui.components.PullToRefreshContainer
 import se.kodhast.fonder.ui.components.RiskCard
 import se.kodhast.fonder.ui.riskprofil.labelRes
 import se.kodhast.fonder.ui.theme.Copper
@@ -59,6 +58,7 @@ import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppDivider
 import se.kodhast.ui.components.AppIconButton
+import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.InfoPill
@@ -163,7 +163,7 @@ fun BeslutContent(
     }
     // Ingen gest utan gaten: en dragning som inte kan ge något är värre än ingen (UI-11).
     if (state.canRecomputeSwitchPlan) {
-        PullToRefreshContainer(refreshing = state.switchPlanWorking, onRefresh = onRefresh, modifier = modifier) { list(Modifier) }
+        AppPullToRefresh(refreshing = state.switchPlanWorking, onRefresh = onRefresh, modifier = modifier.fillMaxSize()) { list(Modifier) }
     } else {
         list(modifier)
     }

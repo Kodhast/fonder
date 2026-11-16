@@ -22,16 +22,21 @@ import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.ui.components.AppIconButton
+import se.kodhast.ui.components.AppTopBar
 import se.kodhast.ui.components.IconButtonVariant
+import se.kodhast.ui.components.LocalTopBarBackStyle
+import se.kodhast.ui.components.TopBarBackStyle
+import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.Tone
 
 /**
- * Den delade [AppTopBar] och [AppTabHeading] (UI-8, NAV-7, UI-14) i JVM: toppraden har rubrik och
- * en bakåtpil som läses "Tillbaka", fliken en rubrik som skärmläsaren läser som rubrik och sina
- * åtgärder till höger.
+ * Fonders [AppTabHeading] och android-ui:s lilla [AppTopBar] under [FonderTheme] (UI-8, NAV-7, UI-14) i
+ * JVM: toppraden har en rubrik som läses som rubrik och bibliotekets tonade bakåtpil som läses
+ * "Tillbaka" (temat sätter ingen egen pilstil), fliken en rubrik som skärmläsaren läser som rubrik och
+ * sina åtgärder till höger.
  */
 @RunWith(RobolectricTestRunner::class)
-class AppTopBarTest {
+class AppTabHeadingTest {
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -39,9 +44,17 @@ class AppTopBarTest {
     @Test
     fun `toppraden visar rubriken och bakåtpilen går tillbaka`() {
         var backs = 0
-        composeRule.setContent { FonderTheme { AppTopBar(title = "Pågående byte", onBack = { backs++ }) } }
+        var backStyle: TopBarBackStyle? = null
+        composeRule.setContent {
+            FonderTheme {
+                backStyle = LocalTopBarBackStyle.current
+                AppTopBar(title = "Pågående byte", size = TopBarSize.Small, onBack = { backs++ })
+            }
+        }
 
+        assertEquals(TopBarBackStyle(), backStyle)
         composeRule.onNodeWithText("Pågående byte").assertIsDisplayed()
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         composeRule.onNodeWithContentDescription("Tillbaka").assertTouchHeightIsEqualTo(48.dp).performClick()
 
         assertEquals(1, backs)
@@ -73,7 +86,7 @@ class AppTopBarTest {
     @Test
     fun `skärmdump ljust och mörkt`() = composeRule.captureLightAndDark("AppTopBar_variants") {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            AppTopBar(title = "Fonddetalj", onBack = {})
+            AppTopBar(title = "Fonddetalj", size = TopBarSize.Small, onBack = {})
             AppTabHeading(title = "Översikt") {
                 AppIconButton(
                     icon = R.drawable.ic_settings,

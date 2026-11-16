@@ -41,8 +41,10 @@ import se.kodhast.fonder.domain.model.SwitchWatchCloseReason
 import se.kodhast.fonder.domain.usecase.SwitchPlanCalc
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.domain.usecase.TargetLevelPreselection
+import se.kodhast.fonder.ui.common.RetrySignal
 import se.kodhast.fonder.ui.common.catchAsDetailError
 import se.kodhast.fonder.ui.common.errorOrNull
+import se.kodhast.fonder.ui.common.restartOn
 import se.kodhast.fonder.ui.common.valueOrNull
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.DetailUiState
@@ -204,6 +206,9 @@ sealed interface SwitchWatchEvent {
     /** "Försök igen" efter ett misslyckat uppslag av alternativ. */
     data object RetryAutoFill : SwitchWatchEvent
 
+    /** "Försök igen" efter ett läsfel (NFR-6): läser om bevakningen från början. */
+    data object Retry : SwitchWatchEvent
+
     /** Risknivån att köpa på (ANA-13). */
     data class SelectTargetLevel(val level: Int) : SwitchWatchEvent
 
@@ -291,6 +296,8 @@ class SwitchWatchViewModel @AssistedInject constructor(
 
     private val watch: Flow<SwitchWatch?> = switchWatchRepository.observe(watchId)
 
+    private val retrySignal = RetrySignal()
+
     val uiState: StateFlow<SwitchWatchUiState> = combine(
         combine(watch, preferencesRepository.switchWatchTtlDays, ::Pair),
         metadata,
@@ -362,6 +369,7 @@ class SwitchWatchViewModel @AssistedInject constructor(
     }
         // Ett läsfel i bevakningen visas som fel i stället för att krascha skärmen (NFR-6).
         .catchAsDetailError { SwitchWatchUiState(watch = it) }
+        .restartOn(retrySignal)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -386,6 +394,7 @@ class SwitchWatchViewModel @AssistedInject constructor(
         when (event) {
             SwitchWatchEvent.Refresh -> refresh()
             SwitchWatchEvent.RetryAutoFill -> onRetryAutoFill()
+            SwitchWatchEvent.Retry -> retrySignal.retry()
             is SwitchWatchEvent.SelectTargetLevel -> onSelectTargetLevel(event.level)
             is SwitchWatchEvent.IndexOnlyChanged -> onIndexOnlyChanged(event.indexOnly)
             SwitchWatchEvent.Cancel -> onCancel()
