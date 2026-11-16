@@ -40,6 +40,7 @@ import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.DateField
 import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 // Exporten är i praktiken inte en riktig zip-baserad .xlsx utan kalkylbladets råa XML
@@ -184,7 +185,7 @@ private fun ImportRowCard(
                     if (!occasion.dateConfident) {
                         Text(
                             stringResource(R.string.import_date_uncertain),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.error
                         )
                     }
@@ -211,7 +212,7 @@ private fun ImportRowCard(
                     rowState.occasionSharesTotal.toString(),
                     row.shares.toString()
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.error
             )
         }

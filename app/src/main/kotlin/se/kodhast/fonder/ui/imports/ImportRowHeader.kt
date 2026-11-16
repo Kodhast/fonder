@@ -12,6 +12,7 @@ import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.components.CheckRow
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 /** Under denna träffsäkerhet visas "osäker matchning" under fondvalet (IMP-serien). */
@@ -71,7 +72,7 @@ internal fun ColumnScope.ImportRowHeader(
 private fun ImportRowWarning(text: String) {
     Text(
         text,
-        style = MaterialTheme.typography.bodySmall,
+        style = AppTheme.typography.itemSubtitle,
         color = MaterialTheme.colorScheme.error
     )
 }

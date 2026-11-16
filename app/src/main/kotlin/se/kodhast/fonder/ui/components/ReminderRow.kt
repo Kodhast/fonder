@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Påminnelserad överst på en skärm — en lugn uppmaning om något användaren bör göra, med en
@@ -61,27 +63,27 @@ fun ReminderRow(
             modifier = Modifier
                 .clickable(role = Role.Button, onClickLabel = actionLabel, onClick = onAction)
                 .heightIn(min = 48.dp)
-                .padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
+                .padding(start = 14.dp, top = Spacing.m, bottom = Spacing.m, end = Spacing.s),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(Spacing.m)
         ) {
             if (count != null) CountBadge(count, size = CountBadgeSize.Large) else Icon(icon, contentDescription = null)
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(body, style = MaterialTheme.typography.bodySmall)
+                Text(body, style = AppTheme.typography.itemSubtitle)
             }
             if (chevron) {
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = Spacing.xs)
                 )
             } else {
                 Text(
                     actionLabel,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = AppTheme.typography.button,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 4.dp)
+                    modifier = Modifier.padding(horizontal = Spacing.xs)
                 )
             }
         }

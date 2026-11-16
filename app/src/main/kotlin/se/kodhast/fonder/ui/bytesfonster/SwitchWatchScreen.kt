@@ -45,6 +45,7 @@ import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SwitchRow
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -235,7 +236,7 @@ private fun SwitchWatchList(
                             }
                             Text(
                                 text,
-                                style = MaterialTheme.typography.bodySmall,
+                                style = AppTheme.typography.itemSubtitle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -300,7 +301,7 @@ private fun SwitchWatchList(
                                 SwitchWatchMessage.CandidateLimitReached ->
                                     stringResource(R.string.format_switch_watch_limit, SwitchWatchCalc.MAX_CANDIDATES)
                             },
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.error
                         )
                         // Meddelandet är en kvittens på en åtgärd, inte ett tillstånd — det kvitteras
@@ -318,14 +319,14 @@ private fun SwitchWatchList(
                     if (state.canChangeSelection) {
                         Text(
                             stringResource(R.string.switch_watch_level_footer),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(top = Spacing.s)
                         )
                     }
                     Text(
                         stringResource(R.string.switch_watch_disclaimer),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = Spacing.s)
                     )
@@ -352,7 +353,7 @@ private fun HeaderCard(state: SwitchWatchUiState) {
         content.proceedsKr?.let { amount ->
             Text(
                 stringResource(R.string.format_switch_watch_amount, MoneyFormat.kr(amount)),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -368,7 +369,7 @@ private fun HeaderCard(state: SwitchWatchUiState) {
         }
         Text(
             status,
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = if (content.expired && !content.closed) {
                 MaterialTheme.colorScheme.error
             } else {
@@ -403,7 +404,7 @@ private fun TargetLevelCard(
         )
         Text(
             levelHint(state),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.s)
         )
@@ -461,7 +462,7 @@ private fun ComparisonChart(state: SwitchWatchUiState) {
     if (!content.hasChart) {
         Text(
             stringResource(R.string.switch_watch_chart_unavailable),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Spacing.l)
         )
@@ -517,14 +518,14 @@ private fun CandidateCard(
         row.feePercent?.let { fee ->
             Text(
                 stringResource(R.string.format_switch_watch_fee, MoneyFormat.feePercent(fee)),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (row.historyUnavailable) {
             Text(
                 stringResource(R.string.switch_watch_history_unavailable),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

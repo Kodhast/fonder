@@ -43,6 +43,7 @@ import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityEditScreen
 import se.kodhast.ui.components.TopBarSize
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
 
@@ -187,7 +188,7 @@ fun TransactionFormContent(
             state.prefillAmountKr?.let { amount ->
                 Text(
                     stringResource(R.string.format_transaktionsform_prefill_note, MoneyFormat.kr(amount)),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -209,7 +210,7 @@ fun TransactionFormContent(
                 if (state.blockedBySwitch) {
                     Text(
                         stringResource(R.string.transaktionsform_save_blocked),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -228,7 +229,7 @@ private fun OwnedSharesRow(owned: Double, onSellAll: () -> Unit) {
     ) {
         Text(
             stringResource(R.string.format_transaktionsform_owned, SwedishNumberFormat.formatShares(owned)),
-            style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+            style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )

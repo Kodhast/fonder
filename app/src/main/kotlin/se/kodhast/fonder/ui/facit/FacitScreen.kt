@@ -114,7 +114,7 @@ fun FacitContent(
                 item(contentType = "disclaimer") {
                     Text(
                         stringResource(R.string.facit_disclaimer),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.l)
                     )
@@ -176,7 +176,7 @@ private fun SummaryCard(state: FacitUiState) {
             }
             Text(
                 stringResource(R.string.facit_by_horizon_explain),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -200,7 +200,7 @@ private fun SummaryCard(state: FacitUiState) {
             )
             Text(
                 stringResource(R.string.facit_summary_fee_explain),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -227,7 +227,7 @@ private fun SummaryCard(state: FacitUiState) {
             }
             Text(
                 stringResource(R.string.facit_by_plan_index_explain),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -352,7 +352,7 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
                             ),
                             LocalDate.ofEpochDay(row.suggestedAtEpochDay).format(dateFormatter)
                         ),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -403,14 +403,14 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
                     if (row.kind == SuggestionKind.RISK_PLAN) {
                         Text(
                             stringResource(R.string.format_facit_plan_index_detail, row.planIndex + 1),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     row.switchValueKr?.let { valueKr ->
                         Text(
                             stringResource(R.string.format_facit_amount, MoneyFormat.kr(valueKr)),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -421,13 +421,13 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
                                 MoneyFormat.percentSigned(row.outcome.sellReturn!!),
                                 MoneyFormat.percentSigned(row.outcome.buyReturn!!)
                             ),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     } else {
                         Text(
                             stringResource(if (row.outcome.hasBaseNav) R.string.facit_not_evaluated_explain else R.string.facit_not_evaluable_explain),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = AppTheme.typography.itemSubtitle,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }

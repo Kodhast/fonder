@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
+import se.kodhast.ui.theme.Spacing
 
 /** Stapelns tjocklek — 10 dp med helt rundade ändar (M3 Expressive, UI-12). */
 private val BAR_HEIGHT = 10.dp
@@ -64,7 +65,7 @@ fun ExposureBar(
     // procenttal utan ordet "mål" vore tvetydiga.
     val description = targetText?.let { stringResource(R.string.format_exposure_bar_target_description, label, percentText, it) }
     val semantics = if (description != null) Modifier.clearAndSetSemantics { contentDescription = description } else Modifier
-    Column(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp).then(semantics)) {
+    Column(modifier = modifier.fillMaxWidth().padding(vertical = Spacing.xs).then(semantics)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -76,7 +77,7 @@ fun ExposureBar(
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
+                modifier = Modifier.weight(1f, fill = false).padding(end = Spacing.s)
             )
             Text(
                 targetText?.let { stringResource(R.string.format_exposure_bar_target, percentText, it) } ?: percentText,

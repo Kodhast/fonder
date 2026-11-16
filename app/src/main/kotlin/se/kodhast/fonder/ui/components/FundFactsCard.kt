@@ -118,7 +118,7 @@ fun FundFactsCard(
         reason?.let {
             Text(
                 it,
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.s)
             )

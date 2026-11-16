@@ -28,6 +28,7 @@ import se.kodhast.fonder.ui.components.ChoiceChipRow
 import se.kodhast.ui.common.EditorEvents
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.EntityEditScreen
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 @Composable
@@ -143,14 +144,14 @@ private fun AllocationSection(state: RiskProfilUiState, onAllocationPercentChang
         )
         Text(
             stringResource(R.string.riskprofile_allocation_disclaimer),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Spacing.s)
         )
         if (state.availableLevels.isEmpty()) {
             Text(
                 stringResource(R.string.riskprofile_no_levels_yet),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
@@ -170,7 +171,7 @@ private fun AllocationSection(state: RiskProfilUiState, onAllocationPercentChang
             if (!state.valid) {
                 Text(
                     stringResource(R.string.riskprofile_allocation_sum_error),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = Spacing.xs)
                 )

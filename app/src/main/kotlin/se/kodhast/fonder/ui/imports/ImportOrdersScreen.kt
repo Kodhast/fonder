@@ -36,6 +36,7 @@ import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 /** Importera exakta transaktioner från en eller flera Handelsbanken-avräkningsnotor (PDF), issue #8-uppföljning. */
@@ -127,7 +128,7 @@ fun ImportOrdersReview(
                     state.unparsedFileNames.size,
                     state.unparsedFileNames.joinToString(", ")
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(Spacing.l)
             )
@@ -135,7 +136,7 @@ fun ImportOrdersReview(
         if (state.hasSwitchQuestions) {
             Text(
                 stringResource(R.string.import_orders_switch_intro),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)
             )
@@ -226,7 +227,7 @@ private fun ImportOrderRowCard(
         if (switchSaleRowSkipped) {
             Text(
                 stringResource(R.string.import_orders_switch_sale_row_skipped),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.error
             )
         }

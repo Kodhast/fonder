@@ -81,6 +81,8 @@ import se.kodhast.fonder.ui.components.ConnectedChoiceSpacing
 import se.kodhast.fonder.ui.components.WorkingIndicator
 import se.kodhast.fonder.ui.theme.ChartSeriesColors
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /** En namngiven kursserie att rita bredvid innehavets egen i [FundLineChart] (ANA-11, issue #85). */
 data class ChartSeries(val label: String, val points: List<Pair<Long, Double>>)
@@ -274,7 +276,7 @@ fun FundLineChart(
         // [working] falskt, så samma besked inte ges två gånger i samma kort.
         if (working) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.xs),
                 horizontalArrangement = Arrangement.End
             ) {
                 WorkingIndicator(working = true, contentDescription = stringResource(R.string.chart_working))
@@ -330,7 +332,7 @@ fun FundLineChart(
                 },
                 indexed = normalized.indexed,
                 partial = normalized.partial,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = Spacing.s)
             )
         } else if (showMovingAverage) {
             // Kurs och snitt med sina linjesymboler och senaste värden (ANA-14) — symbolen visar
@@ -352,7 +354,7 @@ fun FundLineChart(
                 ),
                 indexed = false,
                 partial = false,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = Spacing.s)
             )
         }
         // Skrollbar rad, inte en vanlig Row: sex perioder får inte plats på en telefonskärm,
@@ -362,7 +364,7 @@ fun FundLineChart(
         val periods = ChartPeriodFilter.Period.entries
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(ConnectedChoiceSpacing),
-            modifier = Modifier.padding(top = 8.dp).testTag(CHART_PERIOD_ROW_TEST_TAG)
+            modifier = Modifier.padding(top = Spacing.s).testTag(CHART_PERIOD_ROW_TEST_TAG)
         ) {
             itemsIndexed(periods, key = { _, option -> option.name }) { index, option ->
                 ConnectedChoiceButton(
@@ -457,26 +459,26 @@ private fun ChartLegend(
     Column(modifier = modifier) {
         entries.forEach { entry ->
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 2.dp)) {
-                LegendSymbolMark(entry.symbol, entry.color, modifier = Modifier.padding(end = 8.dp))
+                LegendSymbolMark(entry.symbol, entry.color, modifier = Modifier.padding(end = Spacing.s))
                 if (entry.value == null) {
-                    Text(entry.label, style = MaterialTheme.typography.bodySmall)
+                    Text(entry.label, style = AppTheme.typography.itemSubtitle)
                 } else {
-                    Text(entry.label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-                    Text(entry.value, style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall))
+                    Text(entry.label, style = AppTheme.typography.itemSubtitle, modifier = Modifier.weight(1f))
+                    Text(entry.value, style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle))
                 }
             }
         }
         if (indexed) {
             Text(
                 stringResource(R.string.fond_chart_indexed_explain),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (partial) {
             Text(
                 stringResource(R.string.fond_chart_partial_comparison),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

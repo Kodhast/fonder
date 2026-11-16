@@ -24,6 +24,8 @@ import se.kodhast.fonder.domain.usecase.FundAnalysisCalc
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.theme.StatusColors
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Delade byggstenar för att visa [FundAnalysisCalc]-status (issue #16, regel 4) — återanvänds
@@ -104,15 +106,15 @@ fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifie
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = statusColor(level).copy(alpha = 0.14f))
     ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-            StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = 12.dp))
+        Row(modifier = Modifier.padding(Spacing.l), verticalAlignment = Alignment.Top) {
+            StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = Spacing.m))
             Column {
                 Text(statusTitle(level), style = MaterialTheme.typography.titleMedium)
                 val messages = statusTriggerMessages(analysis)
                 if (messages.isNotEmpty()) {
                     Text(
                         messages.joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -137,7 +139,7 @@ fun AnalysisGuidanceCard(analysis: FundAnalysisCalc.Analysis, modifier: Modifier
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = if (index == 0) Modifier else Modifier.padding(top = 8.dp)
+                modifier = if (index == 0) Modifier else Modifier.padding(top = Spacing.s)
             )
         }
     }
