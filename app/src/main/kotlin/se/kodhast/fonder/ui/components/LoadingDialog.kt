@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Blockerande väntedialog för ett arbete användaren just startat och måste invänta (importens
@@ -33,19 +34,19 @@ fun LoadingDialog(title: String, body: String) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(Spacing.xl),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 WorkingIndicator(working = true, contentDescription = title, size = 48.dp)
                 Text(
                     title,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 16.dp)
+                    modifier = Modifier.padding(top = Spacing.l)
                 )
                 Text(
                     body,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = Spacing.xs)
                 )
             }
         }

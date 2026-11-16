@@ -17,11 +17,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Delad rad för att visa en periods värdeförändring (kr + %), t.ex. "Idag" eller "Senaste
@@ -97,14 +98,14 @@ fun PeriodRow(
         // "Handelsbanken Amerika Småbolag Tema Criteria A1" radbröt över två rader och avgiften
         // försvann helt ur vyn (issue #78). Samma lösning som PortfoljScreen redan använder för
         // fondnamnet i sin egen rad.
-        val labelModifier = Modifier.weight(1f, fill = false).padding(end = 8.dp)
+        val labelModifier = Modifier.weight(1f, fill = false).padding(end = Spacing.s)
         val labelColor = if (muted) mutedColor else Color.Unspecified
         if (supportingLabel == null) {
             Text(label, style = MaterialTheme.typography.bodyMedium, color = labelColor, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = labelModifier)
         } else {
             Column(modifier = labelModifier) {
                 Text(label, style = MaterialTheme.typography.bodyMedium, color = labelColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(supportingLabel, style = MaterialTheme.typography.bodySmall, color = mutedColor)
+                Text(supportingLabel, style = AppTheme.typography.itemSubtitle, color = mutedColor)
             }
         }
         if (valueText != null) {
@@ -126,10 +127,10 @@ fun PeriodRow(
         } else if (amount == null && fraction == null) {
             val insufficient = insufficientText ?: stringResource(R.string.period_insufficient_data)
             if (supportingValue == null) {
-                Text(insufficient, style = MaterialTheme.typography.bodySmall, color = mutedColor)
+                Text(insufficient, style = AppTheme.typography.itemSubtitle, color = mutedColor)
             } else {
                 Column(horizontalAlignment = Alignment.End) {
-                    Text(insufficient, style = MaterialTheme.typography.bodySmall, color = mutedColor)
+                    Text(insufficient, style = AppTheme.typography.itemSubtitle, color = mutedColor)
                     SupportingValue(supportingValue)
                 }
             }
@@ -168,7 +169,7 @@ fun PeriodRow(
                 if (partial) {
                     Text(
                         stringResource(R.string.period_partial_data),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = AppTheme.typography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -182,7 +183,7 @@ fun PeriodRow(
 private fun SupportingValue(text: String) {
     Text(
         text,
-        style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+        style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }

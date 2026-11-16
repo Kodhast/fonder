@@ -122,7 +122,7 @@ fun ComponentGallery(onBack: () -> Unit, modifier: Modifier = Modifier) {
             GallerySection(R.string.gallery_section_navigation) { Navigation() }
             GallerySection(R.string.gallery_section_dialogs) { Dialogs() }
             GallerySection(R.string.gallery_section_library) { Library() }
-            ExpandableSection(title = stringResource(R.string.gallery_section_chart), titleStyle = MaterialTheme.typography.headlineSmall) {
+            ExpandableSection(title = stringResource(R.string.gallery_section_chart), titleStyle = AppTheme.typography.headline) {
                 Chart()
             }
         }
@@ -134,7 +134,7 @@ private fun GallerySection(title: Int, content: @Composable ColumnScope.() -> Un
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         Text(
             stringResource(title),
-            style = MaterialTheme.typography.headlineSmall,
+            style = AppTheme.typography.headline,
             modifier = Modifier.semantics { heading() }
         )
         content()
@@ -146,7 +146,7 @@ private fun GallerySection(title: Int, content: @Composable ColumnScope.() -> Un
 private fun Label(name: String) {
     Text(
         name,
-        style = MaterialTheme.typography.labelMedium,
+        style = AppTheme.typography.pill,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = Spacing.s)
     )
@@ -183,7 +183,7 @@ private fun ColumnScope.CardsAndRows() {
     Label("AppCard (android-ui, Fonders kortstil)")
     AppCard(modifier = Modifier.fillMaxWidth()) {
         CardTitleRow(title = "Fondavgifter per år", working = true, style = AppTheme.typography.itemTitle)
-        Text("Kontur och 16 dp luft.", style = MaterialTheme.typography.bodySmall)
+        Text("Kontur och 16 dp luft.", style = AppTheme.typography.itemSubtitle)
     }
     AppCard(modifier = Modifier.fillMaxWidth(), tone = Tone.Filled, onClick = {}) {
         Text("Klickbart och tonat (Tone.Filled).", style = MaterialTheme.typography.bodyMedium)
@@ -222,7 +222,7 @@ private fun ColumnScope.CardsAndRows() {
     AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
         ItemRow(title = "Mot riskprofil 4,00", subtitle = "Balanserad tillväxt · ISK/KF")
         AppDivider()
-        ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr", style = MaterialTheme.typography.bodyLarge) }, navigates = true, onClick = {})
+        ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr", style = AppTheme.typography.body) }, navigates = true, onClick = {})
     }
     Label("InfoPill (android-ui, 8 dp) · RiskBadge · ProfitTakeBadge · CountBadge · StatusDot")
     galleryTones.chunked(CHIPS_PER_ROW).forEach { tones ->

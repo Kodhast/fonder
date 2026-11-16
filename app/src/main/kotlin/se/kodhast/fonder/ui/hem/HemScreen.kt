@@ -51,6 +51,7 @@ import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
 
@@ -302,7 +303,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
         if (portfolio.returnSeries.isEmpty) {
             Text(
                 stringResource(R.string.hem_return_chart_insufficient),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.s)
             )
@@ -319,7 +320,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
         )
         Text(
             stringResource(R.string.hem_return_chart_explain),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.s)
         )
@@ -329,7 +330,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
             } else {
                 stringResource(R.string.hem_return_chart_benchmark_missing)
             },
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs)
         )
@@ -342,7 +343,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
                     R.string.format_hem_return_chart_benchmark_unclassified,
                     MoneyFormat.percent(benchmark.unclassifiedFraction)
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -350,7 +351,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
         if (portfolio.returnSeries.partial) {
             Text(
                 stringResource(R.string.hem_return_chart_partial),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -416,14 +417,14 @@ private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundCl
         )
         Text(
             stringResource(R.string.hem_fee_explain),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs)
         )
         if (summary.unknownFeeCount > 0) {
             Text(
                 stringResource(R.string.format_hem_fee_unknown, summary.unknownFeeCount),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -436,7 +437,7 @@ private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundCl
                     summary.comparedCount,
                     summary.comparableCount
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
@@ -474,14 +475,14 @@ private fun FeeHoldingRow(holdingFee: PortfolioFeeCalc.HoldingFee, onClick: () -
         when {
             savings != null && savings > 0 -> Text(
                 stringResource(R.string.format_hem_fee_holding_savings, MoneyFormat.kr(savings)),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
             )
 
             holdingFee.wasCompared -> Text(
                 stringResource(R.string.fee_comparison_none_cheaper),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
             )
@@ -506,7 +507,7 @@ private fun FlaggedFundRow(flagged: FlaggedHolding, onClick: () -> Unit) {
                 Text(flagged.fund.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.copyableFundName(flagged.fund.name))
                 Text(
                     statusTriggerMessages(flagged.analysis).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

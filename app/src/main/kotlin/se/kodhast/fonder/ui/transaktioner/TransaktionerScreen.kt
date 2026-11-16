@@ -51,6 +51,7 @@ import se.kodhast.ui.components.EntityListScreen
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -249,7 +250,7 @@ private fun RealizedCard(state: TransaktionerUiState, cardStyle: AppCardStyle, m
             if (state.yearRealized.uncertain || (showTotal && state.totalRealized.uncertain)) {
                 Text(
                     stringResource(R.string.handelser_realized_uncertain),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -312,7 +313,7 @@ private fun HandelseRow(
             leading = {
                 Text(
                     LocalDate.ofEpochDay(tx.epochDay).format(dateFormatter),
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+                    style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -370,14 +371,14 @@ private fun HandelseDetails(row: TransaktionRad, onStartSwitchWatch: (Transaktio
     ) {
         Text(
             stringResource(R.string.format_transaktion_rad, tx.shares.toString(), MoneyFormat.kr(tx.pricePerShare)),
-            style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+            style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         if (sale == null) {
             if (tx.fee > 0.0) {
                 Text(
                     stringResource(R.string.format_transaktion_fee, MoneyFormat.kr(tx.fee)),
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+                    style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -387,7 +388,7 @@ private fun HandelseDetails(row: TransaktionRad, onStartSwitchWatch: (Transaktio
         if (tx.dateEstimated) {
             Text(
                 stringResource(R.string.handelse_estimated_date_explain),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             DateField(
@@ -417,7 +418,7 @@ private fun SaleDetails(sale: RealizedSale) {
                 MoneyFormat.kr(sale.fee),
                 MoneyFormat.kr(sale.costBasis)
             ),
-            style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+            style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         PeriodRow(
@@ -428,7 +429,7 @@ private fun SaleDetails(sale: RealizedSale) {
         if (sale.uncoveredShares > 0.0) {
             Text(
                 stringResource(R.string.sold_fund_uncovered_warning),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.error
             )
         }

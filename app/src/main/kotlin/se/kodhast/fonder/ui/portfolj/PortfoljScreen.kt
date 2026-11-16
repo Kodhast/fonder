@@ -44,6 +44,7 @@ import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.LoadErrorState
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
@@ -182,7 +183,7 @@ private fun ExposureCard(exposure: PortfolioExposureCalc.Result, working: Boolea
         if (exposure.excludedCount > 0) {
             Text(
                 stringResource(R.string.format_portfolj_exposure_excluded, exposure.excludedCount),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.s)
             )
@@ -199,7 +200,7 @@ private fun ColumnScope.ExposureDimensionSection(
 ) {
     Text(title, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Spacing.m))
     if (explain != null) {
-        Text(explain, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(explain, style = AppTheme.typography.itemSubtitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     dimension.buckets.forEach { bucket ->
         ExposureBar(label = bucket.label, fraction = bucket.fraction)
@@ -259,7 +260,7 @@ private fun HoldingRow(
             if (fraction != null) {
                 Text(
                     "${MoneyFormat.percentSigned(fraction)} · ${MoneyFormat.kr(holding.gainLoss ?: 0.0)}",
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodySmall),
+                    style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
                     color = ReturnColors.forAmount(holding.gainLoss ?: 0.0)
                 )
             }
@@ -291,7 +292,7 @@ private fun HoldingRow(
             )
             Text(
                 stringResource(R.string.portfolj_price_missing),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -308,7 +309,7 @@ private fun FirstPurchaseRow(holding: Holding, modifier: Modifier = Modifier) {
             LocalDate.ofEpochDay(firstPurchaseEpochDay).format(dateFormatter),
             MoneyFormat.kr(holding.netInvested)
         ),
-        style = MaterialTheme.typography.bodySmall,
+        style = AppTheme.typography.itemSubtitle,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
     )

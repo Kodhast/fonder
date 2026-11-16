@@ -15,6 +15,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /** Storleken på [CountBadge]: liten bredvid en text eller ikon, stor som ledande element i en rad. */
 enum class CountBadgeSize { Small, Large }
@@ -41,15 +43,15 @@ fun CountBadge(
             .widthIn(min = minSize)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.secondary)
-            .padding(horizontal = if (size == CountBadgeSize.Large) 8.dp else 5.dp),
+            .padding(horizontal = if (size == CountBadgeSize.Large) Spacing.s else 5.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             count.toString(),
             style = if (size == CountBadgeSize.Large) {
-                MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                AppTheme.typography.button.copy(fontWeight = FontWeight.Bold)
             } else {
-                MaterialTheme.typography.labelSmall
+                AppTheme.typography.caption
             },
             color = MaterialTheme.colorScheme.onSecondary
         )

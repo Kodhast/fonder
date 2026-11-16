@@ -6,7 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Delad, återanvändbar rad som kan fällas ut med en klartextförklaring (issue #22, regel 4).
@@ -40,9 +41,9 @@ fun ExpandableInfoRow(
         Column {
             Text(
                 text = explanation,
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = Spacing.s)
             )
             extraContent?.invoke()
         }

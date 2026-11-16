@@ -647,7 +647,7 @@ private fun SoldLeader(watch: OpenSwitchWatch) {
     if (name == null || change == null) {
         Text(
             stringResource(R.string.beslut_switch_watch_no_leader),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         return
@@ -664,7 +664,7 @@ private fun SoldLeader(watch: OpenSwitchWatch) {
                 withStyle(MonoAmountStyle.toSpanStyle()) { append(MoneyFormat.percentSigned(change)) }
             }
         },
-        style = MaterialTheme.typography.bodySmall
+        style = AppTheme.typography.itemSubtitle
     )
 }
 
@@ -745,7 +745,7 @@ private fun FacitRow(followedCount: Int, followedExcessKr: Double?, onOpen: () -
                 {
                     Text(
                         MoneyFormat.krSigned(followedExcessKr),
-                        style = MonoAmountStyle.merge(MaterialTheme.typography.bodyLarge),
+                        style = MonoAmountStyle.merge(AppTheme.typography.body),
                         color = ReturnColors.forAmount(followedExcessKr)
                     )
                 }

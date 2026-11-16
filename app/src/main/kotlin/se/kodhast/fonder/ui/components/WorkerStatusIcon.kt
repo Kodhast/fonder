@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Liten bakgrundsindikator för en pågående kursuppdatering (NAV-6, issue #27) — placeras i
@@ -29,7 +30,7 @@ fun WorkerStatusIcon(isRunning: Boolean, modifier: Modifier = Modifier) {
         working = isRunning,
         contentDescription = stringResource(R.string.worker_status_running),
         size = 24.dp,
-        modifier = modifier.padding(horizontal = 12.dp)
+        modifier = modifier.padding(horizontal = Spacing.m)
     )
 }
 

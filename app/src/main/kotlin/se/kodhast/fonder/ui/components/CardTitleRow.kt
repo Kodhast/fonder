@@ -3,7 +3,6 @@ package se.kodhast.fonder.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -11,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Ett korts rubrikrad med plats för en väntesnurra (NAV-6) — den delade byggstenen varje kort
@@ -31,12 +31,12 @@ fun CardTitleRow(
     title: String,
     modifier: Modifier = Modifier,
     working: Boolean = false,
-    style: TextStyle = MaterialTheme.typography.labelMedium
+    style: TextStyle = AppTheme.typography.pill
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s)
     ) {
         Text(
             title,

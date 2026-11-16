@@ -14,6 +14,8 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 /**
  * Portföljens totalkort (HEM-1/POR-3) — totalt värde, **totalresultat** (realiserat + orealiserat
@@ -56,12 +58,12 @@ fun TotalCard(
         )
         if (gainLossFraction != null) {
             val priceMissing = if (total.partial) stringResource(R.string.portfolj_price_missing) else null
-            Text(MoneyFormat.kr(totalValue), style = MonoAmountStyle.merge(MaterialTheme.typography.headlineMedium))
+            Text(MoneyFormat.kr(totalValue), style = MonoAmountStyle.merge(AppTheme.typography.bigNumber))
             PeriodRow(
                 label = stringResource(R.string.total_result),
                 amount = total.totalGainKr,
                 fraction = total.totalGainFraction,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = Spacing.xs),
                 insufficientText = priceMissing
             )
             afterTotalResult?.invoke(this)
@@ -81,15 +83,15 @@ fun TotalCard(
             ExpandableInfoRow(explanation = stringResource(R.string.total_explain)) {
                 Text(
                     stringResource(R.string.total_what_counts),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
-            Text(MoneyFormat.kr(totalInvested), style = MonoAmountStyle.merge(MaterialTheme.typography.headlineMedium))
+            Text(MoneyFormat.kr(totalInvested), style = MonoAmountStyle.merge(AppTheme.typography.bigNumber))
             Text(
                 stringResource(R.string.portfolj_price_missing),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

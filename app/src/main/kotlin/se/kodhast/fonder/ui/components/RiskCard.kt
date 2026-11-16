@@ -14,6 +14,7 @@ import se.kodhast.fonder.domain.usecase.PortfolioRiskCalc
 import se.kodhast.fonder.domain.usecase.RiskSummary
 import se.kodhast.fonder.domain.usecase.SwitchEffectCalc
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 /**
@@ -55,7 +56,7 @@ fun RiskCard(
         val scale = stringResource(R.string.hem_risk_scale)
         Text(
             goal?.let { stringResource(R.string.format_risk_card_goal, it) + " " + scale } ?: scale,
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.xs)
         )
@@ -104,14 +105,14 @@ private fun AverageRows(effect: SwitchEffectCalc.Result, portfolioRisk: Portfoli
     )
     Text(
         stringResource(R.string.hem_risk_explain),
-        style = MaterialTheme.typography.bodySmall,
+        style = AppTheme.typography.itemSubtitle,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = Spacing.xs)
     )
     if (portfolioRisk.excludedCount > 0) {
         Text(
             stringResource(R.string.format_hem_risk_excluded, portfolioRisk.excludedCount),
-            style = MaterialTheme.typography.bodySmall,
+            style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = Spacing.xs)
         )

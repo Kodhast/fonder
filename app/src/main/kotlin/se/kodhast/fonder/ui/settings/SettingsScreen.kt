@@ -367,7 +367,7 @@ fun SettingsContent(
             state.backupMessage?.let { message ->
                 Text(
                     backupMessageText(message),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     modifier = Modifier.padding(bottom = Spacing.xs)
                 )
                 AppButton(
@@ -436,7 +436,7 @@ fun SettingsContent(
             )
             Text(
                 stringResource(R.string.settings_danger_body),
-                style = MaterialTheme.typography.bodySmall,
+                style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.s)
             )
@@ -447,7 +447,7 @@ fun SettingsContent(
             if (state.databaseCleared) {
                 Text(
                     stringResource(R.string.settings_clear_database_success),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = AppTheme.typography.itemSubtitle,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(bottom = Spacing.xs)
                 )
