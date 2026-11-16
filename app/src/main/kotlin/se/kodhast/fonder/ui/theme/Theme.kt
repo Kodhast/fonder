@@ -1,6 +1,5 @@
 package se.kodhast.fonder.ui.theme
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
@@ -39,8 +38,9 @@ private val LocalFonderColors = staticCompositionLocalOf { FonderLightColors }
  *
  * Knapparna och tillbakapilen har bibliotekets standard (UI-13, UI-14): 56 dp knappar utan formmorf
  * och den tonade pilplattan, samma som ReseApoteket och Dagboken – Fonder sätter ingen egen stil.
- * [FonderLightCardStyle]/[FonderDarkCardStyle] ger bibliotekets kort ([LocalAppCardStyle]) Fonders kontur (1 dp `outlineVariant`) och
- * 16 dp luft – även mellan ett korts bitar ([se.kodhast.ui.components.CardSegment]) – utan extra mellanrum mellan innehållets delar (UI-13).
+ * [FonderCardStyle] ger bibliotekets kort ([LocalAppCardStyle]) 16 dp luft – även mellan ett korts bitar
+ * ([se.kodhast.ui.components.CardSegment]) – utan extra mellanrum mellan innehållets delar (UI-13). Kortens kant och skugga
+ * kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18), inte från en egen kontur.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -53,11 +53,12 @@ fun FonderTheme(
         extendedColors = if (darkTheme) FonderDarkExtendedColors else FonderLightExtendedColors,
         shapes = FonderAppShapes,
         typeScale = FonderTypography,
-        motionScheme = MotionScheme.expressive()
+        motionScheme = MotionScheme.expressive(),
+        depth = if (darkTheme) FonderDarkDepth else FonderLightDepth
     ) {
         CompositionLocalProvider(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
-            LocalAppCardStyle provides if (darkTheme) FonderDarkCardStyle else FonderLightCardStyle,
+            LocalAppCardStyle provides FonderCardStyle,
             LocalAppBrandStyle provides FonderBrandStyle
         ) {
             MaterialExpressiveTheme(shapes = FonderShapes, content = content)
@@ -72,12 +73,10 @@ fun FonderTheme(
 private val FonderBrandStyle = AppBrandStyle(sectionDots = true, emptyStateMark = true)
 
 /**
- * Fonders kortstil för android-ui:s kort: 1 dp kontur i `outlineVariant`, 16 dp luft och inget extra
- * mellanrum mellan innehållets delar – skärmarna lägger sina egna avstånd (UI-13).
+ * Fonders kortstil för android-ui:s kort: 16 dp luft och inget extra mellanrum mellan innehållets delar – skärmarna
+ * lägger sina egna avstånd (UI-13). Ingen egen kontur: djupets kortkant och skugga ritar kortets kant (UI-18).
  */
-private fun fonderCardStyle(border: Color) = AppCardStyle(border = BorderStroke(1.dp, border), padding = Spacing.l, segmentGap = Spacing.l, contentSpacing = 0.dp)
-private val FonderLightCardStyle = fonderCardStyle(FonderLightColorScheme.outlineVariant)
-private val FonderDarkCardStyle = fonderCardStyle(FonderDarkColorScheme.outlineVariant)
+private val FonderCardStyle = AppCardStyle(padding = Spacing.l, segmentGap = Spacing.l, contentSpacing = 0.dp)
 
 /**
  * Fonders kortstil utan inre luft – för ett kort vars rader själva går ut i kanten och har sin luft innanför

@@ -26,13 +26,15 @@ import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.Error
 import se.kodhast.fonder.ui.theme.Filled
-import se.kodhast.fonder.ui.theme.FonderLightColorScheme
+import se.kodhast.fonder.ui.theme.FonderLightDepth
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.CardSegment
 import se.kodhast.ui.components.LocalAppCardStyle
+import se.kodhast.ui.theme.AppDepth
+import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Tone
 
 /**
@@ -47,17 +49,21 @@ class AppCardTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `FonderTheme ger korten 1 dp kontur i outlineVariant, 16 dp luft och inget extra mellanrum`() {
+    fun `FonderTheme ger korten djupets kant i stället för egen kontur, 16 dp luft och inget extra mellanrum`() {
         var style: AppCardStyle? = null
         var flush: AppCardStyle? = null
+        var depth: AppDepth? = null
         composeRule.setContent {
             FonderTheme(darkTheme = false) {
                 style = LocalAppCardStyle.current
                 flush = flushCardStyle
+                depth = AppTheme.depth
             }
         }
 
-        assertEquals(1.dp, style?.border?.width)
+        // Ingen egen kontur (UI-18): kortets kant och skugga kommer från djupet, tonade i nordisk blå.
+        assertEquals(null, style?.border)
+        assertEquals(FonderLightDepth, depth)
         assertEquals(16.dp, style?.padding)
         assertEquals(0.dp, style?.contentSpacing)
         // Ett korts bitar (CardSegment) har samma 16 dp luft som ett helt kort, så att raderna inte trycks ihop.
@@ -65,8 +71,6 @@ class AppCardTest {
         assertEquals(0.dp, flush?.padding)
         assertEquals(0.dp, flush?.segmentGap)
         assertEquals(style?.border, flush?.border)
-        // Konturens färg: outlineVariant, så att korten syns mot bakgrunden i ljust tema.
-        assertEquals(androidx.compose.ui.graphics.SolidColor(FonderLightColorScheme.outlineVariant), style?.border?.brush)
     }
 
     @Test
@@ -116,7 +120,7 @@ class AppCardTest {
     }
 
     @Test
-    fun `bitar av ett kort delar kontur – tre bitar blir två konturbredder kortare`() {
+    fun `bitar av ett kort utan kontur ligger kant i kant – tre bitar är tre bitars höjd`() {
         composeRule.setContent {
             FonderTheme {
                 Column(modifier = Modifier.testTag("grupp")) {
@@ -127,8 +131,8 @@ class AppCardTest {
             }
         }
 
-        // Andra och tredje biten dras upp 1 dp var, så att konturerna sammanfaller.
-        composeRule.onNodeWithTag("grupp").assertHeightIsEqualTo(148.dp)
+        // Utan kontur dras bitarna inte upp: djupets kant ritas runt hela kortet, inte i skarvarna.
+        composeRule.onNodeWithTag("grupp").assertHeightIsEqualTo(150.dp)
     }
 
     @Test

@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.2.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.3.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.3.0 | **Djup och tryckkänsla** (UI-18, android-ui 1.4.1): knappar, valda chips och flikar, kryss, stegare, växlar, fältet i fokus, meddelanden, menyer och dialoger får ljuskant, svagt skimmer och mjuk blåtonad skugga, och knappar sjunker in när de trycks. Korten får en hårfin blå kant och mjuk skugga i stället för den grå konturen. Färgerna är desamma. |
 | 1.2.0 | Fonder ser ut som ReseApoteket och Dagboken men behåller sina färger: större knappar utan formbyte, flikraden med vald flik i blått och plusknappen i koppar sist i raden, som öppnar en meny med samma fyra val; tonad tillbakapil, bibliotekets kryssrader på importen och "Försök igen" när en import eller ett pågående byte inte gick att läsa (#261). Textstilar och avstånd hämtas ur android-ui:s roller och steg, utan att något syns (#261 del 2). Facits rader fälls ut från rubriken som appens övriga utfällbara delar och läses upp som utfällda eller hopfällda (#261 del 3). |
 | 1.1.0 | Avsändaren Kodhäst syns: signaturen "En kodhäst-app" sist i Inställningar, ordmärket på startskärmen (Android 12+), hästen i tomma lägen, två prickar före avsnittsrubriker och två kopparprickar i appikonen. Fonders färger och laddning är desamma (#252). |
 | 1.0.1 | Nytt kodpaket `se.kodhast.fonder` och android-ui 1.0.0 från Kodhast. Inget nytt för användaren: appens id är detsamma, så appen uppdateras ovanpå den gamla och ikonen ligger kvar. **Öppna appen en gång efter uppdateringen**, för först då köas kursuppdateringen i bakgrunden om (#253). |
