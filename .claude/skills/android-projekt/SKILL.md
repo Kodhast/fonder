@@ -243,7 +243,7 @@ Processen (när, hur, visa och vänta) står i pluginen; det här är Fonders de
 
 Stegen står i pluginen; det här är Fonders delar.
 
-- **Repo:** owner `ParTee71`, repo `fonder`, basbranch `master`. Issues och PR:er läses och
+- **Repo:** owner `Kodhast`, repo `fonder`, basbranch `master`. Issues och PR:er läses och
   skrivs med GitHub MCP.
 - **Lokalt och i CI:** testerna körs lokalt före push när Android SDK finns i `/opt/android-sdk`
   (pluginens hook `android-start` säger om den gör det; annars claude-android `scripts/android-sdk.sh`).
@@ -333,7 +333,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
 
 ## Issues (android:refine-issue)
 
-- **Repo:** owner `ParTee71`, repo `fonder`; dubblettsökning med `mcp__github__search_issues`
+- **Repo:** owner `Kodhast`, repo `fonder`; dubblettsökning med `mcp__github__search_issues`
   (`repo:Kodhast/fonder <ord>`).
 - **Extra undersökningspunkter:**
   - **Skärmar:** `ui/hem`, `ui/portfolj`, `ui/fond`, `ui/fondsok`, `ui/beslut`,
@@ -387,7 +387,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
   `-PversionNameOverride` och går före `versionName`. README har två ställen: versionsraden
   överst (`> Version: <version> …`) och raden under "Versionshistorik". Alla höjs och skrivs i
   funktions-PR:en.
-- **Workflow:** `release.yml` (owner `ParTee71`, repo `fonder`), tre jobb (detaljer och kostnad i
+- **Workflow:** `release.yml` (owner `Kodhast`, repo `fonder`), tre jobb (detaljer och kostnad i
   skill `ci-budget`):
   - `gate` (sekunder) stannar om commiten inte ligger på `master` eller om `ci-ok` i `android.yml`
     inte är grönt på exakt den commiten – enhetstester, skärmdumpar och `cpdCheck` körs alltså inte
