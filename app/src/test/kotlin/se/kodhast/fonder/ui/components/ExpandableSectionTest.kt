@@ -5,10 +5,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -55,5 +58,25 @@ class ExpandableSectionTest {
 
         composeRule.onNodeWithText("Ordlista").assert(state("Hopfälld"))
         assertEquals(1, expands)
+    }
+
+    @Test
+    fun `summary syns hopfällt och hör inte till knappen`() {
+        composeRule.setContent {
+            FonderTheme {
+                ExpandableSection(
+                    header = { Text("Europa Aktiv → Europa Index") },
+                    summary = { Text("Meravkastning +6,5 %") }
+                ) { Text("Belopp: 25 000 kr") }
+            }
+        }
+
+        composeRule.onNodeWithText("Meravkastning +6,5 %").assertIsDisplayed()
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Role))
+            .assertHasNoClickAction()
+        composeRule.onNodeWithText("Europa Aktiv → Europa Index")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Text, listOf(AnnotatedString("Europa Aktiv → Europa Index"))))
+        composeRule.onNodeWithText("Belopp: 25 000 kr").assertDoesNotExist()
     }
 }
