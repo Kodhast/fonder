@@ -5,6 +5,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import se.kodhast.ui.theme.AppDepth
 import se.kodhast.ui.theme.ExtendedColors
 import se.kodhast.ui.theme.Tone
 import se.kodhast.ui.theme.ToneColors
@@ -192,3 +193,22 @@ data class FonderColors(val gain: Color, val loss: Color)
 
 val FonderLightColors = FonderColors(gain = GainLight, loss = LossLight)
 val FonderDarkColors = FonderColors(gain = GainDark, loss = LossDark)
+
+/**
+ * Djupet (android-ui `AppDepth`, UI-18): i ljust skuggor och kortkant tonade mot nordisk blå, i mörkt en ljus kant
+ * och ljuskant som bär djupet medan skuggan knappt syns.
+ */
+val FonderLightDepth = AppDepth(
+    highlight = Color.White.copy(alpha = 0.30f),
+    sheen = Color.White.copy(alpha = 0.12f),
+    shadow = Blue900.copy(alpha = 0.30f),
+    cardEdge = Blue700.copy(alpha = 0.10f),
+    cardShadow = Blue900.copy(alpha = 0.16f)
+)
+val FonderDarkDepth = AppDepth(
+    highlight = Color.White.copy(alpha = 0.40f),
+    sheen = Color.White.copy(alpha = 0.14f),
+    shadow = Color.Black.copy(alpha = 0.55f),
+    cardEdge = Color.White.copy(alpha = 0.08f),
+    cardShadow = Color.Black.copy(alpha = 0.55f)
+)
