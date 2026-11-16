@@ -468,8 +468,6 @@
     <string name="facit_not_evaluated_explain">Kunde inte utvärderas än — det finns ingen dag efter förslaget då båda fonderna har en kurs. Bakgrundsuppdateringen fyller på kurserna efter hand.</string>
     <string name="facit_not_evaluable_explain">Kan inte utvärderas — kursen vid förslaget saknas för någon av fonderna, så det finns inget utgångsläge att mäta från.</string>
     <string name="facit_followed_label">Genomförd</string>
-    <string name="facit_expand">Visa detaljer</string>
-    <string name="facit_collapse">Dölj detaljer</string>
     <string name="facit_disclaimer">Båda fonderna mäts alltid på samma dag — den senaste dag båda har en kurs. Måttet jämför de två fondernas kursutveckling sedan förslagsdagen. Det är inte din faktiska avkastning: den beror på vilken dag du bytte och på eventuella avgifter, och skatt räknas inte alls (bytesförslag ges bara i ISK/KF, där ett byte inte utlöser skatt). Bara förslag som faktiskt gavs mäts här — perioder utan plan syns inte.</string>
     <string name="settings_about_section">Om appen</string>
 

@@ -1,30 +1,19 @@
 package se.kodhast.fonder.ui.facit
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -40,6 +29,7 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchOutcomeCalc
 import se.kodhast.fonder.ui.components.CardTitleRow
 import se.kodhast.fonder.ui.components.CenteredState
+import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.FollowedToggleRow
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.theme.flushCardStyle
@@ -309,10 +299,10 @@ private fun HorizonRow(entry: SwitchOutcomeCalc.HorizonSummary, modifier: Modifi
 
 /**
  * Ett inspelat förslag. Hopfällbart av samma skäl som sälj-korten i Sålda fonder (SLD-4) —
- * stängt visas datum, fonderna och utfallet, expanderat detaljerna. Byggs lokalt i stället för
- * att återanvända `ExpandableInfoRow`, av exakt samma skäl som `SoldFundRow` dokumenterar: den
- * komponenten fäller ut en förklarande klartext, här är det radens egna detaljer som ska
- * döljas. Interaktionsmönstret (pil, ≥48 dp träffyta, `rememberSaveable`) återanvänds ändå.
+ * stängt visas fonderna, sorten och datumet och utfallet, utfällt detaljerna. Byggt på den delade
+ * [ExpandableSection] (regel 4): rubrik och undertext i rubrikraden (knapp med "Hopfälld"/"Utfälld",
+ * UI-3), meravkastningen alltid synlig under den (`summary`) och detaljerna i det som fälls ut.
+ * Läget sparas med `rememberSaveable` (UI-9).
  *
  * "Genomförd" ligger här *och* på Beslut (HEM-8): planen på Beslut försvinner efter
  * `SwitchPlanCalc.PLAN_TTL_DAYS`, så utan kryssrutan här gick ett äldre förslag aldrig att
@@ -320,22 +310,14 @@ private fun HorizonRow(entry: SwitchOutcomeCalc.HorizonSummary, modifier: Modifi
  */
 @Composable
 private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Unit) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    AppCard(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 6.dp),
-        // Hela kortet fäller ut: klickytan går ända ut i kanten och marginalen ligger innanför den.
-        style = flushCardStyle
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clip(AppTheme.shapes.card)
-                .clickable { expanded = !expanded }
-                .padding(Spacing.l)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
+    // Kortet utan inre luft: luften ovanför och under rubriken ligger innanför rubrikradens rundade
+    // tryckyta, så att hörnen inte klipper rubrikens och undertextens första bokstäver. Sidornas och
+    // nederkantens luft ligger utanför den, på sektionen.
+    AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 6.dp), style = flushCardStyle) {
+        ExpandableSection(
+            modifier = Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.l),
+            header = {
+                Column(modifier = Modifier.padding(top = Spacing.l, bottom = Spacing.s)) {
                     Text(
                         stringResource(
                             R.string.format_facit_row_funds,
@@ -356,87 +338,78 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Icon(
-                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = stringResource(
-                        if (expanded) R.string.facit_collapse else R.string.facit_expand
-                    ),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            summary = {
+                // Utfallet via den delade PeriodRow (regel 4): procent + kronor, färgat efter
+                // procenten. Är raden inte utvärderad ännu är båda talen null och komponenten
+                // markerar den som otillräcklig data — aldrig som 0, som lästs som "gav ingenting".
+                // Mätdagen står under etiketten (issue #197): båda fonderna mäts samma dag, och utan en
+                // sådan dag efter förslaget är raden ej utvärderad. Saknar förslaget ett utgångsläge
+                // (NAV ≤ 0 vid förslaget) blir det aldrig utvärderat — då "Otillräcklig data", inte "väntar".
+                val measuredAt = row.outcome.measuredAtEpochDay
+                val days = row.outcome.days
+                val hasBaseNav = row.outcome.hasBaseNav
+                PeriodRow(
+                    label = stringResource(R.string.facit_row_excess_label),
+                    amount = row.outcome.excessKr,
+                    fraction = row.outcome.excessReturn,
+                    stackValue = true,
+                    insufficientText = if (hasBaseNav) stringResource(R.string.facit_row_not_evaluated) else null,
+                    supportingLabel = when {
+                        measuredAt != null && days != null -> pluralStringResource(
+                            R.plurals.format_facit_measured_at,
+                            days.toInt(),
+                            LocalDate.ofEpochDay(measuredAt).format(dateFormatter),
+                            days.toInt()
+                        )
+
+                        hasBaseNav -> stringResource(R.string.facit_row_waiting_same_day)
+
+                        else -> null
+                    }
                 )
             }
-
-            // Utfallet via den delade PeriodRow (regel 4): procent + kronor, färgat efter
-            // procenten. Är raden inte utvärderad ännu är båda talen null och komponenten
-            // markerar den som otillräcklig data — aldrig som 0, som lästs som "gav ingenting".
-            // Mätdagen står under etiketten (issue #197): båda fonderna mäts samma dag, och utan en
-            // sådan dag efter förslaget är raden ej utvärderad. Saknar förslaget ett utgångsläge
-            // (NAV ≤ 0 vid förslaget) blir det aldrig utvärderat — då "Otillräcklig data", inte "väntar".
-            val measuredAt = row.outcome.measuredAtEpochDay
-            val days = row.outcome.days
-            val hasBaseNav = row.outcome.hasBaseNav
-            PeriodRow(
-                label = stringResource(R.string.facit_row_excess_label),
-                amount = row.outcome.excessKr,
-                fraction = row.outcome.excessReturn,
-                stackValue = true,
-                insufficientText = if (hasBaseNav) stringResource(R.string.facit_row_not_evaluated) else null,
-                supportingLabel = when {
-                    measuredAt != null && days != null -> pluralStringResource(
-                        R.plurals.format_facit_measured_at,
-                        days.toInt(),
-                        LocalDate.ofEpochDay(measuredAt).format(dateFormatter),
-                        days.toInt()
-                    )
-
-                    hasBaseNav -> stringResource(R.string.facit_row_waiting_same_day)
-
-                    else -> null
-                },
-                modifier = Modifier.padding(top = Spacing.s)
-            )
-
-            AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = Spacing.s)) {
-                    // Plats i planen bara för planens rader: ett avgiftsbyte ingår inte i någon
-                    // rangordning, så dess planIndex är alltid 0 och "1:a bytet i planen" hade
-                    // varit en påhittad ordning (issue #91).
-                    if (row.kind == SuggestionKind.RISK_PLAN) {
-                        Text(
-                            stringResource(R.string.format_facit_plan_index_detail, row.planIndex + 1),
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    row.switchValueKr?.let { valueKr ->
-                        Text(
-                            stringResource(R.string.format_facit_amount, MoneyFormat.kr(valueKr)),
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    if (row.outcome.isEvaluated) {
-                        Text(
-                            stringResource(
-                                R.string.format_facit_legs,
-                                MoneyFormat.percentSigned(row.outcome.sellReturn!!),
-                                MoneyFormat.percentSigned(row.outcome.buyReturn!!)
-                            ),
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
-                        Text(
-                            stringResource(if (row.outcome.hasBaseNav) R.string.facit_not_evaluated_explain else R.string.facit_not_evaluable_explain),
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    FollowedToggleRow(
-                        followed = row.followed,
-                        onFollowedChange = { checked -> onFollowedChange(row.recordId, checked) },
-                        modifier = Modifier.padding(top = Spacing.xs)
+        ) {
+            Column(modifier = Modifier.padding(top = Spacing.s)) {
+                // Plats i planen bara för planens rader: ett avgiftsbyte ingår inte i någon
+                // rangordning, så dess planIndex är alltid 0 och "1:a bytet i planen" hade
+                // varit en påhittad ordning (issue #91).
+                if (row.kind == SuggestionKind.RISK_PLAN) {
+                    Text(
+                        stringResource(R.string.format_facit_plan_index_detail, row.planIndex + 1),
+                        style = AppTheme.typography.itemSubtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                row.switchValueKr?.let { valueKr ->
+                    Text(
+                        stringResource(R.string.format_facit_amount, MoneyFormat.kr(valueKr)),
+                        style = AppTheme.typography.itemSubtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (row.outcome.isEvaluated) {
+                    Text(
+                        stringResource(
+                            R.string.format_facit_legs,
+                            MoneyFormat.percentSigned(row.outcome.sellReturn!!),
+                            MoneyFormat.percentSigned(row.outcome.buyReturn!!)
+                        ),
+                        style = AppTheme.typography.itemSubtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        stringResource(if (row.outcome.hasBaseNav) R.string.facit_not_evaluated_explain else R.string.facit_not_evaluable_explain),
+                        style = AppTheme.typography.itemSubtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                FollowedToggleRow(
+                    followed = row.followed,
+                    onFollowedChange = { checked -> onFollowedChange(row.recordId, checked) },
+                    modifier = Modifier.padding(top = Spacing.xs)
+                )
             }
         }
     }

@@ -28,6 +28,8 @@ import se.kodhast.ui.components.CollapsibleHeader
  * @param onExpand körs när sektionen fälls **ut** (inte när den fälls ihop) — kroken för innehåll
  *   som är dyrt att hämta och därför inte ska laddas förrän någon vill se det, t.ex.
  *   jämförelsediagrammets kurshistorik för en föreslagen fond (ANA-11).
+ * @param summary står alltid synligt mellan rubrikraden och det som fälls ut, utanför tryckytan –
+ *   t.ex. Facit-radens meravkastning; `null` (standard) ritar inget.
  */
 @Composable
 fun ExpandableSection(
@@ -35,6 +37,7 @@ fun ExpandableSection(
     modifier: Modifier = Modifier,
     initiallyExpanded: Boolean = false,
     onExpand: () -> Unit = {},
+    summary: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
@@ -48,6 +51,7 @@ fun ExpandableSection(
         ) {
             Box(modifier = Modifier.weight(1f)) { header() }
         }
+        summary?.invoke()
         AnimatedVisibility(visible = expanded) { content() }
     }
 }

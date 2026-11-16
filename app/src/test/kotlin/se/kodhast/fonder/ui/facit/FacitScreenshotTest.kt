@@ -1,6 +1,21 @@
 package se.kodhast.fonder.ui.facit
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.unit.dp
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -11,6 +26,7 @@ import se.kodhast.fonder.domain.usecase.FacitRad
 import se.kodhast.fonder.domain.usecase.FacitSummary
 import se.kodhast.fonder.domain.usecase.SwitchOutcomeCalc
 import se.kodhast.fonder.testing.captureLightAndDark
+import se.kodhast.fonder.ui.theme.FonderTheme
 
 /**
  * Skärmdump ljust + mörkt av Facit (SET-5): summeringskortet med träffandel, horisontband och plats i planen
@@ -62,5 +78,24 @@ class FacitScreenshotTest {
     @Test
     fun `skärmdump av summeringen och raderna`() = composeRule.captureLightAndDark("FacitScreen_rader") {
         FacitContent(state = state)
+    }
+
+    @Test
+    fun `en rad fälls ut från rubriken, som läses som knapp med läget`() {
+        composeRule.setContent { FonderTheme { FacitContent(state = state) } }
+        val header = hasText("Europa Aktiv → Europa Index", substring = true) and hasClickAction()
+        composeRule.onNodeWithTag(FACIT_LIST_TEST_TAG).performScrollToNode(header)
+        // Ihopfällt syns meravkastningen (radens mätdag, 4 dagar) men inte detaljerna (beloppet).
+        composeRule.onNodeWithText("· 4 dagar", substring = true).assertIsDisplayed()
+        composeRule.onAllNodesWithText("Belopp:", substring = true).assertCountEquals(0)
+
+        composeRule.onNode(header)
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Hopfälld"))
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+
+        composeRule.onNode(header).assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Utfälld"))
+        composeRule.onAllNodesWithText("Belopp:", substring = true).assertCountEquals(1)
     }
 }
