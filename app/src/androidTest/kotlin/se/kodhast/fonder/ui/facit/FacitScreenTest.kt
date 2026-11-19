@@ -214,6 +214,10 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("Såld fond → Köpt fond").performClick()
+        // Utfällningen är en animation: noden finns men har storlek noll tills den fällts ut.
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodesWithText("Genomförd").fetchSemanticsNodes().firstOrNull()?.size?.height?.let { it > 0 } == true
+        }
         val node = composeRule.onNodeWithText("Genomförd").fetchSemanticsNode()
         val info = "bounds=${node.boundsInRoot} root=${composeRule.onRoot().fetchSemanticsNode().size} cfg=${node.config}"
         composeRule.onNodeWithText("Genomförd").performClick()
