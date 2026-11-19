@@ -28,7 +28,6 @@ import se.kodhast.fonder.ui.theme.Error
 import se.kodhast.fonder.ui.theme.Filled
 import se.kodhast.fonder.ui.theme.FonderLightDepth
 import se.kodhast.fonder.ui.theme.FonderTheme
-import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.CardSegment
@@ -51,12 +50,10 @@ class AppCardTest {
     @Test
     fun `FonderTheme ger korten djupets kant i stället för egen kontur och bibliotekets standardluft`() {
         var style: AppCardStyle? = null
-        var flush: AppCardStyle? = null
         var depth: AppDepth? = null
         composeRule.setContent {
             FonderTheme(darkTheme = false) {
                 style = LocalAppCardStyle.current
-                flush = flushCardStyle
                 depth = AppTheme.depth
             }
         }
@@ -66,9 +63,6 @@ class AppCardTest {
         assertEquals(FonderLightDepth, depth)
         // Fonder sätter ingen egen kortstil: kortets luft och avstånd är bibliotekets standard (alla appar lika).
         assertEquals(AppCardStyle(), style)
-        assertEquals(0.dp, flush?.padding)
-        assertEquals(0.dp, flush?.segmentGap)
-        assertEquals(style?.border, flush?.border)
     }
 
     @Test

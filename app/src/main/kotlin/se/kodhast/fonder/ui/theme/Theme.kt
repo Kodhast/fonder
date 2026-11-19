@@ -10,11 +10,9 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
 import se.kodhast.ui.components.ActionMenuStyle
 import se.kodhast.ui.components.AppBrandStyle
-import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.AppIdentity
 import se.kodhast.ui.components.LocalAppBrandStyle
 import se.kodhast.ui.components.LocalAppIdentity
@@ -75,12 +73,6 @@ private val FonderBrandStyle = AppBrandStyle(
     toolbarStyle = ToolbarStyle.Tonal,
     actionMenu = ActionMenuStyle.Fab
 )
-
-/**
- * Kortstilen för ett kort vars rader själva går ut i kanten och har sin luft innanför klickytan (Facits
- * utfällbara rader, Besluts bytesrader och Facit-raden): ingen inre luft. Allt annat tar bibliotekets standard.
- */
-val flushCardStyle = AppCardStyle(padding = 0.dp, segmentGap = 0.dp)
 
 /** Semantiska avkastningsfärger. Får aldrig bäras av enbart färg — para med tecken/pil. */
 object ReturnColors {

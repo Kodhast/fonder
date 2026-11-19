@@ -151,11 +151,11 @@ ui/
 ├── common/       DataErrorMessage (DataError.toMessage(), felens svenska texter). Tillståndshjälparna (itemsOrEmpty,
 │                 valueOrNull, errorOrNull, catchAsListError/catchAsDetailError(AppErrors), RetrySignal + restartOn,
 │                 NFR-6/#173/#174) är android-ui:s ui-common (3.1.0, Fonder 1.8.0)
-├── navigation/   AppNavigation (android-ui:s AppNavHost med AppTransitions, flikraden och plusmenyn; FonderPage
-│                 lägger toppraden runt skärmar utan ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
+├── navigation/   AppNavigation (android-ui:s AppNavHost med AppTransitions, flikraden och plusmenyn; varje
+│                 skärm ritar sin topprad i sin ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
 │                 sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
-│                 Pages (SubPage med AppTopBar; flikarna ritar sitt sidhuvud i ramen) · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
-├── components/   Delade komponenter (CenteredState, PeriodRow, AnalysisStatusBanner/StatusDot, RiskLevelPicker,
+│                 DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
+├── components/   Delade komponenter (PeriodRow, AnalysisStatusBanner/StatusDot, RiskLevelPicker,
 │                 copyableFundName — Fonders texter på android-ui:s copyOnLongPress ·
 │                 ExpandableInfoRow — förklaringsrad på android-ui:s Foldout, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
 │                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0;
@@ -290,8 +290,6 @@ versionen i tabellen.
 | Behov | API | Artefakt:version | Används i | Verifierad |
 |---|---|---|---|---|
 | Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`), inre `MaterialExpressiveTheme(shapes = FonderShapes)` | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
-| Laddningsindikator | `LoadingIndicator()` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |
-| Vågig progress | `LinearWavyProgressIndicator` | `material3:1.5.0-beta01` | `ui/components/ProgressBar.kt` | 2026-10-20 (kompilerad) |
 | Flytande verktygsrad | android-ui:s `AppFloatingToolbar(items, selectedIndex, onSelect, action)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Plusknapp med meny | android-ui:s `ToolbarAction(label, icon, menu: List<AppMenuItem>)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Växlingsknapp | `ToggleButton` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |

@@ -1,11 +1,11 @@
 package se.kodhast.fonder.ui.facit
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -102,7 +102,7 @@ class FacitScreenTest {
         composeRule.onNodeWithText("Fond A → Fond B").assertExists()
         // Raderna är lazy: på emulatorns 320×640 ligger andra kortet under summeringen och är inte
         // komponerat förrän listan rullats dit (UI-5) – värderaderna blev högre med android-ui:s ValueRow.
-        composeRule.onNodeWithTag(FACIT_LIST_TEST_TAG).performScrollToNode(hasText("Fond C → Fond D"))
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText("Fond C → Fond D"))
         composeRule.onNodeWithText("Fond C → Fond D").assertExists()
     }
 
@@ -143,6 +143,8 @@ class FacitScreenTest {
             FonderTheme { FacitContent(state = state(rad(id = 1, planIndex = 0), rad(id = 2, planIndex = 1))) }
         }
 
+        // Fördelningen per horisont och plats i planen ligger hopfälld i summeringen (#266 F6).
+        composeRule.onNodeWithText(DETAILS).performClick()
         composeRule.onNodeWithText("Per plats i planen").assertExists()
         composeRule.onNodeWithText("Plats 1").assertExists()
         composeRule.onNodeWithText("Plats 2").assertExists()
@@ -157,6 +159,7 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("mätt till 2024-11-03 · 30 dagar").assertExists()
+        composeRule.onNodeWithText(DETAILS).performClick()
         composeRule.onNodeWithText("Per horisont · alla förslag").assertExists()
         composeRule.onNodeWithText("1–6 månader · 1 st").assertExists()
         composeRule.onNodeWithText("median · 1 av 1 bättre").assertExists()
@@ -307,8 +310,13 @@ class FacitScreenTest {
             FonderTheme { FacitContent(state = state(*rows.toTypedArray())) }
         }
 
-        composeRule.onNodeWithTag(FACIT_LIST_TEST_TAG).performScrollToIndex(15)
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToIndex(15)
 
         composeRule.onNodeWithText("Fond 15 → Köpt fond").assertIsDisplayed()
+    }
+
+    private companion object {
+        /** Rubriken på summeringens hopfällda del (facit_details_title). */
+        const val DETAILS = "Per horisont och plats i planen"
     }
 }

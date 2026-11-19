@@ -25,7 +25,7 @@ class SwitchWatchContentTest {
         composeRule.setContent {
             FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound()))) }
         }
-        composeRule.onNodeWithText("Bevakningen finns inte").assertExists()
+        composeRule.onNodeWithText(MISSING, substring = true).assertExists()
         composeRule.onNodeWithText("Det finns inte längre.").assertDoesNotExist()
     }
 
@@ -34,9 +34,8 @@ class SwitchWatchContentTest {
         composeRule.setContent {
             FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.map(DataError.Database)))) }
         }
-        composeRule.onNodeWithText("Kunde inte visa innehållet").assertExists()
         composeRule.onNodeWithText("Appens data gick inte att läsa. Lämna skärmen och försök igen.").assertExists()
-        composeRule.onNodeWithText("Bevakningen finns inte").assertDoesNotExist()
+        composeRule.onNodeWithText(MISSING, substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -62,5 +61,10 @@ class SwitchWatchContentTest {
             FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound()))) }
         }
         composeRule.onNodeWithText("Försök igen").assertDoesNotExist()
+    }
+
+    private companion object {
+        /** Början av texten för en bevakning som inte finns (switch_watch_missing_body). */
+        const val MISSING = "Det pågående bytet har tagits bort"
     }
 }

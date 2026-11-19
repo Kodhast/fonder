@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,7 +48,6 @@ import se.kodhast.fonder.ui.theme.Gain
 import se.kodhast.fonder.ui.theme.Neutral
 import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.fonder.ui.theme.Tertiary
-import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppDivider
@@ -74,9 +72,9 @@ import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.components.LoadingDialog
-import se.kodhast.ui.components.LocalTopBarStatus
 import se.kodhast.ui.components.MakerMark
 import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.components.SectionCard
 import se.kodhast.ui.components.SectionHeader
 import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.SwitchRow
@@ -184,15 +182,14 @@ private fun ColumnScope.Buttons() {
 
 @Composable
 private fun ColumnScope.CardsAndRows() {
-    Label("SectionHeader (android-ui) · CardTitleRow")
-    SectionHeader(title = "Byten", count = "2 väntar på dig", working = true, workingDescription = "Uppdaterar Byten")
+    Label("SectionHeader (android-ui)")
+    SectionHeader(title = "Byten", count = "2 väntar på dig")
     SectionHeader(title = "Tema")
     Label("MakerMark (android-ui) – Kodhästs signatur sist i Inställningar")
     MakerMark()
-    Label("AppCard (android-ui, Fonders kortstil)")
-    AppCard(modifier = Modifier.fillMaxWidth()) {
-        CardTitleRow(title = "Fondavgifter per år", working = true, style = AppTheme.typography.itemTitle)
-        Text("Kontur och 16 dp luft.", style = AppTheme.typography.itemSubtitle)
+    Label("AppCard · SectionCard (android-ui)")
+    SectionCard(title = "Fondavgifter per år", modifier = Modifier.fillMaxWidth()) {
+        Text("Hämtar …", style = AppTheme.typography.itemSubtitle)
     }
     AppCard(modifier = Modifier.fillMaxWidth(), tone = Tone.Filled, onClick = {}) {
         Text("Klickbart och tonat (Tone.Filled).", style = MaterialTheme.typography.bodyMedium)
@@ -217,7 +214,7 @@ private fun ColumnScope.CardsAndRows() {
     )
     Column {
         rows.forEachIndexed { index, (type, fund, amount) ->
-            CardSegment(top = index == 0, bottom = index == rows.lastIndex, style = flushCardStyle) {
+            CardSegment(top = index == 0, bottom = index == rows.lastIndex) {
                 ItemRow(
                     title = fund,
                     subtitle = "14 okt 2026",
@@ -227,7 +224,7 @@ private fun ColumnScope.CardsAndRows() {
             }
         }
     }
-    AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         ItemRow(title = "Mot riskprofil 4,00", subtitle = "Balanserad tillväxt · ISK/KF")
         AppDivider()
         ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr", style = AppTheme.typography.body) }, navigates = true, onClick = {})
@@ -319,15 +316,11 @@ private fun ColumnScope.Status() {
     Label("AnalysisStatusBanner · AnalysisGuidanceCard")
     AnalysisStatusBanner(analysis = galleryAnalysis)
     AnalysisGuidanceCard(analysis = galleryAnalysis)
-    Label("WorkingIndicator · ProgressBar")
-    WorkingIndicator(working = true, contentDescription = "Uppdaterar Innehav")
-    ProgressBar(modifier = Modifier.fillMaxWidth())
-    ProgressBar(modifier = Modifier.fillMaxWidth(), progress = { 0.6f })
     Label("AppPullToRefresh (android-ui)")
     AppPullToRefresh(refreshing = true, onRefresh = {}, modifier = Modifier.height(GALLERY_REFRESH_HEIGHT)) {
         PeriodRow(label = "Sedan köp", amount = 18_420.0, fraction = 0.091)
     }
-    Label("EmptyState med knappar · LoadErrorState (android-ui, CenteredState utanför ramarna)")
+    Label("EmptyState med knappar · LoadErrorState (android-ui)")
     EmptyState(
         icon = R.drawable.ic_holdings,
         title = "Inga innehav ännu",

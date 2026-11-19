@@ -18,12 +18,8 @@
     <!-- Sidhuvudets prickar under en kursuppdatering (NAV-6). Ersätter android-ui:s "Ändringar väntar på
          servern" (samma namn, appens sträng går före bibliotekets): i Fonder betyder prickarna att något hämtas. -->
     <string name="sync_pending">Uppdaterar kurser i bakgrunden</string>
-    <!-- Kortens egen väntesnurra (NAV-6) — %1$s är kortets rubrik, så flera samtidiga snurror går att skilja åt -->
-    <string name="format_card_working">Uppdaterar %1$s</string>
-    <!-- Rubrik för kort som tidigare saknade en, men som behövde en rad att bära snurran i (NAV-6) -->
+    <!-- Rubrik på Översiktens utvecklingskort -->
     <string name="hem_performance_title">Utveckling</string>
-    <!-- Diagrammets egen väntesnurra (NAV-6) — diagrammet ligger inte alltid i ett kort med rubrik -->
-    <string name="chart_working">Uppdaterar diagrammet</string>
     <string name="ok">OK</string>
     <string name="settings">Inställningar</string>
     <string name="sign_in_with_google">Logga in med Google</string>
@@ -443,6 +439,8 @@
     <string name="facit_empty_title">Inget facit än</string>
     <string name="facit_empty_body">Här visas utfallet av bytesförslagen på Beslut. Inga förslag har spelats in ännu — de skapas av bakgrundsuppdateringen när riskprofil och kontotyp är satta och portföljen avviker från målfördelningen.</string>
     <string name="facit_summary_title">Meravkastning mot att ha behållit</string>
+    <string name="facit_details_title">Per horisont och plats i planen</string>
+    <string name="facit_suggestions_group">Förslagen</string>
     <string name="facit_summary_plan_title">Bytesplanen</string>
     <string name="facit_summary_fee_title">Billigare alternativ</string>
     <string name="facit_summary_fee_explain">Avgiftsbytena redovisas separat: där är vinsten den lägre avgiften, känd på förhand, medan bytesplanens utfall beror på hur fonderna går. Ett gemensamt snitt hade dolt skillnaden.</string>
@@ -488,6 +486,8 @@
     <!-- Importera innehav (issue #8) -->
     <string name="import_title">Importera innehav</string>
     <string name="import_pick_file">Välj Excel-fil</string>
+    <string name="import_pick_file_title">Välj exporten från banken</string>
+    <string name="import_rows_group">Fonder i filen</string>
     <string name="import_pick_file_body">Välj filen du exporterade som \"Innehav Fonder\" från Handelsbankens internetbank.</string>
     <string name="import_loading_title">Importerar…</string>
     <string name="import_loading_body">Matchar fonder och hämtar kurshistorik. Det kan ta en liten stund.</string>
@@ -559,6 +559,8 @@
     <string name="format_switch_plan_fee_delta">Avgiftsskillnad: %1$s</string>
     <string name="switch_plan_disclaimer">Rätt cirka 3 gånger av 4, uppmätt spann −10 till +13 procentenheter, på en risknivå under sex år — inte en garanti. Byten är gratis i ISK/KF, men inte riskfria.</string>
     <string name="import_orders_title">Importera avräkningsnotor</string>
+    <string name="import_orders_pick_files_title">Välj avräkningsnotorna</string>
+    <string name="import_orders_rows_group">Transaktioner i filerna</string>
     <string name="import_orders_pick_files_body">Välj en eller flera PDF-avräkningsnotor från Handelsbankens internetbank.</string>
     <string name="import_orders_pick_files_button">Välj PDF-filer</string>
     <string name="import_orders_loading_title">Läser PDF-filer…</string>
@@ -641,7 +643,6 @@
     <string name="format_switch_watch_empty_index_title">Inga köpbara indexfonder på nivå %1$d</string>
     <string name="format_switch_watch_empty_index_body">Ingen av de bästa indexfonderna på risknivå %1$d gick att köpa hos Handelsbanken. Stäng av ”Bara indexfonder”, välj en annan nivå eller lägg till egna nedan.</string>
     <string name="switch_watch_level_footer">Byter du nivå hämtar appen nya förslag på den nivån. Alternativ du lagt till själv ligger kvar. Likviden räknas på vald nivå i bytesplanen.</string>
-    <string name="switch_watch_missing_title">Bevakningen finns inte</string>
     <string name="switch_watch_missing_body">Det pågående bytet har tagits bort eller återställts bort. Starta en ny bevakning från Sålda fonder eller från ett bytesförslag.</string>
     <string name="switch_watch_isin_unavailable">Fonden kunde inte identifieras med ISIN och går därför inte att bevaka — kurserna hämtas på ISIN.</string>
     <string name="format_switch_watch_limit">Du kan bevaka högst %1$d alternativ åt gången.</string>

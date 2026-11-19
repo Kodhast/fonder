@@ -2,14 +2,10 @@ package se.kodhast.fonder.ui.imports
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.LocalDate
@@ -55,8 +50,8 @@ private val IMPORT_MIME_TYPES = arrayOf(
 /** Importera befintliga innehav från Handelsbankens "Innehav Fonder"-Excel-export (issue #8). */
 @Composable
 fun ImportHoldingsScreen(
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onDone: () -> Unit = {},
     viewModel: ImportHoldingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,56 +62,44 @@ fun ImportHoldingsScreen(
     }
 
     if (state.imported) {
-        ImportCompleteDialog(importedCount = state.rows.count { it.readyToImport }, onDismiss = onDone)
+        ImportCompleteDialog(importedCount = state.rows.count { it.readyToImport }, onDismiss = onBack)
+        return
     }
 
-    val error = state.error
-    when {
-        state.imported -> Unit
-
-        !state.fileSelected -> Column(
-            modifier = modifier.fillMaxSize().padding(Spacing.xl),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(stringResource(R.string.import_pick_file_body), style = MaterialTheme.typography.bodyMedium)
-            AppButton(
-                text = stringResource(R.string.import_pick_file),
-                onClick = { filePicker.launch(IMPORT_MIME_TYPES) },
-                modifier = Modifier.padding(top = Spacing.l)
-            )
-        }
-
-        // Filen gick inte att läsa: "Försök igen" väljer en ny fil (NFR-6).
-        error != null -> ImportError(stringResource(R.string.import_title), error, onPickAgain = { filePicker.launch(IMPORT_MIME_TYPES) }, modifier = modifier)
-
-        else -> Column(modifier = modifier.fillMaxSize()) {
-            LazyColumn(modifier = Modifier.weight(1f)) {
-                items(state.rows, key = { it.row.isin + it.row.shares }) { rowState ->
-                    ImportRowCard(
-                        rowState = rowState,
-                        catalogFunds = state.catalogFunds,
-                        onFundOverride = { fund -> viewModel.onEvent(ImportHoldingsEvent.FundOverride(rowState.row, fund)) },
-                        onIncludedChange = { included -> viewModel.onEvent(ImportHoldingsEvent.IncludedChange(rowState.row, included)) },
-                        onOccasionDateChange = { index, date -> viewModel.onEvent(ImportHoldingsEvent.OccasionDateChange(rowState.row, index, date)) },
-                        onOccasionSharesChange = { index, text -> viewModel.onEvent(ImportHoldingsEvent.OccasionSharesChange(rowState.row, index, text)) },
-                        onOccasionTypeChange = { index, type -> viewModel.onEvent(ImportHoldingsEvent.OccasionTypeChange(rowState.row, index, type)) },
-                        onAddOccasion = { viewModel.onEvent(ImportHoldingsEvent.AddOccasion(rowState.row)) },
-                        onRemoveOccasion = { index -> viewModel.onEvent(ImportHoldingsEvent.RemoveOccasion(rowState.row, index)) }
-                    )
-                }
-            }
-            AppButton(
-                text = stringResource(R.string.import_commit_button, state.rows.count { it.readyToImport }),
-                onClick = { viewModel.onEvent(ImportHoldingsEvent.Import) },
-                enabled = state.canImport,
-                modifier = Modifier.fillMaxWidth().padding(Spacing.l)
-            )
-        }
+    ImportFrame(
+        title = stringResource(R.string.import_title),
+        state = importListState(state.fileSelected, state.loading, state.error, state.rows),
+        pick = ImportPick(
+            icon = R.drawable.ic_holdings,
+            title = stringResource(R.string.import_pick_file_title),
+            message = stringResource(R.string.import_pick_file_body),
+            button = stringResource(R.string.import_pick_file)
+        ),
+        // "Försök igen" efter ett läsfel väljer en ny fil (NFR-6).
+        onPick = { filePicker.launch(IMPORT_MIME_TYPES) },
+        onBack = onBack,
+        group = stringResource(R.string.import_rows_group),
+        commit = stringResource(R.string.import_commit_button, state.rows.count { it.readyToImport }),
+        canCommit = state.canImport,
+        onCommit = { viewModel.onEvent(ImportHoldingsEvent.Import) },
+        key = { it.row.isin + it.row.shares },
+        modifier = modifier
+    ) { rowState ->
+        ImportRowCard(
+            rowState = rowState,
+            catalogFunds = state.catalogFunds,
+            onFundOverride = { fund -> viewModel.onEvent(ImportHoldingsEvent.FundOverride(rowState.row, fund)) },
+            onIncludedChange = { included -> viewModel.onEvent(ImportHoldingsEvent.IncludedChange(rowState.row, included)) },
+            onOccasionDateChange = { index, date -> viewModel.onEvent(ImportHoldingsEvent.OccasionDateChange(rowState.row, index, date)) },
+            onOccasionSharesChange = { index, text -> viewModel.onEvent(ImportHoldingsEvent.OccasionSharesChange(rowState.row, index, text)) },
+            onOccasionTypeChange = { index, type -> viewModel.onEvent(ImportHoldingsEvent.OccasionTypeChange(rowState.row, index, type)) },
+            onAddOccasion = { viewModel.onEvent(ImportHoldingsEvent.AddOccasion(rowState.row)) },
+            onRemoveOccasion = { index -> viewModel.onEvent(ImportHoldingsEvent.RemoveOccasion(rowState.row, index)) }
+        )
     }
 
-    // Fondmatchning + kursuppdatering (5 års historik per fond) tar en stund — en
-    // overlay-modal gör väntan tydlig i stället för att visa en tom, ointeraktiv lista.
+    // Fondmatchning + kursuppdatering (5 års historik per fond) tar en stund — en spärrande
+    // dialog gör väntan tydlig i stället för att visa en tom, ointeraktiv lista (#266: importen behåller sin väntan).
     if (state.loading) {
         LoadingDialog(
             title = stringResource(R.string.import_loading_title),
@@ -138,7 +121,7 @@ private fun ImportRowCard(
     onRemoveOccasion: (Int) -> Unit
 ) {
     val row = rowState.row
-    AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 6.dp)) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         ImportRowHeader(
             included = rowState.included,
             onIncludedChange = onIncludedChange,

@@ -116,7 +116,7 @@ flik (`rememberAppBackStack`), skärmarna kopplade i `fonderEntries` (`AppNaviga
 `select` och `popIfTop(key)` – aldrig från ViewModeln – och flikarnas ViewModels från aktiviteten
 (`hiltViewModel(tabOwner)`), så att en flik behåller sitt innehåll vid flikbyte. Ramen är android-ui:s
 `AppNavHost` (flikraden, plusmenyn, `AppTransitions`, sidhuvudets prickar via `sync`); flikarna ritar
-`AppHeader` i ramarnas flikläge, och `FonderPage` lägger `SubPage` (`AppTopBar`) runt underskärmarna utan egen ram. Inställningar och
+`AppHeader` i ramarnas flikläge, och underskärmarna står på list- eller detaljramen med liten `AppTopBar` (#266 F6). Inställningar och
 Facit är skärmar i stacken, inte flikar (NAV-7).
 
 ## Tillgänglighet (android:accessibility-compose)
@@ -131,13 +131,13 @@ UI-10 (risknivå i text). Semantiken ligger i komponenten, aldrig hos anroparen.
   Kontrollera i båda temana – vinst/förlust har egna ljusa och mörka toner.
 - `FundLineChart` sätter en `contentDescription` med period, antal punkter, lägsta och högsta
   värde och i procentläge kurvornas namn (`format_fond_chart_description*` i `strings.xml`).
-- Sidhuvudets prickar säger "Uppdaterar kurser i bakgrunden" (`sync_pending`, NAV-6); väntesnurran säger vilket kort som uppdateras.
+- Sidhuvudets prickar säger "Uppdaterar kurser i bakgrunden" (`sync_pending`, NAV-6); ett värde på väg säger "Hämtar …" i text, ingen snurra i korten (UI-19).
 - Periodvalet och övriga val (`ChoiceChips`, `AppSegmentedChoice` från android-ui) läses som radioval;
   `RiskLevelPicker` använder `minimumInteractiveComponentSize()`.
 - `Foldout` (android-ui), `ExpandableInfoRow` och `FollowedToggleRow` kommunicerar läget.
 - Belopp i `MonoAmountStyle` behåller kolumnerna vid stor text; etiketten kapas, värdet aldrig.
 - Tester: Robolectric i `app/src/test` (`EmptyStateTest`, `ChoiceControlsTest`) och instrument i
-  `app/src/androidTest` (`RiskBadgeTest`, `CardTitleRowTest`). Det finns
+  `app/src/androidTest` (`RiskBadgeTest`). Det finns
   inget komponentgalleri med `fontScale = 1.3` än; komponenternas skärmdumpar ligger i
   `ComponentScreenshotTest`.
 
@@ -219,12 +219,11 @@ Processen (när, hur, visa och vänta) står i pluginen; det här är Fonders de
 
 - **Mallen:** det finns **ingen gemensam canvas än**. Den första mockupen blir mallen: ett
   komponentark med katalogen i `ui/components/` och `ui/diagram/` (skill `shared-ui-components`)
-  i ljust och mörkt. Länken skrivs då in här och i CLAUDE.md:s processregel. Fonder har inga
-  list- eller redigeringsramar, så beteendearket visar de tillstånd som finns: laddar
-  (väntesnurran i rubrikraden, NAV-6), tomt (`EmptyState`), fel, okänd data ("Risk okänd", ANA-4)
+  i ljust och mörkt. Länken skrivs då in här och i CLAUDE.md:s processregel. Beteendearket visar ramarnas
+  tillstånd: laddar (ramens laddning och sidhuvudets prickar, NAV-6, UI-19), tomt (`EmptyState`), fel, okänd data ("Risk okänd", ANA-4)
   och lång text som kapas (UI-6).
 - **Facit är det byggda:** `ui/theme` och skärmdumparna i `app/src/test/screenshots/`.
-- **Byggs av** befintliga komponenter (`CardTitleRow`, `PeriodRow`, `RiskBadge`, `EmptyState`,
+- **Byggs av** befintliga komponenter (`SectionCard`, `PeriodRow`, `RiskBadge`, `EmptyState`,
   `FundLineChart` …) i designspråket i skill `ui-style`: nordisk blå, sparsam koppar, M3
   Expressive, Space Grotesk, belopp med tabulära siffror, vinst/förlust med tecken och färg.
   Mörkt tema när det spelar roll: vinst/förlust, diagramkurvor och koppar byter ton.
@@ -255,7 +254,7 @@ Stegen står i pluginen; det här är Fonders delar.
 - **Syskonklasser att följa:** `PortfoljViewModel`, `TransaktionerViewModel`,
   `FundSearchViewModel`; skärmen är `XScreen(viewModel = hiltViewModel())` → tillståndslös
   `XContent` (avsnittet Compose ovan).
-- **Kända dubbletter** (skill `shared-ui-components`): rör du `TotalCard`, `ComparisonChart`,
+- **Kända dubbletter** (skill `shared-ui-components`): rör du `TotalCard`,
   importens laddningsdialoger eller en egen listrad – slå ihop den först, som egen commit.
 - **Domänskills:** data → skills `data-safety-backup`, `room-migrations` och
   `android-data-layer`; diagram → skill `diagram`; loggning, nätverk och Drive → skill
@@ -326,7 +325,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
   i README och raden i "Versionshistorik".
 - **Regel 4:** avvikelse från nordisk blå/koppar, Space Grotesk eller tabulära siffror för
   belopp; en egen listrad i stället för `ItemRow`; en tredje kopia av en känd dubblett
-  (`TotalCard`, `ComparisonChart`, importens laddningsdialoger) i stället för att slå ihop den;
+  (`TotalCard`, importens laddningsdialoger) i stället för att slå ihop den;
   baslinjen (`ui-allowlist.txt` ur pluginens `regel4-check.mjs --baseline`) får bara krympa, och `cpdCheck`
   har ingen.
 - **Regel 5:** emulatorn i fler jobb än `instrumented-tests`.
@@ -341,7 +340,7 @@ Release här; GUI → avsnittet Mockup här och `ui-style`.
   - **Skärmar:** `ui/hem`, `ui/portfolj`, `ui/fond`, `ui/fondsok`, `ui/beslut`,
     `ui/transaktioner`, `ui/imports`, `ui/facit`, `ui/bytesfonster`, `ui/riskprofil`,
     `ui/settings` – och vilka ViewModels, repositories, use cases (`domain/usecase/`) och workers.
-  - **Kända dubbletter:** `TotalCard`, `ComparisonChart`, importens laddningsdialoger, egna
+  - **Kända dubbletter:** `TotalCard`, importens laddningsdialoger, egna
     listrader – berörs en, slås den ihop först (skill `shared-ui-components`).
   - **Externa källor:** `data/network/` (Avanza, Handelsbanken, Riksbanken) är odokumenterade
     (TP-10, TP-14) – flagga skörheten.

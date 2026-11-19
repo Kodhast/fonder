@@ -20,7 +20,7 @@ LaunchedEffect(state.saved) { if (state.saved) { onSaved(); viewModel.onSavedHan
 withContext(io) {
 import kotlinx.coroutines.Dispatchers
 EmptyState(icon = R.drawable.ic_search, title = "Ingen portfölj ännu", message = "")
-CardTitleRow(title = "Värde")
+SectionCard(title = "Värde") { }
 PeriodRow(label = "1 år", amount = null, percent = 4.2)
 ValueAsOfRow(date)
 ShareBar(label, fraction, value)
@@ -34,7 +34,6 @@ AppSegmentedChoice(options = labels, selectedIndex = 0, onSelect = {})
 ChoiceChips(options, selected, onSelect = {}, label = { it })
 SelectField(label = "Fond", options = options)
 DateField(label = "Datum", date = date, onDateChange = {})
-WorkingIndicator()
 ImportCompleteDialog(onDismiss = {})
 FundLineChart(series)
 Text("Hej", style = MaterialTheme.typography.titleMedium)
@@ -52,7 +51,6 @@ Spacer(Modifier.width(8.dp))
 LazyColumn(modifier = Modifier.testTag("hem")) { }
 AppCard(modifier = Modifier.fillMaxWidth()) { }
 AppCard(onClick = {}, tone = Tone.Filled) { }
-AppCard(style = flushCardStyle) { }
 AppButton(text = "Spara", onClick = {})
 AppButton(text = "Avbryt", onClick = {}, variant = ButtonVariant.Text)
 AppIconButton(icon = UiR.drawable.ic_close, contentDescription = "Ta bort", onClick = {})
@@ -63,10 +61,9 @@ LoadingDialog(title = "Importerar", message = "")
 CheckRow(title = "Ta med", checked = true, onCheckedChange = {}, done = false, tinted = false)
 SwitchRow(title = "Bara indexfonder", checked = true, onCheckedChange = {})
 RiskLevelPicker(selected = 4, onSelect = {}, marked = 6)
-ProgressBar()
 ItemRow(title = "Global Indexfond A", navigates = true, onClick = {})
 InfoPill(text = "Sålt", tone = Tone.Copper, shape = AppTheme.shapes.smallTile)
-SectionHeader(title = "Byten", count = "2 väntar på dig", working = true)
+SectionHeader(title = "Byten", count = "2 väntar på dig")
 AppDivider()
 AppDivider(Modifier.padding(top = Spacing.s))
 AppFloatingToolbar(items = tabs, selectedIndex = 0, onSelect = {}, action = ToolbarAction("Lägg till", UiR.drawable.ic_add, menu))
@@ -189,7 +186,7 @@ app/src/main/kotlin/se/kodhast/fonder/ui/hem/notes.md
 app/src/test/kotlin/X.kt
 app/src/main/kotlin/se/kodhast/fonder/data/repository/FundRepository.kt	component-only,vico,dispatchers
 app/src/main/kotlin/se/kodhast/fonder/ui/theme/Theme.kt	component-only,vico,dispatchers,events
-app/src/main/kotlin/se/kodhast/fonder/ui/components/CenteredState.kt	vico,dispatchers,events
+app/src/main/kotlin/se/kodhast/fonder/ui/components/PeriodRow.kt	vico,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/diagram/FundLineChart.kt	component-only,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/hem/HemScreen.kt	feature,component-only,vico,dispatchers,events
 app/src/main/kotlin/se/kodhast/fonder/ui/navigation/AppNavigation.kt	feature,component-only,vico,dispatchers,events

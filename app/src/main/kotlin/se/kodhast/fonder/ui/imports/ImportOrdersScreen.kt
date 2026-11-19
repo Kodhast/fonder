@@ -4,22 +4,17 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.datetime.toJavaLocalDate
@@ -31,7 +26,6 @@ import se.kodhast.fonder.domain.usecase.SwitchOption
 import se.kodhast.fonder.ui.components.ImportCompleteDialog
 import se.kodhast.fonder.ui.transaktioner.SwitchDecisionField
 import se.kodhast.fonder.ui.transaktioner.labelRes
-import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.DateField
@@ -42,8 +36,8 @@ import se.kodhast.ui.theme.Spacing
 /** Importera exakta transaktioner från en eller flera Handelsbanken-avräkningsnotor (PDF), issue #8-uppföljning. */
 @Composable
 fun ImportOrdersScreen(
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onDone: () -> Unit = {},
     viewModel: ImportOrdersViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,46 +50,28 @@ fun ImportOrdersScreen(
     if (state.imported) {
         ImportCompleteDialog(
             importedCount = state.rows.count { it.readyToImport },
-            onDismiss = onDone,
+            onDismiss = onBack,
             notice = state.linkFailedCount.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.format_import_orders_link_failed, it, it) }
         )
+        return
     }
 
-    val error = state.error
-    when {
-        state.imported -> Unit
+    ImportOrdersContent(
+        state = state,
+        onPick = { filePicker.launch(arrayOf("application/pdf")) },
+        onBack = onBack,
+        onFundOverride = { transaction, fund -> viewModel.onEvent(ImportOrdersEvent.FundOverride(transaction, fund)) },
+        onIncludedChange = { transaction, included -> viewModel.onEvent(ImportOrdersEvent.IncludedChange(transaction, included)) },
+        onDateChange = { transaction, date -> viewModel.onEvent(ImportOrdersEvent.DateChange(transaction, date)) },
+        onSharesTextChange = { transaction, text -> viewModel.onEvent(ImportOrdersEvent.SharesTextChange(transaction, text)) },
+        onPriceTextChange = { transaction, text -> viewModel.onEvent(ImportOrdersEvent.PriceTextChange(transaction, text)) },
+        onSwitchSelect = { transaction, option -> viewModel.onEvent(ImportOrdersEvent.SwitchSelected(transaction, option)) },
+        onImport = { viewModel.onEvent(ImportOrdersEvent.Import) },
+        modifier = modifier
+    )
 
-        !state.filesSelected -> Column(
-            modifier = modifier.fillMaxSize().padding(Spacing.xl),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(stringResource(R.string.import_orders_pick_files_body), style = MaterialTheme.typography.bodyMedium)
-            AppButton(
-                text = stringResource(R.string.import_orders_pick_files_button),
-                onClick = { filePicker.launch(arrayOf("application/pdf")) },
-                modifier = Modifier.padding(top = Spacing.l)
-            )
-        }
-
-        // Filen gick inte att läsa: "Försök igen" väljer en ny fil (NFR-6).
-        error != null -> ImportError(stringResource(R.string.import_orders_title), error, onPickAgain = { filePicker.launch(arrayOf("application/pdf")) }, modifier = modifier)
-
-        else -> ImportOrdersReview(
-            state = state,
-            onFundOverride = { transaction, fund -> viewModel.onEvent(ImportOrdersEvent.FundOverride(transaction, fund)) },
-            onIncludedChange = { transaction, included -> viewModel.onEvent(ImportOrdersEvent.IncludedChange(transaction, included)) },
-            onDateChange = { transaction, date -> viewModel.onEvent(ImportOrdersEvent.DateChange(transaction, date)) },
-            onSharesTextChange = { transaction, text -> viewModel.onEvent(ImportOrdersEvent.SharesTextChange(transaction, text)) },
-            onPriceTextChange = { transaction, text -> viewModel.onEvent(ImportOrdersEvent.PriceTextChange(transaction, text)) },
-            onSwitchSelect = { transaction, option -> viewModel.onEvent(ImportOrdersEvent.SwitchSelected(transaction, option)) },
-            onImport = { viewModel.onEvent(ImportOrdersEvent.Import) },
-            modifier = modifier
-        )
-    }
-
-    // Läsning/tolkning av flera PDF-filer kan ta en stund — overlay-modal precis som
-    // Excel-importet (IMP-4), ingen tom eller ointeraktiv vy under tiden.
+    // Läsning/tolkning av flera PDF-filer kan ta en stund — spärrande dialog precis som
+    // Excel-importen (IMP-4), ingen tom eller ointeraktiv vy under tiden.
     if (state.loading) {
         LoadingDialog(
             title = stringResource(R.string.import_orders_loading_title),
@@ -105,11 +81,12 @@ fun ImportOrdersScreen(
 }
 
 /**
- * Granskningen av de tolkade avräkningsnotorna (IMP-6) — tillståndsdriven och testbar, utan
- * ViewModel. Raderna står sälj före köp, var och en med bytesväljaren (BYT-2).
+ * Orderimporten (IMP-6) — tillståndsdriven och testbar, utan ViewModel: filväljaren innan filer valts, läsfelet
+ * ("Försök igen" väljer nya filer, NFR-6) och granskningen av de tolkade avräkningsnotorna. Raderna står sälj före
+ * köp, var och en med bytesväljaren (BYT-2).
  */
 @Composable
-fun ImportOrdersReview(
+fun ImportOrdersContent(
     state: ImportOrdersUiState,
     onFundOverride: (ImportedOrderTransaction, Fund?) -> Unit,
     onIncludedChange: (ImportedOrderTransaction, Boolean) -> Unit,
@@ -118,9 +95,48 @@ fun ImportOrdersReview(
     onPriceTextChange: (ImportedOrderTransaction, String) -> Unit,
     onSwitchSelect: (ImportedOrderTransaction, SwitchOption) -> Unit,
     onImport: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPick: () -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxSize()) {
+    val header = state.unparsedFileNames.isNotEmpty() || state.hasSwitchQuestions
+    ImportFrame(
+        title = stringResource(R.string.import_orders_title),
+        state = importListState(state.filesSelected, state.loading, state.error, state.rows),
+        pick = ImportPick(
+            icon = R.drawable.ic_upload,
+            title = stringResource(R.string.import_orders_pick_files_title),
+            message = stringResource(R.string.import_orders_pick_files_body),
+            button = stringResource(R.string.import_orders_pick_files_button)
+        ),
+        onPick = onPick,
+        onBack = onBack,
+        group = stringResource(R.string.import_orders_rows_group),
+        commit = stringResource(R.string.import_orders_commit_button, state.rows.count { it.readyToImport }),
+        canCommit = state.canImport,
+        onCommit = onImport,
+        key = { "${it.transaction.isin}-${it.transaction.epochDay}-${it.transaction.shares}-${it.transaction.sourceFileName}" },
+        modifier = modifier,
+        header = if (header) ({ ImportOrdersIntro(state) }) else null
+    ) { rowState ->
+        ImportOrderRowCard(
+            rowState = rowState,
+            catalogFunds = state.catalogFunds,
+            onFundOverride = { fund -> onFundOverride(rowState.transaction, fund) },
+            onIncludedChange = { included -> onIncludedChange(rowState.transaction, included) },
+            onDateChange = { date -> onDateChange(rowState.transaction, date) },
+            onSharesTextChange = { text -> onSharesTextChange(rowState.transaction, text) },
+            onPriceTextChange = { text -> onPriceTextChange(rowState.transaction, text) },
+            onSwitchSelect = { option -> onSwitchSelect(rowState.transaction, option) },
+            switchSaleRowSkipped = state.switchSaleRowSkipped(rowState)
+        )
+    }
+}
+
+/** Överst i granskningen: filer som inte gick att tolka, och hur bytesfrågorna läses. */
+@Composable
+private fun ImportOrdersIntro(state: ImportOrdersUiState) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         if (state.unparsedFileNames.isNotEmpty()) {
             Text(
                 stringResource(
@@ -129,42 +145,16 @@ fun ImportOrdersReview(
                     state.unparsedFileNames.joinToString(", ")
                 ),
                 style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(Spacing.l)
+                color = MaterialTheme.colorScheme.error
             )
         }
         if (state.hasSwitchQuestions) {
             Text(
                 stringResource(R.string.import_orders_switch_intro),
                 style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(
-                state.rows,
-                key = { "${it.transaction.isin}-${it.transaction.epochDay}-${it.transaction.shares}-${it.transaction.sourceFileName}" }
-            ) { rowState ->
-                ImportOrderRowCard(
-                    rowState = rowState,
-                    catalogFunds = state.catalogFunds,
-                    onFundOverride = { fund -> onFundOverride(rowState.transaction, fund) },
-                    onIncludedChange = { included -> onIncludedChange(rowState.transaction, included) },
-                    onDateChange = { date -> onDateChange(rowState.transaction, date) },
-                    onSharesTextChange = { text -> onSharesTextChange(rowState.transaction, text) },
-                    onPriceTextChange = { text -> onPriceTextChange(rowState.transaction, text) },
-                    onSwitchSelect = { option -> onSwitchSelect(rowState.transaction, option) },
-                    switchSaleRowSkipped = state.switchSaleRowSkipped(rowState)
-                )
-            }
-        }
-        AppButton(
-            text = stringResource(R.string.import_orders_commit_button, state.rows.count { it.readyToImport }),
-            onClick = onImport,
-            enabled = state.canImport,
-            modifier = Modifier.fillMaxWidth().padding(Spacing.l)
-        )
     }
 }
 
@@ -181,7 +171,7 @@ private fun ImportOrderRowCard(
     switchSaleRowSkipped: Boolean
 ) {
     val tx = rowState.transaction
-    AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 6.dp)) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         ImportRowHeader(
             included = rowState.included,
             onIncludedChange = onIncludedChange,

@@ -236,6 +236,25 @@ class ImportOrdersViewModelTest {
     }
 
     @Test
+    fun `nya filer efter ett lasfel nollstaller felet`() = runTest(dispatcher) {
+        findFundByIsinResult = nordeaFund
+        val vm = viewModel(PdfTextExtractor { bytes -> if (bytes.isEmpty()) "inte en avräkningsnota" else NORDEA_TEXT })
+
+        vm.uiState.test {
+            awaitItem()
+            vm.onFilesRead(listOf("skrap.pdf" to ByteArray(0)))
+            assertEquals(DataError.ImportNoTransactions, awaitItemSkipping { it.loading || !it.switchReady }.error?.cause)
+
+            vm.onFilesRead(listOf("nota.pdf" to ByteArray(1)))
+            val state = awaitItemSkipping { it.loading || !it.switchReady || it.rows.isEmpty() }
+
+            assertNull(state.error)
+            assertEquals("SE0003653302", state.rows.single().transaction.isin)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `flera filer samtidigt ger en rad per parsad transaktion`() = runTest(dispatcher) {
         findFundByIsinResult = nordeaFund
         val extractorPerFile: (String) -> String = { fileName ->

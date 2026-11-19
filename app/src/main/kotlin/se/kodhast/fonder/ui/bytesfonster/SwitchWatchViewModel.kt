@@ -180,7 +180,7 @@ data class SwitchWatchUiState(
     /** Läsfelet eller "finns inte" som visas i stället för bevakningen (NFR-6). */
     val error: UiError? get() = watch.errorOrNull()
 
-    /** Det skärmen visar: bevakningen, eller tomt under den första laddningen (rubrikkortet snurrar då). */
+    /** Det skärmen visar: bevakningen, eller tomt under den första laddningen (ramen visar då laddningen). */
     val content: SwitchWatchDetail get() = watch.valueOrNull() ?: SwitchWatchDetail()
 
     val canAddCandidate: Boolean get() = !content.closed && content.rows.size < SwitchWatchCalc.MAX_CANDIDATES
@@ -188,12 +188,9 @@ data class SwitchWatchUiState(
     /** Nivå och filter går bara att ändra medan bytet pågår — en stängd bevakning bär vad som hände. */
     val canChangeSelection: Boolean get() = watch.valueOrNull()?.closed == false
 
-    /** Rubrikkortets väntesnurra (NAV-6) — bevakningen läses och alternativen fylls på. */
-    val headerWorking: Boolean get() = loading || fillingCandidates
-
     /**
-     * Diagrammets väntesnurra: en kurva som ännu saknar en av kandidaterna är inte fel, men den
-     * är inte heller hela jämförelsen — och skillnaden syns inte i bilden.
+     * Jämförelsen hämtas fortfarande: en kurva som ännu saknar en av kandidaterna är inte fel, men den
+     * är inte heller hela jämförelsen — och skillnaden syns inte i bilden, så diagrammet säger det i text.
      */
     val chartWorking: Boolean get() = loading || fillingCandidates || content.rows.any { it.historyLoading }
 }

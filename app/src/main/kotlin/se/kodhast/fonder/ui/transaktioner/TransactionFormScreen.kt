@@ -4,7 +4,6 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -26,21 +25,21 @@ import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwedishNumberFormat
 import se.kodhast.fonder.domain.usecase.SwitchOption
-import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.navigation.TransactionFormKey
 import se.kodhast.fonder.ui.theme.Filled
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.common.EditorEvents
+import se.kodhast.ui.common.ListUiState
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.AppTextField
-import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.DateField
 import se.kodhast.ui.components.EmptyAction
-import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.EmptyContent
 import se.kodhast.ui.components.EntityEditScreen
+import se.kodhast.ui.components.EntityListScreen
 import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.AppTheme
@@ -252,22 +251,26 @@ private fun OwnedSharesRow(owned: Double, onSellAll: () -> Unit) {
 }
 
 /**
- * Inga bevakade fonder att välja bland (TRX-6): ramens lilla topprad med bakåt, utan Spara – det finns
- * inget att spara – och ett tomt läge med vägen till fondsök.
+ * Inga bevakade fonder att välja bland (TRX-6): listramens tomma läge med liten topprad och bakåt, utan Spara –
+ * det finns inget att spara – och vägen till fondsök.
  */
 @Composable
 private fun NoFunds(title: String, fundLookupFailed: Boolean, onClose: () -> Unit, onWatchFund: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxSize()) {
-        LibraryTopBar(title, size = TopBarSize.Small, onBack = onClose)
-        CenteredState(Modifier.weight(1f)) {
-            EmptyState(
-                icon = R.drawable.ic_search,
-                title = stringResource(R.string.transaktionsform_no_funds_title),
-                message = stringResource(if (fundLookupFailed) R.string.transaktionsform_fund_not_found_no_funds else R.string.transaktionsform_no_funds_body),
-                actions = listOf(EmptyAction(stringResource(R.string.transaktionsform_watch_fund), onWatchFund))
-            )
-        }
-    }
+    EntityListScreen<Unit>(
+        title = title,
+        state = ListUiState.Empty,
+        empty = EmptyContent(
+            icon = R.drawable.ic_search,
+            title = stringResource(R.string.transaktionsform_no_funds_title),
+            message = stringResource(if (fundLookupFailed) R.string.transaktionsform_fund_not_found_no_funds else R.string.transaktionsform_no_funds_body),
+            actions = listOf(EmptyAction(stringResource(R.string.transaktionsform_watch_fund), onWatchFund))
+        ),
+        add = null,
+        key = { it },
+        modifier = modifier,
+        onBack = onClose,
+        topBarSize = TopBarSize.Small
+    ) {}
 }
 
 @Composable

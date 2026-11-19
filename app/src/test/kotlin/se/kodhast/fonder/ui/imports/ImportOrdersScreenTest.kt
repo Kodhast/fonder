@@ -1,12 +1,13 @@
 package se.kodhast.fonder.ui.imports
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import java.time.LocalDate
@@ -102,7 +103,7 @@ class ImportOrdersScreenTest {
     )
 
     @Composable
-    private fun Review(state: ImportOrdersUiState) = ImportOrdersReview(
+    private fun Review(state: ImportOrdersUiState) = ImportOrdersContent(
         state = state,
         onFundOverride = { _, _ -> },
         onIncludedChange = { _, _ -> },
@@ -147,10 +148,23 @@ class ImportOrdersScreenTest {
     fun `ett läsfel visas under importens rubrik och Försök igen öppnar filväljaren igen (NFR-6)`() {
         var picks = 0
         composeRule.setContent {
-            FonderTheme { ImportError("Importera avräkningsnotor", AppErrors.map(DataError.ImportNoTransactions), onPickAgain = { picks++ }) }
+            FonderTheme {
+                ImportOrdersContent(
+                    state = ImportOrdersUiState(filesSelected = true, error = AppErrors.map(DataError.ImportNoTransactions)),
+                    onFundOverride = { _, _ -> },
+                    onIncludedChange = { _, _ -> },
+                    onDateChange = { _, _ -> },
+                    onSharesTextChange = { _, _ -> },
+                    onPriceTextChange = { _, _ -> },
+                    onSwitchSelect = { _, _ -> },
+                    onImport = {},
+                    onPick = { picks++ }
+                )
+            }
         }
 
-        composeRule.onNodeWithText("Importera avräkningsnotor").assertIsDisplayed()
+        // Rubriken står både i toppraden och som felets rubrik.
+        composeRule.onAllNodesWithText("Importera avräkningsnotor").assertCountEquals(2)
         composeRule.onNodeWithText("Försök igen").performClick()
 
         assertEquals(1, picks)

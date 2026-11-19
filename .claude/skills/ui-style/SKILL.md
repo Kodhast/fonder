@@ -12,7 +12,7 @@ siffror radar upp sig i kolumner. Krav: UI-1 (identitet, fast palett, ljust + m�
 **Var saker står (enda källor):** temats API kommer från biblioteket android-ui (`se.kodhast.ui.theme`:
 `AppTheme`, `ExtendedColors`/`Tone`, `AppShapes`, `AppTypography`, `Spacing`); Fonders egna värden står i
 `ui/theme/` – `Color.kt` (paletten, färgscheman, `FonderLight/DarkExtendedColors`, tonerna `Tone.Gain`,
-`Tone.Copper`, `Tone.Tertiary`, `Tone.Neutral`, `Tone.NeutralPrimary`, `Tone.Filled`, `Tone.Error`, `FonderColors`), `Theme.kt` (`FonderTheme`, kortstilarna `flushCardStyle`/`nestedCardStyle`/`ListFrameCards`, `ReturnColors`, `StatusColors`, `ChartSeriesColors`),
+`Tone.Copper`, `Tone.Tertiary`, `Tone.Neutral`, `Tone.NeutralPrimary`, `Tone.Filled`, `Tone.Error`, `FonderColors`), `Theme.kt` (`FonderTheme`, `ReturnColors`, `StatusColors`, `ChartSeriesColors`),
 `Type.kt` (`FonderTypography`, `MonoAmountStyle`), `Shape.kt` (`FonderShapes`, `FonderAppShapes`). Vilken
 komponent som används för vad → skill `shared-ui-components`. Koden är facit; tabellerna nedan speglar den.
 
@@ -107,8 +107,8 @@ eller `AppTheme.shapes`, aldrig `RoundedCornerShape(…)` i feature-kod.
 
 - Tryckytor minst 48 dp (skill `android:accessibility-compose` och `android-projekt` → "Tillgänglighet").
 - Etiketten kapas, aldrig värdet (UI-6); allt som kan växa skrollar (UI-5).
-- Bakgrundsarbete visas med den delade formskiftande laddningsindikatorn i rubrikraden (`CardTitleRow`/`WorkingIndicator`,
-  NAV-6), aldrig som ett blockerande överlägg.
+- Bakgrundsarbete visas med Kodhäst-prickarna i sidhuvudet och toppraden (NAV-6, UI-19), aldrig som en snurra i ett
+  kort och aldrig som ett blockerande överlägg (utom importens `LoadingDialog`).
 
 ## Texter
 
