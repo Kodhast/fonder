@@ -14,7 +14,7 @@ import se.kodhast.ui.theme.ToneColors
  * Liten, fristående markering för vinstsignalen (S4, `FundAnalysisCalc.ProfitTakeSignal`,
  * ANA-8, issue #26) — medvetet skild från [StatusDot]/risktrafikljuset (grön/gul/röd)
  * eftersom en stor orealiserad vinst är en möjlighet, inte en risk. Den fasta paletten
- * (UI-1) har redan både kopparaccenten (risksignalens gula, `StatusColors.gul`) och
+ * (UI-1) har redan både bärnstenen (risksignalens gula, `StatusColors.gul`) och
  * [ReturnColors.gain] (risksignalens gröna, `StatusColors.gron`) upptagna av risknivåerna
  * — en ren färgad prick i endera färgen skulle se ut som en befintlig risknivå och
  * förvirra. Ikon + kort textetikett gör den visuellt skild utan att kräva en ny

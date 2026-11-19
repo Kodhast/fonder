@@ -101,8 +101,9 @@ object ReturnColors {
 
 /**
  * Grön/gul/röd statusfärger för säljsignaler (issue #16, ANA-3) — samma fasta palett som
- * övriga appen (UI-1): grön/röd återanvänder [ReturnColors], gul återanvänder den befintliga
- * kopparaccenten (`secondary`) i stället för en ny hårdkodad färg.
+ * övriga appen (UI-1): grön/röd återanvänder [ReturnColors]; gul är en egen bärnstensfärg. Den var
+ * kopparaccenten (`secondary`), men koppar och förlustens rödbruna gick knappt att skilja åt.
+ * Nivån bärs aldrig bara av färgen: `StatusDot` läses upp med nivåns namn (UI-3).
  */
 object StatusColors {
     val gron: Color
@@ -111,7 +112,7 @@ object StatusColors {
 
     val gul: Color
         @Composable @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.secondary
+        get() = LocalFonderColors.current.signalAmber
 
     val rod: Color
         @Composable @ReadOnlyComposable

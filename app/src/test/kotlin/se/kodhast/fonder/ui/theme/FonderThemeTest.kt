@@ -63,7 +63,7 @@ class FonderThemeTest {
         assertEquals(LossLight, seen.loss)
         assertEquals(GainContainerLight, seen.gainContainer)
         assertEquals(OnGainContainerLight, seen.onGainContainer)
-        assertEquals(Copper, seen.gul)
+        assertEquals(SignalAmberLight, seen.gul)
     }
 
     @Test
@@ -76,6 +76,6 @@ class FonderThemeTest {
         assertEquals(LossDark, seen.loss)
         assertEquals(GainContainerDark, seen.gainContainer)
         assertEquals(OnGainContainerDark, seen.onGainContainer)
-        assertEquals(CopperBright, seen.gul)
+        assertEquals(SignalAmberDark, seen.gul)
     }
 }
