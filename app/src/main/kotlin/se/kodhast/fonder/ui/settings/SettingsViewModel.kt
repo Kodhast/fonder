@@ -38,7 +38,6 @@ import se.kodhast.fonder.domain.model.BackupRecord
 import se.kodhast.fonder.domain.model.BackupTarget
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
-import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.UiError
 
@@ -110,9 +109,7 @@ data class SettingsUiState(
     /** Senaste lyckade säkerhetskopia eller återställning, till Drive eller fil — null om ingen gjorts (SET-7, HEM-12). */
     val lastBackup: BackupRecord? = null,
     /** Sant när Drive-scopet saknas — kortet erbjuder då knappen som löser det (SET-7). */
-    val driveBackupNeedsAuth: Boolean = false,
-    /** En kursuppdatering kör just nu ([BackgroundWork.PRICE_REFRESH]) — kurskortets väntesnurra (NAV-6). */
-    val priceRefreshWorking: Boolean = false
+    val driveBackupNeedsAuth: Boolean = false
 )
 
 /** Referensvalets del av tillståndet — se [SettingsViewModel.uiState] för varför den combine:as in separat. */
@@ -261,10 +258,6 @@ class SettingsViewModel @Inject constructor(
                 signInInProgress = account.signInInProgress,
                 signInError = account.signInError
             )
-        }.combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
-            // Eget led i kedjan av samma skäl som grenarna ovan: körstatusen kommer från
-            // WorkManager och ska inte kunna räkna om tema, kontotyp eller backup-tillstånd.
-            state.copy(priceRefreshWorking = BackgroundWork.PRICE_REFRESH in running)
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),

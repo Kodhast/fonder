@@ -21,7 +21,6 @@ class ScreenTest {
 
     @Test
     fun `underskärmarna utan ram har rubrik`() {
-        assertEquals(R.string.nav_settings, subPageTitle(SettingsKey))
         assertEquals(R.string.import_title, subPageTitle(ImportHoldingsKey))
         assertEquals(R.string.import_orders_title, subPageTitle(ImportOrdersKey))
         assertEquals(R.string.facit_title, subPageTitle(FacitKey))
@@ -35,6 +34,7 @@ class ScreenTest {
             FondDetaljKey("SHB0000442"),
             FundSearchKey,
             TransactionFormKey(),
+            SettingsKey,
             RiskProfileKey,
             BenchmarkPickerKey,
             SwitchWatchPickerKey(7),

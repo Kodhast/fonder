@@ -72,9 +72,7 @@ class SettingsScreenTest {
     // --- Riskprofil-ingång (SET-3, issue #68) ---
 
     @Test
-    fun temavaljaren_visar_alla_tre_lagen_via_delad_ChoiceChipRow() {
-        // Regression efter extraheringen till den delade ChoiceChipRow (issue #68) —
-        // temaväljaren ska fungera precis som innan omskrivningen.
+    fun temavaljaren_visar_alla_tre_lagen() {
         composeRule.setContent {
             FonderTheme { SettingsContent(state = SettingsUiState()) }
         }
@@ -93,7 +91,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Öppna riskprofil").performScrollTo().performClick()
+        composeRule.onNodeWithText("Riskprofil").performScrollTo().performClick()
         assertTrue(called)
     }
 
@@ -132,7 +130,7 @@ class SettingsScreenTest {
             FonderTheme { SettingsContent(state = SettingsUiState(), onOpenFacit = { opened = true }) }
         }
 
-        composeRule.onNodeWithText("Öppna facit").performScrollTo().performClick()
+        composeRule.onNodeWithText("Facit").performScrollTo().performClick()
 
         assertTrue(opened)
     }
@@ -374,7 +372,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("ditt Google-konto", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Inloggad med Google", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -493,5 +491,56 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("Återställ från säkerhetskopia?").assertExists()
         composeRule.onNodeWithText("Återställ").performClick()
         assertEquals(1, restores)
+    }
+
+    // --- Navigerande rader och kontot (UI-19) ---
+
+    @Test
+    fun importraderna_anropar_sina_callbacks() {
+        var holdings = 0
+        var orders = 0
+        composeRule.setContent {
+            FonderTheme {
+                SettingsContent(state = SettingsUiState(), onImportHoldings = { holdings++ }, onImportOrders = { orders++ })
+            }
+        }
+
+        composeRule.onNodeWithText("Importera innehav").performScrollTo().performClick()
+        composeRule.onNodeWithText("Importera avräkningsnotor").performScrollTo().performClick()
+
+        assertEquals(1, holdings)
+        assertEquals(1, orders)
+    }
+
+    @Test
+    fun bevakningstiden_valjs_med_segmentknapparna() {
+        var selected: Long? = null
+        composeRule.setContent {
+            FonderTheme { SettingsContent(state = SettingsUiState(), onSwitchWatchTtlSelect = { selected = it }) }
+        }
+
+        composeRule.onNodeWithText("60 dagar").performScrollTo().performClick()
+
+        assertEquals(60L, selected)
+    }
+
+    @Test
+    fun logga_ut_fragar_innan_callbacken_koms() {
+        var signOuts = 0
+        composeRule.setContent {
+            FonderTheme {
+                SettingsContent(
+                    state = SettingsUiState(googleUser = AuthUser("uid-1", "Test Testsson", "test@example.com")),
+                    onSignOut = { signOuts++ }
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Logga ut").performScrollTo().performClick()
+        assertEquals(0, signOuts)
+        composeRule.onNodeWithText("Logga ut?").assertExists()
+
+        composeRule.onNodeWithText("Avbryt").performClick()
+        assertEquals(0, signOuts)
     }
 }

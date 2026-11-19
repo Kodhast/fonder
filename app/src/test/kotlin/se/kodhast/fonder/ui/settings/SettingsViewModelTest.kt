@@ -66,7 +66,6 @@ import se.kodhast.fonder.domain.usecase.DriveBackupFile
 import se.kodhast.fonder.domain.usecase.FeeComparisonCalc
 import se.kodhast.fonder.domain.usecase.SwitchPlanCalc
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
-import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FakeFundPriceRefreshScheduler
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -217,19 +216,6 @@ class SettingsViewModelTest {
             while (state.lastPriceSyncEpochMillis == null) state = awaitItem()
 
             assertEquals(1_700_000_000_000L, state.lastPriceSyncEpochMillis)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `kurskortet snurrar under en kursuppdatering, backup-kortet gor det inte`() = runTest(dispatcher) {
-        val vm = viewModel()
-
-        vm.uiState.test {
-            var state = awaitItem()
-            fakeScheduler.runningWork.value = setOf(BackgroundWork.PRICE_REFRESH)
-            while (!state.priceRefreshWorking) state = awaitItem()
-            assertFalse(state.backupInProgress)
             cancelAndIgnoreRemainingEvents()
         }
     }
