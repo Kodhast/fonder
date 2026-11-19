@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
@@ -213,9 +214,11 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("Såld fond → Köpt fond").performClick()
+        val node = composeRule.onNodeWithText("Genomförd").fetchSemanticsNode()
+        val info = "bounds=${node.boundsInRoot} root=${composeRule.onRoot().fetchSemanticsNode().size} cfg=${node.config}"
         composeRule.onNodeWithText("Genomförd").performClick()
 
-        assertEquals(7L to true, callback)
+        assertEquals(info, 7L to true, callback)
     }
 
     @Test
