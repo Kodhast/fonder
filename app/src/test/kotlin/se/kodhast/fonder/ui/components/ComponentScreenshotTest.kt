@@ -45,11 +45,8 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun `WorkerStatusIcon och WorkingIndicator`() = composeRule.captureLightAndDark("WorkerStatusIcon_running", animated = true) {
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            WorkerStatusIcon(isRunning = true)
-            WorkingIndicator(working = true, contentDescription = "Uppdaterar Kurser")
-        }
+    fun `WorkingIndicator`() = composeRule.captureLightAndDark("WorkingIndicator_running", animated = true) {
+        WorkingIndicator(working = true, contentDescription = "Uppdaterar Kurser")
     }
 
     @Test

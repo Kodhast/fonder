@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -31,33 +32,30 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.test.espresso.Espresso
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
-import org.junit.Assert.assertSame
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
-import se.kodhast.ui.components.AppTopBar as LibraryTopBar
-import se.kodhast.ui.components.TopBarSize
+import se.kodhast.ui.components.APP_HEADER_TAG
 
 /**
- * Navigeringsskalet (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s flikrad med plusknapp
- * och meny, toppradsval och `NavDisplay`, men enkla ersättare för skärmarna så att testet inte behöver
- * Hilt: fyra flikar med Översikt som start, plusknappens meny på varje flik med de fyra valen i
- * ordning, som öppnar sina skärmar, bakåt som stänger menyn, Inställningar
- * bakom ikonen på Översikt, ingen länk till Sålda fonder på Händelser (SLD-1), flikraden och
- * plusmenyn borta på en djupare skärm, bakåt från en annan flik till Översikt, att en flik behåller
- * sitt tillstånd och sin ViewModel vid flikbyte, att stacken återställs efter rotation, och att en
- * ramskärm ([FrameKey]) ritar sin egen topprad med chromets indikator via `LocalTopBarStatus`.
+ * Fonders navigationsram (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s `AppNavHost` med Fonders
+ * flikrad, plusknapp och meny och toppraden runt skärmarna ([FonderPage]), men enkla ersättare för skärmarna
+ * så att testet inte behöver Hilt: fyra flikar med Översikt som start och Kodhäst-sidhuvudet, plusknappens
+ * meny med de fyra valen i ordning, som öppnar sina skärmar, bakåt som stänger menyn, Inställningar bakom
+ * ikonen på Översikt, flikraden och plusmenyn borta på en djupare skärm, underskärmarnas topprad med
+ * tillbakapil, ramskärmarna utan, bakåt från en annan flik till Översikt, att en flik behåller sitt tillstånd
+ * vid flikbyte, att stacken återställs efter rotation och sidhuvudets prickar under en kursuppdatering (NAV-6).
  */
 @RunWith(RobolectricTestRunner::class)
-class AppNavigationShellTest {
+class FonderNavHostTest {
 
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
-    private val backStack = AppBackStack()
+    private val backStack = appBackStack()
 
     /** Ersättarskärmens text – flikarnas och skärmarnas gamla ruttnamn, så skärmdumpen är oförändrad. */
     private fun name(key: AppKey): String = when (key) {
@@ -96,12 +94,7 @@ class AppNavigationShellTest {
 
     private fun setShell(beslutBadgeCount: Int = 0) = composeRule.setContent {
         FonderTheme {
-            AppNavigationShell(
-                isWorkerRunning = false,
-                beslutBadgeCount = beslutBadgeCount,
-                backStack = backStack,
-                entryProvider = ::stubEntry
-            )
+            FonderNavHost(backStack = backStack, entryProvider = ::stubEntry, beslutBadgeCount = beslutBadgeCount)
         }
     }
 
@@ -122,10 +115,10 @@ class AppNavigationShellTest {
 
     private fun assertTabChrome(visible: Boolean) {
         if (visible) {
-            composeRule.onNodeWithTag(APP_FLOATING_TOOLBAR_TAG).assertIsDisplayed()
+            composeRule.onNodeWithContentDescription("Händelser").assertIsDisplayed()
             composeRule.onNodeWithContentDescription("Lägg till").assertIsDisplayed()
         } else {
-            composeRule.onNodeWithTag(APP_FLOATING_TOOLBAR_TAG).assertDoesNotExist()
+            composeRule.onNodeWithContentDescription("Händelser").assertDoesNotExist()
             composeRule.onNodeWithContentDescription("Lägg till").assertDoesNotExist()
         }
     }
@@ -145,12 +138,13 @@ class AppNavigationShellTest {
             composeRule.onNodeWithContentDescription(label).performClick()
             assertOnScreen(route)
             composeRule.onNodeWithContentDescription(label).assertIsSelected()
-            // Flikens rubrik i innehållet, ingen bakåtpil – Händelser är en ramskärm och ritar sin egen.
-            // (Den valda fliken i flikraden visar också namnet, men är ingen rubrik.)
-            if (Screen.forKey(backStack.current)?.key is FrameKey) {
+            // Flikens rubrik i Kodhäst-sidhuvudet, ingen bakåtpil – Händelser står på listramen och ritar sitt
+            // eget. (Den valda fliken i flikraden visar också namnet, men är ingen rubrik.)
+            if (backStack.currentTab == HandelserKey) {
                 composeRule.onAllNodes(hasText(label) and isHeading()).assertCountEquals(0)
             } else {
                 composeRule.onNode(hasText(label) and isHeading()).assertIsDisplayed()
+                composeRule.onNodeWithTag(APP_HEADER_TAG).assertIsDisplayed()
             }
             composeRule.onNodeWithContentDescription("Tillbaka").assertDoesNotExist()
             assertTabChrome(visible = true)
@@ -185,7 +179,7 @@ class AppNavigationShellTest {
 
             assertOnScreen(route)
             assertTabChrome(visible = false)
-            // Transaktionsformuläret är en ramskärm utan skalets topprad – systemets bakåt gäller alla.
+            // Transaktionsformuläret står på en ram utan navigationens topprad – systemets bakåt gäller alla.
             pressBack()
             assertOnScreen("hem")
             assertTabChrome(visible = true)
@@ -269,8 +263,9 @@ class AppNavigationShellTest {
         composeRule.onNodeWithText("öppna fond").performClick()
 
         assertOnScreen("fond/$FUND_ID")
-        // Fonddetalj är en ramskärm: namnet står i detaljramens topprad, skalet ritar ingen rubrik (NAV-2).
+        // Fonddetalj står på detaljramen: namnet i ramens topprad, navigationen ritar ingen (NAV-2).
         composeRule.onAllNodesWithText("Fond").assertCountEquals(0)
+        composeRule.onAllNodesWithContentDescription("Tillbaka").assertCountEquals(0)
         assertTabChrome(visible = false)
         pressBack()
         assertOnScreen("portfolj")
@@ -284,6 +279,7 @@ class AppNavigationShellTest {
         composeRule.onNodeWithContentDescription("Innehav").performClick()
         composeRule.onNodeWithContentDescription("Händelser").performClick()
         assertOnScreen("transaktioner")
+        composeRule.onNodeWithContentDescription("Händelser").assertIsSelected()
 
         pressBack()
 
@@ -291,13 +287,16 @@ class AppNavigationShellTest {
         composeRule.onNodeWithContentDescription("Översikt").assertIsSelected()
     }
 
+    /**
+     * Flikrotens sparade tillstånd (rullning, här trycken) behålls vid flikbyte. ViewModeln behålls av att
+     * flikarnas ViewModels hämtas från aktiviteten i `fonderEntries`, inte av navigationsramen.
+     */
     @Test
-    fun `en flik behåller sitt tillstånd och sin ViewModel när man byter flik och tillbaka`() {
+    fun `en flik behåller sitt tillstånd när man byter flik och tillbaka`() {
         setShell()
         composeRule.onNodeWithContentDescription("Innehav").performClick()
         composeRule.onNodeWithText("skärm:portfolj").performClick()
         composeRule.onNodeWithText("tryck:1").assertIsDisplayed()
-        val innehavViewModel = viewModels.getValue(InnehavKey)
 
         composeRule.onNodeWithContentDescription("Beslut").performClick()
         assertOnScreen("beslut")
@@ -305,24 +304,23 @@ class AppNavigationShellTest {
 
         assertOnScreen("portfolj")
         composeRule.onNodeWithText("tryck:1").assertIsDisplayed()
-        assertSame(innehavViewModel, viewModels.getValue(InnehavKey))
-        assertEquals(false, innehavViewModel.cleared)
     }
 
     @Test
-    fun `en flik som lämnas med bakåt börjar om nästa gång`() {
+    fun `en underskärm som stängs börjar om nästa gång`() {
         setShell()
-        composeRule.onNodeWithContentDescription("Innehav").performClick()
-        composeRule.onNodeWithText("skärm:portfolj").performClick()
-        val innehavViewModel = viewModels.getValue(InnehavKey)
+        composeRule.runOnUiThread { backStack.push(SettingsKey) }
+        composeRule.onNodeWithText("skärm:settings").performClick()
+        composeRule.onNodeWithText("tryck:1").assertIsDisplayed()
+        val settingsViewModel = viewModels.getValue(SettingsKey)
 
         pressBack()
         assertOnScreen("hem")
-        composeRule.onNodeWithContentDescription("Innehav").performClick()
+        composeRule.runOnUiThread { backStack.push(SettingsKey) }
 
         composeRule.onNodeWithText("tryck:0").assertIsDisplayed()
-        assertNotSame(innehavViewModel, viewModels.getValue(InnehavKey))
-        assertEquals(true, innehavViewModel.cleared)
+        assertNotSame(settingsViewModel, viewModels.getValue(SettingsKey))
+        assertEquals(true, settingsViewModel.cleared)
     }
 
     @Test
@@ -345,7 +343,7 @@ class AppNavigationShellTest {
         val restoration = StateRestorationTester(composeRule)
         restoration.setContent {
             FonderTheme {
-                AppNavigationShell(isWorkerRunning = false, entryProvider = ::stubEntry)
+                FonderNavHost(backStack = rememberAppBackStack(), entryProvider = ::stubEntry)
             }
         }
         composeRule.onNodeWithContentDescription("Innehav").performClick()
@@ -359,67 +357,50 @@ class AppNavigationShellTest {
         assertOnScreen("hem")
     }
 
-    /** Ersättare för en ramskärm: bibliotekets topprad, som läser chromets status ur `LocalTopBarStatus`. */
-    private fun frameEntry(key: AppKey): NavEntry<AppKey> = if (key is FrameKey) {
-        NavEntry(key) {
-            if (key is TabKey) {
-                LibraryTopBar("ram:${name(key)}")
-            } else {
-                LibraryTopBar("ram:${name(key)}", size = TopBarSize.Small, onBack = { backStack.popIfTop(key) })
-            }
+    @Test
+    fun `underskärmarna utan ram får topprad med rubrik och tillbakapil, ramskärmarna ingen`() {
+        setShell()
+        listOf(
+            ImportHoldingsKey to "Importera innehav",
+            ImportOrdersKey to "Importera avräkningsnotor",
+            SwitchWatchKey(3) to "Pågående byte"
+        ).forEach { (key, title) ->
+            composeRule.runOnUiThread { backStack.push(key) }
+            composeRule.waitForIdle()
+            composeRule.onNode(hasText(title) and isHeading()).assertIsDisplayed()
+            composeRule.onNodeWithContentDescription("Tillbaka").performClick()
+            assertOnScreen("hem")
         }
-    } else {
-        stubEntryWithoutTaps(key)
+        listOf(RiskProfileKey, BenchmarkPickerKey, SwitchWatchPickerKey(3), ComponentGalleryKey).forEach { key ->
+            composeRule.runOnUiThread { backStack.push(key) }
+            composeRule.waitForIdle()
+            composeRule.onAllNodesWithContentDescription("Tillbaka").assertCountEquals(0)
+            pressBack()
+            assertOnScreen("hem")
+        }
     }
 
     @Test
-    fun `en ramskärm har ingen skalrubrik men chromets indikator i sin egen topprad`() {
-        // Indikatorn snurrar oändligt – klockan stegas för hand i stället för att vänta på vila.
+    fun `sidhuvudets prickar säger att kurser uppdateras medan bakgrundsjobbet kör`() {
+        // Prickarna hoppar oändligt – klockan stegas för hand i stället för att vänta på vila.
         composeRule.mainClock.autoAdvance = false
+        var running by mutableStateOf(true)
         composeRule.setContent {
-            FonderTheme { AppNavigationShell(isWorkerRunning = true, backStack = backStack, entryProvider = ::frameEntry) }
+            FonderTheme { FonderNavHost(backStack = backStack, entryProvider = ::stubEntryWithoutTaps, isWorkerRunning = running) }
         }
-        composeRule.runOnUiThread { backStack.push(SettingsKey) }
         composeRule.mainClock.advanceTimeBy(TRANSITION_MS)
-        // En vanlig skärm djupare i stacken: skalets topprad med rubrik och indikator, en gång.
-        composeRule.onNodeWithText("Inställningar").assertIsDisplayed()
         composeRule.onAllNodesWithContentDescription(WORKER_RUNNING).assertCountEquals(1)
 
-        composeRule.runOnUiThread { backStack.push(ComponentGalleryKey) }
+        running = false
         composeRule.mainClock.advanceTimeBy(TRANSITION_MS)
 
-        composeRule.onNodeWithText("ram:${name(ComponentGalleryKey)}").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Inställningar").assertCountEquals(0)
-        composeRule.onAllNodesWithContentDescription("Tillbaka").assertCountEquals(1)
-        composeRule.onAllNodesWithContentDescription(WORKER_RUNNING).assertCountEquals(1)
-        composeRule.onNodeWithContentDescription("Tillbaka").performClick()
-        composeRule.mainClock.advanceTimeBy(TRANSITION_MS)
-        composeRule.onNodeWithText("Inställningar").assertIsDisplayed()
-    }
-
-    @Test
-    fun `Händelser är en ramskärm på en flik med egen rubrik och skalets flikrad och plusknapp`() {
-        composeRule.mainClock.autoAdvance = false
-        composeRule.setContent {
-            FonderTheme { AppNavigationShell(isWorkerRunning = true, backStack = backStack, entryProvider = ::frameEntry) }
-        }
-        composeRule.runOnUiThread { backStack.select(Screen.Handelser) }
-        composeRule.mainClock.advanceTimeBy(TRANSITION_MS)
-
-        // Ramens rubrik och chromets indikator i den, en gång – ingen flikrubrik från skalet.
-        composeRule.onNodeWithText("ram:transaktioner").assertIsDisplayed()
-        composeRule.onAllNodes(hasText("Händelser") and isHeading()).assertCountEquals(0)
-        composeRule.onAllNodesWithContentDescription(WORKER_RUNNING).assertCountEquals(1)
-        composeRule.onAllNodesWithContentDescription("Tillbaka").assertCountEquals(0)
-        // Flikraden och plusmenyn står kvar (NAV-7, NAV-8).
-        composeRule.onNodeWithContentDescription("Händelser").assertIsSelected()
-        composeRule.onNodeWithContentDescription("Lägg till").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription(WORKER_RUNNING).assertCountEquals(0)
     }
 
     @Test
     fun `skärmdump av skalet på Översikt`() {
         composeRule.captureLightAndDark("AppNavigation_oversikt") {
-            AppNavigationShell(isWorkerRunning = false, entryProvider = ::stubEntryWithoutTaps)
+            FonderNavHost(backStack = rememberAppBackStack(), entryProvider = ::stubEntryWithoutTaps)
         }
     }
 
@@ -439,7 +420,7 @@ class AppNavigationShellTest {
         const val FUND_ID = "SHB0000442"
         const val WORKER_RUNNING = "Uppdaterar kurser i bakgrunden"
 
-        /** Längre än skärmbytets övergång (Transitions), så att bara målskärmen står kvar. */
+        /** Längre än skärmbytets övergång (AppTransitions), så att bara målskärmen står kvar. */
         const val TRANSITION_MS = 2_000L
     }
 }

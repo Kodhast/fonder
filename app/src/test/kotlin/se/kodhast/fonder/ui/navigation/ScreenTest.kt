@@ -6,72 +6,39 @@ import org.junit.Test
 import se.kodhast.fonder.R
 
 /**
- * Regressionstest för NAV-1/NAV-7/NAV-9 — flikradens fyra flikar, startskärmen och att
- * Inställningar och Facit är skärmar i stacken med egen rubrik. Ren datakontroll av [Screen] och
- * [titleResFor], inget Compose/Hilt behövs för det.
+ * Regressionstest för NAV-1/NAV-7/NAV-9 — flikradens fyra flikar, startskärmen och vilka underskärmar som
+ * får den lilla toppraden av navigationen ([subPageTitle]) och vilka som ritar sin egen på en ram. Ren
+ * datakontroll, inget Compose/Hilt behövs.
  */
 class ScreenTest {
 
     @Test
-    fun `flikraden har fyra flikar i ratt ordning`() {
-        assertEquals(
-            listOf(OversiktKey, InnehavKey, BeslutKey, HandelserKey),
-            Screen.entries.map { it.key }
-        )
-    }
-
-    @Test
-    fun `oversikt ar startskarm`() {
+    fun `flikraden har fyra flikar i rätt ordning med Översikt först`() {
+        assertEquals(listOf(OversiktKey, InnehavKey, BeslutKey, HandelserKey), TOP_LEVEL)
         assertEquals(Screen.Oversikt, Screen.START)
-        assertEquals(listOf<AppKey>(OversiktKey), AppBackStack().entries)
+        assertEquals(OversiktKey, TOP_LEVEL.first())
     }
 
     @Test
-    fun `installningar ar inte en flik men har rubrik, och flikarna har ingen topprad`() {
-        assertNull(Screen.forKey(SettingsKey))
-        assertEquals(R.string.nav_settings, titleResFor(SettingsKey))
-        Screen.entries.forEach { assertNull(titleResFor(it.key)) }
+    fun `underskärmarna utan ram har rubrik`() {
+        assertEquals(R.string.nav_settings, subPageTitle(SettingsKey))
+        assertEquals(R.string.import_title, subPageTitle(ImportHoldingsKey))
+        assertEquals(R.string.import_orders_title, subPageTitle(ImportOrdersKey))
+        assertEquals(R.string.facit_title, subPageTitle(FacitKey))
+        assertEquals(R.string.switch_watch_title, subPageTitle(SwitchWatchKey(7)))
     }
 
     @Test
-    fun `en ramskarm ritar sin egen rubrik - skalet har ingen for den`() {
-        assertNull(Screen.forKey(ComponentGalleryKey))
-        assertNull(titleResFor(ComponentGalleryKey))
-    }
-
-    @Test
-    fun `facit ar en skarm i stacken under Beslut med egen rubrik`() {
-        // Sedan 0.61.0 (NAV-9): Beslut är en egen flik och Facit en djupare skärm med bakåtpil.
-        assertNull(Screen.forKey(FacitKey))
-        assertEquals(R.string.facit_title, titleResFor(FacitKey))
-        assertEquals(Screen.Beslut, Screen.forKey(BeslutKey))
-    }
-
-    @Test
-    fun `skarmar med argument har rubrik oavsett argument`() {
-        assertEquals(R.string.switch_watch_title, titleResFor(SwitchWatchKey(7)))
-    }
-
-    @Test
-    fun `fonddetalj ar en ramskarm som ritar sin rubrik sjalv`() {
-        // NAV-2: fondens namn står i detaljramens topprad, oavsett fond.
-        assertEquals(null, titleResFor(FondDetaljKey("SHB0000442")))
-        assertEquals(null, titleResFor(FondDetaljKey("SHB0000999")))
-    }
-
-    @Test
-    fun `fondsokens tre lagen och Handelser ar ramskarmar som ritar sin rubrik sjalva`() {
-        // NAV-3, HEM-10, ANA-13: rubriken står i listramens topprad; Händelser har ramens stora rubrik (NAV-5).
-        assertEquals(null, titleResFor(FundSearchKey))
-        assertEquals(null, titleResFor(BenchmarkPickerKey))
-        assertEquals(null, titleResFor(SwitchWatchPickerKey(7)))
-        assertEquals(null, titleResFor(HandelserKey))
-    }
-
-    @Test
-    fun `transaktionsformularet ar en ramskarm som ritar sin rubrik sjalv`() {
-        // NAV-4, UI-15: rubriken ("Ny transaktion", "Registrera säljet", "Registrera köpet") står i ramens topprad.
-        assertEquals(null, titleResFor(TransactionFormKey()))
-        assertEquals(null, titleResFor(TransactionFormKey.bought(7, "SE_A")))
+    fun `flikarna och skärmarna på en ram får ingen topprad av navigationen`() {
+        TOP_LEVEL.forEach { assertNull(subPageTitle(it)) }
+        listOf(
+            FondDetaljKey("SHB0000442"),
+            FundSearchKey,
+            TransactionFormKey(),
+            RiskProfileKey,
+            BenchmarkPickerKey,
+            SwitchWatchPickerKey(7),
+            ComponentGalleryKey
+        ).forEach { assertNull("$it", subPageTitle(it)) }
     }
 }

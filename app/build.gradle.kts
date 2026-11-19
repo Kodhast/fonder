@@ -206,6 +206,8 @@ dependencies {
     implementation(libs.vico.compose.m3)
     // android-ui: tema, tillstånd och komponenter delade med ReseApoteket och Dagboken (#172–#174)
     implementation(libs.android.ui.components)
+    // Navigationsramen: TabBackStack, AppNavHost och AppTransitions (NAV-7, #266 F2)
+    implementation(libs.android.ui.navigation)
 
     // Google-inloggning (TP-6) — Firebase Auth växlar Googles ID-token mot en session,
     // Credential Manager äger kontoväljaren (ersätter utfasade GoogleSignIn).

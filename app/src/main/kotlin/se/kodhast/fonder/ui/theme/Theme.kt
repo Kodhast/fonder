@@ -9,10 +9,16 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import se.kodhast.fonder.R
+import se.kodhast.ui.components.ActionMenuStyle
 import se.kodhast.ui.components.AppBrandStyle
 import se.kodhast.ui.components.AppCardStyle
+import se.kodhast.ui.components.AppIdentity
 import se.kodhast.ui.components.LocalAppBrandStyle
+import se.kodhast.ui.components.LocalAppIdentity
+import se.kodhast.ui.components.ToolbarStyle
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Tone
 
@@ -31,7 +37,8 @@ private val LocalFonderColors = staticCompositionLocalOf { FonderLightColors }
  *
  * Former, kort, knappar och tillbakapil har bibliotekets standard (samma som ReseApoteket och Dagboken, UI-13,
  * UI-14): 22 dp kort, 56 dp knappar utan formmorf och den tonade pilplattan – Fonder sätter ingen egen stil.
- * Kortens kant och skugga kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18).
+ * Kortens kant och skugga kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18). Appens identitet
+ * (`LocalAppIdentity`: ikonen och namnet) ger flikarna Kodhäst-sidhuvudet (NAV-7).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -49,16 +56,25 @@ fun FonderTheme(
         CompositionLocalProvider(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
             LocalAppBrandStyle provides FonderBrandStyle,
+            LocalAppIdentity provides AppIdentity(R.drawable.ic_app_header, stringResource(R.string.app_name)),
             content = content
         )
     }
 }
 
 /**
- * Kodhäst-igenkänningen (UI-17): hästen i tomma lägens ikonruta och prickarna före sektionsrubriker
- * utan ikonruta. Prickarna som laddning står av – Fonder behåller sin formskiftande laddning (UI-12).
+ * Kodhäst-igenkänningen (UI-17): hästen i tomma lägens ikonruta, prickarna före sektionsrubriker
+ * utan ikonruta och prickarna i sidhuvudet som hoppar medan appen hämtar i bakgrunden (NAV-6); flikraden
+ * i appens ljusa ton med plusknappens val som FAB-meny i kopparen (NAV-8). Prickarna som laddning står av –
+ * Fonder behåller sin formskiftande laddning (UI-12).
  */
-private val FonderBrandStyle = AppBrandStyle(sectionDots = true, emptyStateMark = true)
+private val FonderBrandStyle = AppBrandStyle(
+    sectionDots = true,
+    emptyStateMark = true,
+    headerDots = true,
+    toolbarStyle = ToolbarStyle.Tonal,
+    actionMenu = ActionMenuStyle.Fab
+)
 
 /**
  * Kortstilen för ett kort vars rader själva går ut i kanten och har sin luft innanför klickytan (Facits

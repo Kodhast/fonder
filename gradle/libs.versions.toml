@@ -117,6 +117,7 @@ vico-compose-m3                      = { group = "com.patrykandpatrick.vico", na
 android-ui-theme                     = { group = "se.kodhast.ui",           name = "ui-theme",                       version.ref = "androidUi" }
 android-ui-common                    = { group = "se.kodhast.ui",           name = "ui-common",                      version.ref = "androidUi" }
 android-ui-components                = { group = "se.kodhast.ui",           name = "ui-components",                  version.ref = "androidUi" }
+android-ui-navigation                = { group = "se.kodhast.ui",           name = "ui-navigation",                  version.ref = "androidUi" }
 android-ui-testing                   = { group = "se.kodhast.ui",           name = "ui-testing",                     version.ref = "androidUi" }
 compose-shimmer                      = { group = "com.valentinilk.shimmer",  name = "compose-shimmer",                version.ref = "shimmer" }
 androidx-compose-material3-adaptive  = { group = "androidx.compose.material3.adaptive", name = "adaptive",            version.ref = "material3Adaptive" }

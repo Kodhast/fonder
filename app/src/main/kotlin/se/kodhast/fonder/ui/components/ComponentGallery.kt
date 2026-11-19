@@ -87,8 +87,7 @@ import se.kodhast.ui.theme.Tone
  * använder, i sina lägen och med påhittad data – aldrig användarens innehav (skill
  * shared-ui-components). Nås från Inställningar → "Komponenter", bara i debug-bygget.
  *
- * Skärmen är en ramskärm (`FrameKey`): egen `Scaffold` med bibliotekets topprad, som får chromets
- * bakgrundsindikator via `LocalTopBarStatus`. Diagrammet ligger i en hopfälld sektion, så att det
+ * Skärmen har egen `Scaffold` med bibliotekets topprad. Diagrammet ligger i en hopfälld sektion, så att det
  * bara ritas när man fäller ut det (Vico bygger modellen på en annan tråd).
  */
 @Composable
@@ -337,11 +336,8 @@ private fun ColumnScope.Status() {
     Label("AnalysisStatusBanner · AnalysisGuidanceCard")
     AnalysisStatusBanner(analysis = galleryAnalysis)
     AnalysisGuidanceCard(analysis = galleryAnalysis)
-    Label("WorkerStatusIcon · WorkingIndicator · ProgressBar")
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.l), verticalAlignment = Alignment.CenterVertically) {
-        WorkerStatusIcon(isRunning = true)
-        WorkingIndicator(working = true, contentDescription = "Uppdaterar Innehav")
-    }
+    Label("WorkingIndicator · ProgressBar")
+    WorkingIndicator(working = true, contentDescription = "Uppdaterar Innehav")
     ProgressBar(modifier = Modifier.fillMaxWidth())
     ProgressBar(modifier = Modifier.fillMaxWidth(), progress = { 0.6f })
     Label("AppPullToRefresh (android-ui)")
@@ -364,8 +360,6 @@ private fun ColumnScope.Status() {
 @Composable
 private fun ColumnScope.Navigation() {
     var tab by remember { mutableIntStateOf(2) }
-    Label("AppTabHeading")
-    AppTabHeading(title = "Innehav") { WorkerStatusIcon(isRunning = true) }
     Label("AppFloatingToolbar med plusknapp och meny (android-ui)")
     AppFloatingToolbar(
         items = listOf(
@@ -438,10 +432,8 @@ private enum class GalleryDialog(val label: String) {
 
 @Composable
 private fun ColumnScope.Library() {
-    Label("AppTopBar (liten, tonad pil – skalets och ramarnas topprad) · LocalTopBarStatus")
-    CompositionLocalProvider(LocalTopBarStatus provides { WorkerStatusIcon(isRunning = true) }) {
-        LibraryTopBar("Riskprofil", size = TopBarSize.Small, onBack = {})
-    }
+    Label("AppTopBar (liten, tonad pil – underskärmarnas topprad)")
+    LibraryTopBar("Riskprofil", size = TopBarSize.Small, onBack = {})
 }
 
 @Composable
