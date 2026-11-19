@@ -13,24 +13,21 @@ siffror radar upp sig i kolumner. Krav: UI-1 (identitet, fast palett, ljust + m�
 `AppTheme`, `ExtendedColors`/`Tone`, `AppShapes`, `AppTypography`, `Spacing`); Fonders egna värden står i
 `ui/theme/` – `Color.kt` (paletten, färgscheman, `FonderLight/DarkExtendedColors`, tonerna `Tone.Gain`,
 `Tone.Copper`, `Tone.Tertiary`, `Tone.Neutral`, `Tone.NeutralPrimary`, `Tone.Filled`, `Tone.Error`, `FonderColors`), `Theme.kt` (`FonderTheme`, `ReturnColors`, `StatusColors`, `ChartSeriesColors`),
-`Type.kt` (`FonderTypography`, `MonoAmountStyle`), `Shape.kt` (`FonderShapes`, `FonderAppShapes`). Vilken
+`Type.kt` (`FonderTypography`, `MonoAmountStyle`), djupet `FonderLight/DarkDepth` i `Color.kt`; former och kortstil finns inte här (bibliotekets, se Former). Vilken
 komponent som används för vad → skill `shared-ui-components`. Koden är facit; tabellerna nedan speglar den.
 
 ## Tema
 
 - `FonderTheme(darkTheme)` är en tunn omslutning av android-ui:s `AppTheme` (`MaterialExpressiveTheme` +
   `MotionScheme.expressive()`) med `FonderLightColorScheme`/`FonderDarkColorScheme`,
-  `FonderLight/DarkExtendedColors`, `FonderAppShapes` och typskalan `FonderTypography`. **Ingen dynamisk färg** – identiteten ska vara konsekvent.
-- Bibliotekets tema tar inte Material 3:s `Shapes`, så en inre `MaterialExpressiveTheme(shapes = FonderShapes)`
-  lägger Fonders hörn på M3-komponenterna och ärver färger, typografi och rörelse. Ta inte bort den –
-  då får knappar, fält och dialoger M3:s standardhörn.
+  `FonderLight/DarkExtendedColors`, typskalan `FonderTypography` och djupet `FonderLight/DarkDepth` (UI-18). **Ingen dynamisk färg** – identiteten ska vara konsekvent.
 - `FonderTheme` ger `FonderColors` (vinst/förlust) för det läge appen **faktiskt** valt (Inställningar,
   UI-4), inte systemets; `ReturnColors` läser dem därifrån, och övriga semantiska färger kommer ur
   `MaterialTheme.colorScheme` eller `AppTheme.tone(…)`. Aldrig `isSystemInDarkTheme()` direkt i en komponent.
 - **Kontrast:** `ThemeContrastTest` prövar varje textbärande par mot 4,5:1 i båda temana (toner, kort,
   knappar, snackbar, vinst/förlust – UI-3). Ny färg eller ton → nytt par där.
 
-### android-ui-mappningen (`Color.kt`, `Shape.kt`)
+### android-ui-mappningen (`Color.kt`)
 
 | Bibliotekets | Fonders värde |
 |---|---|
@@ -44,11 +41,11 @@ komponent som används för vad → skill `shared-ui-components`. Koden är faci
 | `Tone.NeutralPrimary` (Fonders) | `surfaceVariant` + `primary` (Översiktens kugghjul, `AppIconButton` Tonal) |
 | `Tone.Filled` (Fonders) | `surfaceContainerHigh` + `onSurface` (kort inne i ett kort, `AppCard(tone = Tone.Filled)`) |
 | `Tone.Error` (Fonders) | `errorContainer` + `onErrorContainer` (farozonen i Inställningar) |
-| `LocalAppButtonStyle` / `LocalAppCardStyle` | ingen egen – bibliotekets standard (56 dp, kompakt 40 dp, ingen morf, Material 3:s tonade) sedan 1.2.0 / 1 dp `outlineVariant`-kontur, 16 dp luft, 0 dp innehållsmellanrum (`FonderTheme`, behålls tills kortdjupet finns) |
+| `LocalAppButtonStyle` / `LocalAppCardStyle` | ingen egen – bibliotekets standard: knappar 56 dp (kompakt 40 dp, ingen morf, Material 3:s tonade), kort med 22 dp hörn och bibliotekets luft; kortens kant och skugga kommer från djupet (`FonderLight/DarkDepth`, UI-18). Sedan 1.4.0 och F1 (#266) finns varken `FonderShapes` eller egna kortstilar |
 | `LocalTopBarBackStyle` | ingen egen – bibliotekets tonade runda platta sedan 1.2.0 |
 | Flikrad och plusknapp | ingen egen – android-ui:s `AppFloatingToolbar`: vald flik fylld i `primary`, plusknappen i `secondary` (koppar) sist i raden |
 | `ExtendedColors.accents` | `primary`, `secondary` (diagramseriernas kulörer) |
-| `AppShapes` | kort och rad 18 dp, fält och meny 12 dp, `smallTile` 8 dp, `iconTile` 18 dp, sheet 28 dp upptill, pill rund |
+| `AppShapes` | bibliotekets: kort 22 dp, fält och meny 12 dp, `smallTile` 8 dp, sheet upptill, pill rund – temat tar inga former (android-ui 3.0.0), Fonder har ingen `Shape.kt` |
 | `AppTypography` | `AppTypography.from(FonderTypography)` (bibliotekets standardindelning) |
 
 ### Palett (`Color.kt`)
@@ -96,12 +93,12 @@ båda temana och ett par i `ThemeContrastTest`. Aldrig `Color(…)` i feature-ko
 - Formatering av tal sker bara i `MoneyFormat` / `SwedishNumberFormat` (`domain/usecase`):
   "1 234,50 kr", "+12,3 %", "−5,0 %" (äkta minustecken).
 
-## Former (`Shape.kt`)
+## Former
 
-`FonderShapes` (Material 3, läses av Fonders komponenter): `extraSmall` 12 dp (textfält, menyer) · `small` 8 dp (chips, märken) · `medium` 18 dp
-(kort, påminnelserad, tomt tillstånds ikonruta) · `large` 26 dp · `extraLarge` 28 dp (dialoger). `FonderAppShapes`
-(android-ui:s `AppTheme.shapes`) har samma radier, ur samma konstanter i `Shape.kt`. Hämtas via `MaterialTheme.shapes`
-eller `AppTheme.shapes`, aldrig `RoundedCornerShape(…)` i feature-kod.
+Formerna kommer från android-ui (`AppTheme.shapes`, 3.0.0: temat tar inte former som inställning): kort 22 dp, fält och
+meny 12 dp, `smallTile` 8 dp (märken), sheet 28 dp upptill, pill rund. Fonder har ingen egen formfil och ingen
+`MaterialExpressiveTheme(shapes = …)`. Hämtas via `AppTheme.shapes` eller `MaterialTheme.shapes`, aldrig `RoundedCornerShape(…)`
+i feature-kod. Ska något se annorlunda ut i alla tre appar ändras det i biblioteket, inte här.
 
 ## Layout
 

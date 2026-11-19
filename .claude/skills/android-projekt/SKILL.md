@@ -97,11 +97,11 @@ security rules – `android:firebase-security-rules-auditor` gäller inte här.
   `diagram` för `FundLineChart` (Vico). Skärmdumpar och tester: `testing-strategy`.
 - Tema: `FonderTheme` = android-ui:s `AppTheme` (M3 Expressive, `MotionScheme.expressive()`) med Fonders
   värden ur `ui/theme/`: fast palett (`FonderLightColorScheme`/`FonderDarkColorScheme` och
-  `FonderLight/DarkExtendedColors`, ingen dynamisk färg), `FonderTypography`, `FonderAppShapes` +
-  `FonderShapes`, `MonoAmountStyle` (tnum) och de semantiska `ReturnColors`, `StatusColors`,
+  `FonderLight/DarkExtendedColors`, ingen dynamisk färg), `FonderTypography`, djupet
+  `FonderLight/DarkDepth`, `MonoAmountStyle` (tnum) och de semantiska `ReturnColors`, `StatusColors`,
   `ChartSeriesColors`. Avstånd i skärmkod med `Spacing` (skill `ui-style`).
-- Fonder använder inte android-ui:s ramar (`EntityListScreen`, `EntityEditScreen`) än, men listskärmarnas
-  tillstånd är `ListUiState` från `ui-common` (NFR-6); skärmen är `XScreen(viewModel = hiltViewModel())`
+- Alla skärmar står på android-ui:s ramar (`EntityListScreen`, `EntityDetailScreen`, `EntityEditScreen`, `SettingsPage`;
+  sedan 1.9.0, #266) och listornas tillstånd är `ListUiState` från `ui-common` (NFR-6); skärmen är `XScreen(viewModel = hiltViewModel())`
   som samlar state med `collectAsStateWithLifecycle()` och lämnar typat state och callbacks till
   en tillståndslös `XContent` (t.ex. `SettingsScreen` → `SettingsContent`).
 - Inga Material 3-komponenter, färger, former eller textstilar direkt i `ui/<feature>/` –
@@ -138,8 +138,8 @@ UI-10 (risknivå i text). Semantiken ligger i komponenten, aldrig hos anroparen.
 - Belopp i `MonoAmountStyle` behåller kolumnerna vid stor text; etiketten kapas, värdet aldrig.
 - Tester: Robolectric i `app/src/test` (`EmptyStateTest`, `ChoiceControlsTest`) och instrument i
   `app/src/androidTest` (`RiskBadgeTest`). Det finns
-  inget komponentgalleri med `fontScale = 1.3` än; komponenternas skärmdumpar ligger i
-  `ComponentScreenshotTest`.
+  inget galleri med `fontScale = 1.3` än; komponenternas skärmdumpar ligger i
+  `ComponentScreenshotTest` och galleriets (bibliotekets plus Fonders `appSections`) i `ComponentGalleryTest`.
 
 ## Gradle (android:android-gradle-logic)
 

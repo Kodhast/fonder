@@ -21,8 +21,8 @@
 [feature]
 \bColor\(	MaterialTheme.colorScheme / ReturnColors / StatusColors / ChartSeriesColors (ui/theme)
 \bColor\.[A-Z][A-Za-z]*	MaterialTheme.colorScheme / ReturnColors / StatusColors / ChartSeriesColors (ui/theme)
-\bRoundedCornerShape\(	MaterialTheme.shapes (FonderShapes)
-\bCutCornerShape\(	MaterialTheme.shapes (FonderShapes)
+\bRoundedCornerShape\(	AppTheme.shapes (android-ui)
+\bCutCornerShape\(	AppTheme.shapes (android-ui)
 \bTextStyle\(	MaterialTheme.typography (FonderTypography) / MonoAmountStyle
 \b(fontSize|lineHeight|letterSpacing)\s*=	MaterialTheme.typography (FonderTypography) / MonoAmountStyle
 \.shadow\(	AppCard (android-ui)

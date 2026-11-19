@@ -289,7 +289,7 @@ versionen i tabellen.
 
 | Behov | API | Artefakt:version | Används i | Verifierad |
 |---|---|---|---|---|
-| Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`), inre `MaterialExpressiveTheme(shapes = FonderShapes)` | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
+| Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`) (inga egna former sedan android-ui 3.0.0) | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
 | Flytande verktygsrad | android-ui:s `AppFloatingToolbar(items, selectedIndex, onSelect, action)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Plusknapp med meny | android-ui:s `ToolbarAction(label, icon, menu: List<AppMenuItem>)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Växlingsknapp | `ToggleButton` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |

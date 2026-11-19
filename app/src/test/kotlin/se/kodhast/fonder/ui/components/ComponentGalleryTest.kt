@@ -5,10 +5,11 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -36,29 +37,24 @@ class ComponentGalleryTest {
 
     private fun setGallery() = rule.setContent { FonderTheme { ComponentGallery(onBack = { backs++ }) } }
 
-    /** Galleriets lodräta rullning – knappgrupperna har egna vågräta. */
-    private fun scrollTo(text: String) = rule.onNode(verticalScroll).performScrollToNode(hasText(text))
+    /** Galleriets yttersta lodräta rullning – exemplen i biblioteket har egna. */
+    private fun scrollTo(text: String) = rule.onAllNodes(verticalScroll).onFirst().performScrollToNode(hasText(text))
 
     private val verticalScroll = SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)
 
     @Test
-    fun `topprad med bakåtpil och alla avsnitt`() {
+    fun `topprad med bakåtpil, bibliotekets och Fonders avsnitt`() {
         setGallery()
 
         rule.onNodeWithText("Komponenter").assertIsDisplayed()
-        // Exemplen längre ned har egna bakåtpilar – galleriets är den i dess topprad.
-        rule.onNode(hasContentDescription("Tillbaka") and hasAnyAncestor(hasTestTag(COMPONENT_GALLERY_TOP_BAR_TAG))).performClick()
+        // Exemplen längre ned har egna bakåtpilar – galleriets är den i toppraden, först i trädet.
+        rule.onAllNodes(hasContentDescription("Tillbaka")).onFirst().performClick()
         assertEquals(1, backs)
         listOf(
-            "Knappar",
-            "Kort, rader och märken",
-            "Fält och val",
-            "Belopp och andelar",
-            "Status, laddning och tomt",
-            "Navigering",
-            "Dialoger",
-            "Från android-ui",
-            "Diagram"
+            "Fonder: belopp och andelar",
+            "Fonder: kort, märken och val",
+            "Fonder: analys och dialog",
+            "Fonder: diagram"
         ).forEach { section ->
             scrollTo(section)
             rule.onNodeWithText(section).assertIsDisplayed()
@@ -66,15 +62,15 @@ class ComponentGalleryTest {
     }
 
     @Test
-    fun `bekräftelsedialogen öppnas och stängs`() {
+    fun `importdialogen öppnas och stängs`() {
         setGallery()
-        scrollTo("Confirm")
+        scrollTo("Import")
 
-        rule.onNodeWithText("Confirm").performClick()
-        rule.onNodeWithText("Ta bort transaktionen?").assertIsDisplayed()
-        rule.onNodeWithText("Avbryt").performClick()
+        rule.onNodeWithText("Import").performClick()
+        rule.onNode(hasText("7", substring = true) and hasAnyAncestor(isDialog())).assertIsDisplayed()
+        rule.onNode(hasText("Stäng") and hasAnyAncestor(isDialog())).performClick()
 
-        rule.onNodeWithText("Ta bort transaktionen?").assertDoesNotExist()
+        rule.onNode(isDialog()).assertDoesNotExist()
     }
 
     @Test
@@ -83,7 +79,7 @@ class ComponentGalleryTest {
         rule.onNode(hasContentDescription("Kursdiagram", substring = true)).assertDoesNotExist()
 
         scrollTo("Diagram")
-        rule.onNodeWithText("Diagram").performClick()
+        rule.onAllNodes(hasText("Diagram")).onLast().performClick()
 
         scrollTo("FundLineChart")
         rule.onAllNodes(hasContentDescription("Kursdiagram", substring = true)).onFirst().assertExists()
