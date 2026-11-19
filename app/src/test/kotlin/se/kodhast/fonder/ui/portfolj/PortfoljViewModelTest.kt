@@ -487,7 +487,7 @@ class PortfoljViewModelTest {
     }
 
     @Test
-    fun `exponeringskortet snurrar medan metadata-uppslaget pagar`() = runTest(dispatcher) {
+    fun `exponeringskortet hamtar medan metadata-uppslaget pagar`() = runTest(dispatcher) {
         // Motstycket till testet ovan: att vyn ritas direkt är rätt, men en tom exponeringskarta
         // ska inte se ut som en portfölj källan inte kan klassificera. Snurran (NAV-6) är det som
         // skiljer "vet inte än" från "vet inte" (ANA-4-principen).
@@ -497,22 +497,21 @@ class PortfoljViewModelTest {
 
         val vm = viewModel()
         vm.uiState.test {
-            var state = awaitItemSkipping { it.loading || !it.metadataWorking }
-            assertTrue(state.exposureWorking)
+            val state = awaitItemSkipping { it.loading || !it.metadataWorking }
+            assertTrue(state.metadataWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `en kursuppdatering snurrar totalkortet och varje innehavsrad`() = runTest(dispatcher) {
+    fun `en kursuppdatering markerar varje innehavsrad som hamtad`() = runTest(dispatcher) {
         val today = java.time.LocalDate.now()
         val fond = holdFundAWorth1200(fakeTransactionRepo, cachedPrices, today)
         fakeScheduler.runningWork.value = setOf(BackgroundWork.PRICE_REFRESH)
 
         val vm = viewModel()
         vm.uiState.test {
-            var state = awaitItemSkipping { it.loading || !it.pricesWorking }
-            assertTrue(state.totalWorking)
+            val state = awaitItemSkipping { it.loading || !it.pricesWorking }
             assertTrue(state.holdingWorking(fond.fundId))
             cancelAndIgnoreRemainingEvents()
         }

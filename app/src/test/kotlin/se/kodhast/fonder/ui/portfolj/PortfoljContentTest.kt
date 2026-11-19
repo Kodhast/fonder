@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -25,6 +26,7 @@ import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.ListUiState
 import se.kodhast.ui.common.toListUiState
+import se.kodhast.ui.components.ENTITY_REFRESH_TAG
 
 /**
  * Innehav utan innehav och med läsfel i JVM med Robolectric: det tomma lägets "Ny transaktion" och
@@ -54,17 +56,33 @@ class PortfoljContentTest {
             }
         }
         composeRule.onNodeWithText("Inga innehav ännu").assertIsDisplayed()
-        composeRule.onNodeWithText("Ny transaktion").performScrollTo().performClick()
-        composeRule.onNodeWithText("Importera avräkningsnota").performScrollTo().performClick()
+        composeRule.onNodeWithText("Ny transaktion").performClick()
+        composeRule.onNodeWithText("Importera avräkningsnota").performClick()
         assertEquals("ny;import;", opened)
+    }
+
+    @Test
+    fun `sidhuvudet räknar fonderna och exponeringen säger hämtar medan fondfakta slås upp (NAV-6)`() {
+        val holdings = listOf("A", "B").map { Holding(fund = Fund(fundId = "SE_$it", name = "Fond $it"), netShares = 1.0, netInvested = 100.0, currentValue = 100.0) }
+        composeRule.setContent {
+            FonderTheme { PortfoljContent(state = PortfoljUiState(list = holdings.toListUiState(), metadataWorking = true), onFundClick = {}) }
+        }
+        composeRule.onNodeWithText("2 fonder").assertExists()
+        composeRule.onNodeWithText("Hämtar fondfakta …").assertExists()
+    }
+
+    @Test
+    fun `läsfelet har ingen dragning, bara Försök igen (NFR-6, UI-11)`() {
+        composeRule.setContent { FonderTheme { PortfoljContent(state = failed, onFundClick = {}) } }
+        composeRule.onNodeWithTag(ENTITY_REFRESH_TAG).assertDoesNotExist()
     }
 
     @Test
     fun `läsfelets Försök igen läser om innehaven (NFR-6)`() {
         var retries = 0
         composeRule.setContent { FonderTheme { PortfoljContent(state = failed, onFundClick = {}, onRetry = { retries++ }) } }
-        composeRule.onNodeWithText("Kunde inte visa innehållet").assertIsDisplayed()
-        composeRule.onNodeWithText("Försök igen").performScrollTo().performClick()
+        composeRule.onNodeWithText("Kunde inte hämta listan").assertIsDisplayed()
+        composeRule.onNodeWithText("Försök igen").performClick()
         assertEquals(1, retries)
     }
 

@@ -1,8 +1,13 @@
 package se.kodhast.fonder.ui.hem
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -24,6 +29,7 @@ import se.kodhast.fonder.domain.usecase.CheaperAlternative
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.OpenSwitchWatch
 import se.kodhast.fonder.domain.usecase.PendingDecisions
+import se.kodhast.fonder.domain.usecase.PortfolioFeeCalc
 import se.kodhast.fonder.domain.usecase.PortfolioReturnSeriesCalc
 import se.kodhast.fonder.domain.usecase.PortfolioRiskCalc
 import se.kodhast.fonder.domain.usecase.PortfolioRiskSource
@@ -35,6 +41,7 @@ import se.kodhast.fonder.testing.isDrawn
 import se.kodhast.fonder.ui.components.RiskCard
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.components.ENTITY_REFRESH_TAG
 
 /**
  * Skärmdumpar ljust + mörkt av Översikten enligt mockupen (HEM-13): värdekortet, "Att besluta",
@@ -81,10 +88,50 @@ class HemScreenshotTest {
         composeRule.setContent {
             FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Error(AppErrors.map(DataError.Database)), decisions = decisions)) }
         }
-        composeRule.onNodeWithText("Kunde inte visa innehållet").assertExists()
+        composeRule.onNodeWithText("Kunde inte hämta uppgifterna").assertExists()
         composeRule.onNodeWithText("Appens data gick inte att läsa. Lämna skärmen och försök igen.").assertExists()
         composeRule.onNodeWithText("Ingen portfölj ännu").assertDoesNotExist()
         composeRule.onNodeWithText("0,00 kr", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `lasfel har ingen dragning, bara Forsok igen (NFR-6, UI-11)`() {
+        // En dragning vid läsfel hade hämtat kurser i stället för att läsa om översikten.
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Error(AppErrors.map(DataError.Database)))) }
+        }
+        composeRule.onNodeWithTag(ENTITY_REFRESH_TAG).assertDoesNotExist()
+        composeRule.onNodeWithText("Försök igen").assertExists()
+    }
+
+    @Test
+    fun `avgiftskortet sager hamtar medan fondfakta slas upp (NAV-6)`() {
+        val unknownFees = PortfolioFeeCalc.Result(totalAnnualFeeKr = 0.0, byHolding = emptyList(), unknownFeeCount = 2)
+        var metadataWorking by mutableStateOf(true)
+        composeRule.setContent {
+            FonderTheme {
+                HemContent(
+                    state = HemUiState(
+                        portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true, feeSummary = unknownFees)),
+                        metadataWorking = metadataWorking
+                    )
+                )
+            }
+        }
+        composeRule.onNodeWithText("Hämtar avgifterna …").performScrollTo().assertIsDisplayed()
+        metadataWorking = false
+        composeRule.onNodeWithText("Hämtar avgifterna …").assertDoesNotExist()
+    }
+
+    @Test
+    fun `kugghjulet i sidhuvudet oppnar Installningar (SET)`() {
+        // Kugghjulet flyttade från skalet till Översikts egen ram (#266 F3) – det ska finnas även vid läsfel.
+        var opened = 0
+        composeRule.setContent {
+            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Error(AppErrors.map(DataError.Database))), onOpenSettings = { opened++ }) }
+        }
+        composeRule.onNodeWithContentDescription("Inställningar").performClick()
+        assertEquals(1, opened)
     }
 
     @Test
@@ -241,7 +288,7 @@ class HemScreenshotTest {
 
     @Test
     fun `riskkortet visar laget en stapel per niva med mal och summan att flytta`() {
-        composeRule.setContent { FonderTheme { RiskCard(risk = risk, portfolioRisk = riskPortfolioRisk, working = false) } }
+        composeRule.setContent { FonderTheme { RiskCard(risk = risk, portfolioRisk = riskPortfolioRisk) } }
         composeRule.onNodeWithText("Du har mer risk än ditt mål").assertExists()
         composeRule.onNodeWithText("Flytta ca ${MoneyFormat.krWhole(17_000.0)} så är du framme.").assertExists()
         composeRule.onNode(hasContentDescription("Nivå 4: ${MoneyFormat.percent(0.52)}, mål ${MoneyFormat.percent(0.45)}")).assertExists()
@@ -256,7 +303,7 @@ class HemScreenshotTest {
             PortfolioRiskSource.RiskBase(RiskProfile(targetAllocation = mapOf(3 to 0.5, 4 to 0.5)), mapOf(3 to 48.0, 4 to 52.0), emptyMap()),
             emptyList()
         )!!
-        composeRule.setContent { FonderTheme { RiskCard(risk = inLine, portfolioRisk = riskPortfolioRisk, working = false) } }
+        composeRule.setContent { FonderTheme { RiskCard(risk = inLine, portfolioRisk = riskPortfolioRisk) } }
         composeRule.onNodeWithText("Du ligger i linje med ditt mål").assertExists()
         composeRule.onNodeWithText("Flytta ca", substring = true).assertDoesNotExist()
     }
@@ -272,13 +319,13 @@ class HemScreenshotTest {
                 )
             )
         )!!
-        composeRule.setContent { FonderTheme { RiskCard(risk = partial, portfolioRisk = riskPortfolioRisk, working = false) } }
+        composeRule.setContent { FonderTheme { RiskCard(risk = partial, portfolioRisk = riskPortfolioRisk) } }
         composeRule.onNodeWithText("Bytesplanen flyttar ca ${MoneyFormat.krWhole(10_000.0)}. Det räcker inte hela vägen till målet.").assertExists()
         composeRule.onNodeWithText("så är du framme", substring = true).assertDoesNotExist()
     }
 
     @Test
     fun `skarmdump av riskkortet`() = composeRule.captureLightAndDark("HemScreen_riskkort") {
-        RiskCard(risk = risk, portfolioRisk = riskPortfolioRisk, working = false)
+        RiskCard(risk = risk, portfolioRisk = riskPortfolioRisk)
     }
 }

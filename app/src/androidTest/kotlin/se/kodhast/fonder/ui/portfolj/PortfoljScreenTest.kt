@@ -1,13 +1,19 @@
 package se.kodhast.fonder.ui.portfolj
 
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasScrollToNodeAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
@@ -25,8 +31,8 @@ import se.kodhast.ui.common.ListUiState
 import se.kodhast.ui.common.toListUiState
 
 /**
- * Instrumenterat test av Portföljens tillståndsdrivna innehåll, inklusive de nya
- * dag/vecka/månads-badgarna per innehav (issue #14, POR-5) — bygger [PortfoljUiState]
+ * Instrumenterat test av Portföljens tillståndsdrivna innehåll på listramen (#266 F3), inklusive
+ * dag/vecka/månad per innehav (issue #14, POR-5) — bygger [PortfoljUiState]
  * direkt i stället för att gå via ett riktigt [PortfoljViewModel]/Hilt.
  */
 @RunWith(AndroidJUnit4::class)
@@ -36,6 +42,14 @@ class PortfoljScreenTest {
     val composeRule = createComposeRule()
 
     private val fond = Fund(fundId = "SHB0000442", name = "Fond A")
+
+    /**
+     * Innehaven är riktiga lazy-rader under totalkortet och exponeringskortet (listramen, #266 F3); i
+     * emulatorns fönster (320×640) är raden inte komponerad förrän listan rullats dit.
+     */
+    private fun scrollToHolding(name: String = fond.name) {
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(name, substring = true))
+    }
 
     @Test
     fun tomt_tillstand_visas_utan_innehav() {
@@ -47,15 +61,14 @@ class PortfoljScreenTest {
     }
 
     @Test
-    fun innehavsrad_visar_vantesnurra_medan_dess_kurs_hamtas() {
-        // NAV-6, per fond: en nyss tillagd fond står på 0 kr tills kursen landat, och utan
-        // snurran ser det ut som ett värde i stället för som ett svar på väg. `refreshingFundIds`
-        // gäller just den fonden — resten av listan ska stå stilla.
+    fun innehavsrad_utan_kurs_sager_hamtar_medan_dess_kurs_hamtas() {
+        // NAV-6, per fond: en nyss tillagd fond saknar kurs tills den landat. Raden säger "Hämtar …" i stället
+        // för en egen snurra (#266 F3: en laddningsindikator i sidhuvudet), och bara för just den fonden.
         val annanFond = Fund(fundId = "SHB0000443", name = "Fond B")
         val state = PortfoljUiState(
             list = persistentListOf(
-                Holding(fund = fond, netShares = 10.0, netInvested = 1000.0, currentValue = 1100.0),
-                Holding(fund = annanFond, netShares = 5.0, netInvested = 500.0, currentValue = 520.0)
+                Holding(fund = fond, netShares = 10.0, netInvested = 100.0, currentValue = null),
+                Holding(fund = annanFond, netShares = 5.0, netInvested = 50.0, currentValue = null)
             ).toListUiState(),
             refreshingFundIds = persistentSetOf(fond.fundId)
         )
@@ -64,13 +77,16 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        // useUnmergedTree: innehavsraden är en klickbar Card och slår ihop sina barns semantik.
-        composeRule.onNodeWithContentDescription("Uppdaterar Fond A", useUnmergedTree = true).assertExists()
-        composeRule.onNodeWithContentDescription("Uppdaterar Fond B", useUnmergedTree = true).assertDoesNotExist()
+        scrollToHolding()
+        // useUnmergedTree: innehavsraden är klickbar och slår ihop sina barns semantik.
+        composeRule.onAllNodesWithText("Hämtar …", useUnmergedTree = true).assertCountEquals(1)
+        scrollToHolding(annanFond.name)
+        // Totalkortet säger också "Kurs saknas ännu" (ingen fond har kurs) – här gäller raden.
+        composeRule.onNode(hasText("Kurs saknas ännu") and hasAnyAncestor(hasClickAction()), useUnmergedTree = true).assertExists()
     }
 
     @Test
-    fun alla_innehavsrader_snurrar_under_en_kursuppdatering() {
+    fun innehavsraderna_har_ingen_egen_vantesnurra_under_en_kursuppdatering() {
         val state = PortfoljUiState(
             list = persistentListOf(Holding(fund = fond, netShares = 10.0, netInvested = 1000.0, currentValue = 1100.0)).toListUiState(),
             pricesWorking = true
@@ -80,8 +96,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Uppdaterar Fond A", useUnmergedTree = true).assertExists()
+        scrollToHolding()
+        composeRule.onAllNodesWithContentDescription("Uppdaterar", substring = true, useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -102,13 +118,10 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Fond A").assertExists()
-        composeRule.onNodeWithText("+3,0 % · 30,00 kr", substring = true).assertExists()
-        // Vecka och månad saknar historik -> två "otillräcklig data"-rader. Card slår ihop
-        // sina barns semantik till en enda nod (mergeDescendants), så både onNodeWithText
-        // (kräver exakt en träff) och en oskyddad onAllNodesWithText skulle bara se en
-        // sammanslagen nod — useUnmergedTree=true krävs för att räkna raderna var för sig.
-        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(2)
+        scrollToHolding()
+        // Perioderna står på en rad; vecka och månad saknar historik och står som "–", inte som en falsk nolla.
+        composeRule.onNodeWithText("Dag +3,0 % 30,00 kr · Vecka – · Månad –", useUnmergedTree = true).assertExists()
+        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(0)
     }
 
     @Test
@@ -120,7 +133,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(3)
+        scrollToHolding()
+        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(1)
     }
 
     @Test
@@ -142,7 +156,9 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(3)
+        scrollToHolding()
+        composeRule.onAllNodesWithText("Otillräcklig data", useUnmergedTree = true).assertCountEquals(1)
+        composeRule.onNode(hasText("+0,0 %", substring = true) and hasAnyAncestor(hasClickAction()), useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -162,7 +178,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Första köp 2024-03-15 · Inköpsvärde 500,00 kr", substring = true).assertExists()
+        scrollToHolding()
+        composeRule.onNodeWithText("Första köp 2024-03-15 · Inköpsvärde 500,00 kr", substring = true, useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -187,7 +204,11 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onAllNodesWithText("Värde per 2026-07-10", useUnmergedTree = true).assertCountEquals(2)
+        // Totalkortet står i listans huvud och är inte klickbart; innehavsraden är det (den öppnar Fonddetalj).
+        val asOf = hasText("Värde per 2026-07-10")
+        composeRule.onNode(asOf and !hasAnyAncestor(hasClickAction()), useUnmergedTree = true).assertExists()
+        scrollToHolding()
+        composeRule.onNode(asOf and hasAnyAncestor(hasClickAction()), useUnmergedTree = true).assertExists()
     }
 
     private fun keyFigures(gavFraction: Double? = 0.6) = FundAnalysisCalc.KeyFigures(
@@ -223,7 +244,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Vinstläge", substring = true).assertExists()
+        scrollToHolding()
+        composeRule.onNodeWithText("Vinstläge", substring = true, useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -246,7 +268,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Vinstläge", substring = true).assertDoesNotExist()
+        scrollToHolding()
+        composeRule.onNodeWithText("Vinstläge", substring = true, useUnmergedTree = true).assertDoesNotExist()
     }
 
     // --- Exponeringskarta (POR-9, issue #66) ---
@@ -283,15 +306,12 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Aktiefond").assertExists()
-        composeRule.onNodeWithText("80,0 %").assertExists()
-        composeRule.onNodeWithText("Räntefond").assertExists()
-        composeRule.onNodeWithText("20,0 %").assertExists()
-        composeRule.onNodeWithText("Sverige").assertExists()
-        composeRule.onNodeWithText("Indexfond").assertExists()
-        composeRule.onNodeWithText("30,0 %").assertExists()
-        composeRule.onNodeWithText("Aktivt förvaltad").assertExists()
-        composeRule.onNodeWithText("70,0 %").assertExists()
+        // Varje andel är en ShareBar som läses som en enhet: "etikett, andel".
+        composeRule.onNodeWithContentDescription("Aktiefond, 80,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Räntefond, 20,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Sverige, 100,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Indexfond, 30,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Aktivt förvaltad, 70,0 %").assertExists()
     }
 
     @Test
@@ -322,11 +342,10 @@ class PortfoljScreenTest {
         }
 
         composeRule.onNodeWithText("Risknivå").assertExists()
-        val riskLevelNodes = composeRule.onAllNodesWithText("3", substring = false)
-        riskLevelNodes.assertCountEquals(1)
-        composeRule.onNodeWithText("6").assertExists()
-        composeRule.onNodeWithText("10,0 %").assertExists()
-        composeRule.onNodeWithText("90,0 %").assertExists()
+        val levels = composeRule.onAllNodes(hasContentDescription("3, ", substring = true) or hasContentDescription("6, ", substring = true))
+        levels.assertCountEquals(2)
+        levels[0].assertContentDescriptionEquals("3, 10,0 %")
+        levels[1].assertContentDescriptionEquals("6, 90,0 %")
     }
 
     @Test
@@ -350,9 +369,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Sverige").assertExists()
-        composeRule.onNodeWithText("Okänd region").assertExists()
-        composeRule.onNodeWithText("40,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Sverige, 60,0 %").assertExists()
+        composeRule.onNodeWithContentDescription("Okänd region, 40,0 %").assertExists()
     }
 
     @Test
@@ -395,15 +413,10 @@ class PortfoljScreenTest {
 
     @Test
     fun portfolj_ar_skrollbar_med_exponeringskort_och_manga_innehav() {
-        // Exponeringskortet ligger som ett `item {}` i samma `LazyColumn` som innehavsraderna
-        // (inte i en fast `Column` ovanför, se PortfoljContent) — annars skulle det äta
-        // skärmhöjd permanent och kunna klippa bort de sista innehavsraderna (UI-5, issue #63).
-        // Till skillnad från Hems flaggade fonder (allihop under en enda icke-lazy `Column`
-        // inuti ett `item {}`) är innehavsraderna här riktiga lazy `items()` — den sista raden
-        // är därför inte komponerad förrän listan faktiskt skrollas dit, så
-        // `onNodeWithText(...).performScrollTo()` (som kräver att noden redan finns i
-        // semantikträdet) skulle aldrig hitta den. `performScrollToIndex` på den taggade listan
-        // är rätt verktyg för en genuint virtualiserad lista.
+        // Total- och exponeringskortet är listramens huvud och rullar med innehavsraderna — annars
+        // skulle de äta skärmhöjd permanent och kunna klippa bort de sista raderna (UI-5, issue #63).
+        // Raderna är riktiga lazy-rader: den sista finns inte i semantikträdet förrän listan rullats
+        // dit, därför performScrollToNode på listan i stället för performScrollTo på noden.
         val funds = (1..10).map { i -> Holding(fund = Fund(fundId = "F$i", name = "Innehav $i"), netShares = 1.0, netInvested = 100.0, currentValue = 100.0) }
         val state = PortfoljUiState(list = funds.toListUiState())
 
@@ -411,9 +424,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        // Index 0/1 = TotalCard/ExposureCard, holdings börjar på index 2 -> sista (10:e) på index 11.
-        composeRule.onNodeWithTag(PORTFOLJ_LIST_TEST_TAG).performScrollToIndex(11)
-        composeRule.onNodeWithText("Innehav 10").assertIsDisplayed()
+        scrollToHolding("Innehav 10")
+        composeRule.onNodeWithText("Innehav 10", useUnmergedTree = true).assertIsDisplayed()
     }
 
     // --- Risknivå på innehavsraden (UI-10, issue #85) ---
@@ -430,7 +442,8 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Risk 5/7").assertExists()
+        scrollToHolding()
+        composeRule.onNodeWithText("Risk 5/7", useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -442,6 +455,7 @@ class PortfoljScreenTest {
             FonderTheme { PortfoljContent(state = state, onFundClick = {}) }
         }
 
-        composeRule.onNodeWithText("Risk okänd").assertExists()
+        scrollToHolding()
+        composeRule.onNodeWithText("Risk okänd", useUnmergedTree = true).assertExists()
     }
 }

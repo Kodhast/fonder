@@ -13,13 +13,14 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.PortfolioRiskCalc
 import se.kodhast.fonder.domain.usecase.RiskSummary
 import se.kodhast.fonder.domain.usecase.SwitchEffectCalc
-import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.SectionCard
+import se.kodhast.ui.components.ShareBar
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 /**
  * Riskkortet (HEM-7, issue #238, mockup C2) — delat av Översikt och Beslut (issue #240, regel 4):
- * läget i en mening, en stapel per risknivå med **målstreck** ([ExposureBar] med `target`) och hur
+ * en [SectionCard] med läget i en mening, en stapel per risknivå med **målstreck** (android-ui:s [ShareBar] med `target`) och hur
  * mycket bytesplanen flyttar. Bara nivåer som finns i målet eller innehavet visas. En nivå med minst
  * 5 procentenheter för mycket ritas i koppar med målstrecket i blått, de andra tvärtom — samma gräns
  * som planen säljer vid.
@@ -37,21 +38,15 @@ import se.kodhast.ui.theme.Spacing
 @Composable
 fun RiskCard(
     risk: RiskSummary,
-    working: Boolean,
     modifier: Modifier = Modifier,
     portfolioRisk: PortfolioRiskCalc.Result? = null,
     goal: String? = null,
     footer: (@Composable () -> Unit)? = null
 ) {
     val effect = risk.effect
-    AppCard(modifier = modifier.fillMaxWidth().padding(Spacing.l)) {
-        CardTitleRow(title = stringResource(R.string.hem_risk_title), working = working)
+    SectionCard(title = stringResource(R.string.hem_risk_title), modifier = modifier.fillMaxWidth()) {
         effect.direction?.let { direction ->
-            Text(
-                stringResource(direction.headlineRes()),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = Spacing.s)
-            )
+            Text(stringResource(direction.headlineRes()), style = AppTheme.typography.itemTitle)
         }
         val scale = stringResource(R.string.hem_risk_scale)
         Text(
@@ -62,10 +57,12 @@ fun RiskCard(
         )
         effect.levels.forEach { level ->
             val over = level.isOverweight
-            ExposureBar(
+            ShareBar(
                 label = stringResource(R.string.format_hem_risk_level, level.level),
-                fraction = level.actualFraction,
-                target = level.targetFraction,
+                fraction = level.actualFraction.toFloat(),
+                value = MoneyFormat.percent(level.actualFraction),
+                target = level.targetFraction.toFloat(),
+                targetValue = MoneyFormat.percent(level.targetFraction),
                 color = if (over) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                 targetColor = if (over) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
             )
@@ -77,7 +74,7 @@ fun RiskCard(
             val moveRes = if (effect.reachesTargetAfterPlan == true) R.string.format_hem_risk_move else R.string.format_hem_risk_move_partial
             Text(
                 stringResource(moveRes, MoneyFormat.krWhole(toMove)),
-                style = MaterialTheme.typography.bodyMedium,
+                style = AppTheme.typography.body,
                 modifier = Modifier.padding(top = Spacing.xs)
             )
         }

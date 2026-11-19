@@ -32,18 +32,14 @@ import se.kodhast.fonder.ui.riskprofil.RiskProfilScreen
 import se.kodhast.fonder.ui.settings.SettingsEvent
 import se.kodhast.fonder.ui.settings.SettingsScreen
 import se.kodhast.fonder.ui.settings.SettingsViewModel
-import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
 import se.kodhast.ui.common.SyncUiState
-import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.AppMenuItem
-import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
 import se.kodhast.ui.navigation.AppNavHost
-import se.kodhast.ui.theme.Tone
 
 /**
  * Appens navigering: android-ui:s navigationsram ([AppNavHost]) med Fonders flikar, plusmenyn och
@@ -111,20 +107,14 @@ fun FonderNavHost(
 }
 
 /**
- * Toppraden runt [key]s skärm (NAV-7, UI-8): på Översikt, Innehav och Beslut Kodhäst-sidhuvudet ([TabPage]),
- * med Inställningar som åtgärd på Översikt; på en underskärm utan ram den lilla toppraden med rubrik och
- * tillbakapil ([SubPage], [subPageTitle]). Skärmarna på android-ui:s ramar (Händelser, Fonddetalj, Fondsök,
- * formulären, galleriet) ritar sin egen och får ingen.
+ * Toppraden runt [key]s skärm (UI-8): på en underskärm utan ram den lilla toppraden med rubrik och
+ * tillbakapil ([SubPage], [subPageTitle]). Flikarna och skärmarna på android-ui:s ramar (Översikt, Innehav,
+ * Beslut, Händelser, Fonddetalj, Fondsök, formulären, galleriet) ritar sin egen och får ingen.
  */
 @Composable
 fun FonderPage(key: AppKey, backStack: AppBackStack, content: @Composable () -> Unit) {
     val subTitle = subPageTitle(key)
-    when {
-        key == OversiktKey -> TabPage(stringResource(R.string.nav_oversikt), actions = { SettingsButton { backStack.push(SettingsKey) } }, content = content)
-        key == InnehavKey || key == BeslutKey -> TabPage(stringResource(Screen.entries.first { it.key == key }.labelRes), content = content)
-        subTitle != null -> SubPage(stringResource(subTitle), onBack = { backStack.popIfTop(key) }, content = content)
-        else -> content()
-    }
+    if (subTitle != null) SubPage(stringResource(subTitle), onBack = { backStack.popIfTop(key) }, content = content) else content()
 }
 
 /** Rubriken för en underskärm utan ram ([SubPage]); `null` för flikarna och skärmarna på en ram. */
@@ -142,15 +132,6 @@ fun subPageTitle(key: AppKey): Int? = when (key) {
     is TabKey, is FondDetaljKey, FundSearchKey, is TransactionFormKey, RiskProfileKey, BenchmarkPickerKey,
     is SwitchWatchPickerKey, ComponentGalleryKey -> null
 }
-
-@Composable
-private fun SettingsButton(onClick: () -> Unit) = AppIconButton(
-    icon = R.drawable.ic_settings,
-    contentDescription = stringResource(R.string.nav_settings),
-    onClick = onClick,
-    variant = IconButtonVariant.Tonal,
-    tone = Tone.NeutralPrimary
-)
 
 /** Plusknappens val (NAV-8) i samma ordning som förut, med ikoner som i FAB-menyn. */
 @Composable
@@ -183,6 +164,7 @@ fun fonderEntries(
         HemScreen(
             onFundClick = { fundId -> backStack.push(FondDetaljKey(fundId)) },
             onOpenBeslut = { backStack.select(BeslutKey) },
+            onOpenSettings = { backStack.push(SettingsKey) },
             onOpenBackup = openBackup,
             onWatchFund = { backStack.push(FundSearchKey) },
             onImportHoldings = { backStack.push(ImportHoldingsKey) },

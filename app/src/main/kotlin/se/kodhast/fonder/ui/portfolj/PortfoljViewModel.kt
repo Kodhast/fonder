@@ -75,14 +75,14 @@ data class PortfoljUiState(
      * Läses ur samma [metadata]-flöde som exponeringskartan, alltså utan extra nätverksanrop.
      */
     val riskLevels: ImmutableMap<String, Int> = persistentMapOf(),
-    /** Kurserna hämtas just nu i bakgrunden ([BackgroundWork.PRICE_REFRESH]) — kortens väntesnurra (NAV-6). */
+    /** Kurserna hämtas just nu i bakgrunden ([BackgroundWork.PRICE_REFRESH]) — dra-för-att-uppdaterans indikator (UI-11). */
     val pricesWorking: Boolean = false,
-    /** Fondmetadatan slås upp just nu (nätverk per okänd ISIN) — exponeringskartan vilar på den. */
+    /** Fondmetadatan slås upp just nu (nätverk per okänd ISIN) — exponeringskortet säger "Hämtar …". */
     val metadataWorking: Boolean = false,
     /**
      * Fonder vars engångsuppdatering av kursen pågår just nu (se [PortfoljViewModel]s `init`).
      * Per fond, inte ett gemensamt "något hämtas": en nyss tillagd fond uppdateras medan resten
-     * av listan står färdig, och då ska bara **den** raden snurra (NAV-6).
+     * av listan står färdig, och då ska bara **den** raden säga "Hämtar …".
      */
     val refreshingFundIds: ImmutableSet<String> = persistentSetOf()
 ) {
@@ -94,15 +94,7 @@ data class PortfoljUiState(
 
     val isEmpty: Boolean get() = list is ListUiState.Empty
 
-    // Per kort/rad, härlett här i stället för i skärmen så kopplingen är enhetstestbar utan
-    // Compose (samma uppdelning som HemUiState). Den första laddningen räknas alltid som
-    // pågående: då är varje siffra på skärmen en nolla som ännu inte fyllts i.
-    val totalWorking: Boolean get() = loading || pricesWorking || refreshingFundIds.isNotEmpty()
-
-    /** Exponeringskartan (POR-9) hänger på metadatan, inte på kurserna. */
-    val exposureWorking: Boolean get() = loading || metadataWorking
-
-    /** En innehavsrad snurrar när just dess kurs hämtas, eller när alla kurser uppdateras. */
+    /** En innehavsrad utan kurs säger "Hämtar …" när just dess kurs hämtas, eller när alla kurser uppdateras. */
     fun holdingWorking(fundId: String): Boolean = pricesWorking || fundId in refreshingFundIds
 }
 

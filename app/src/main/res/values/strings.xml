@@ -89,6 +89,19 @@
     <string name="period_week">Senaste veckan</string>
     <string name="period_month">Senaste månaden</string>
     <string name="period_insufficient_data">Otillräcklig data</string>
+    <string name="period_day_short">Dag</string>
+    <string name="period_week_short">Vecka</string>
+    <string name="period_missing_short">–</string>
+    <string name="period_month_short">Månad</string>
+    <string name="holdings_fetching">Hämtar …</string>
+    <string name="hem_fee_fetching">Hämtar avgifterna …</string>
+    <string name="hem_return_chart_benchmark_fetching">Hämtar jämförelseindex …</string>
+    <string name="portfolj_exposure_fetching">Hämtar fondfakta …</string>
+    <string name="portfolj_group_funds">Fonder</string>
+    <plurals name="format_portfolj_subtitle">
+        <item quantity="one">%1$d fond</item>
+        <item quantity="other">%1$d fonder</item>
+    </plurals>
     <string name="period_partial_data">Delvis osäker — någon fond saknar historik</string>
 
     <!-- Portfölj -->
@@ -526,8 +539,6 @@
     <string name="riskprofile_no_levels_yet">Kan inte föreslå en skala än — risknivåer hämtas första gången appen slår upp fondmetadata (t.ex. via Fondsök eller ett innehav).</string>
 
     <!-- Riskprofil på Hem (HEM-7, issue #68, mål-mot-faktisk per nivå i issue #71) -->
-    <string name="format_exposure_bar_target">%1$s · mål %2$s</string>
-    <string name="format_exposure_bar_target_description">%1$s: %2$s, mål %3$s</string>
     <string name="hem_risk_title">Riskprofil</string>
     <string name="hem_risk_target_label">Målnivå</string>
     <string name="hem_risk_actual_label">Innehavens snittnivå</string>
@@ -731,8 +742,11 @@
         <item>nov</item>
         <item>dec</item>
     </string-array>
-    <string name="hem_decisions_title">Att besluta</string>
     <string name="hem_decisions_action">Visa beslut</string>
+    <plurals name="format_hem_decisions_waiting">
+        <item quantity="one">%1$d beslut väntar</item>
+        <item quantity="other">%1$d beslut väntar</item>
+    </plurals>
     <plurals name="format_hem_decisions_suggestions">
         <item quantity="one">%1$d föreslaget</item>
         <item quantity="other">%1$d föreslagna</item>

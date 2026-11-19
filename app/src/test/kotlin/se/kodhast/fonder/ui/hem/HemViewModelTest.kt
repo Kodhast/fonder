@@ -590,51 +590,44 @@ class HemViewModelTest {
     }
 
     @Test
-    fun `en kursuppdatering snurrar kurskorten men inte riskkortet`() = runTest(dispatcher) {
+    fun `en kursuppdatering syns i tillstandet men inte som metadata`() = runTest(dispatcher) {
         setUpHoldingWithMetadataForSwitchPlan()
         fakeScheduler.runningWork.value = setOf(BackgroundWork.PRICE_REFRESH)
 
         val vm = viewModel()
         vm.uiState.test {
             var state = awaitItemSkipping { it.loading || !it.pricesWorking }
-            assertTrue(state.totalWorking)
-            assertTrue(state.performanceWorking)
-            assertTrue(state.returnChartWorking)
-            assertTrue(state.analysisWorking)
-            // Riskkortet vilar på metadatan, inte på kurserna — det ska stå stilla medan bara
-            // kurserna hämtas, annars säger snurran ingenting.
+            assertFalse(state.benchmarkWorking)
+            // Avgiftskortets "Hämtar …" vilar på metadatan, inte på kurserna.
             while (state.metadataWorking) state = awaitItem()
-            assertFalse(state.riskWorking)
+            assertTrue(state.pricesWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `en referensfondsskanning snurrar bara avkastningskortet`() = runTest(dispatcher) {
+    fun `en referensfondsskanning beror bara avkastningskortet`() = runTest(dispatcher) {
         setUpHoldingWithMetadataForSwitchPlan()
         fakeScheduler.runningWork.value = setOf(BackgroundWork.BENCHMARK_SCAN)
 
         val vm = viewModel()
         vm.uiState.test {
-            var state = awaitItemSkipping { it.loading || !it.benchmarkWorking }
-            assertTrue(state.returnChartWorking)
+            val state = awaitItemSkipping { it.loading || !it.benchmarkWorking }
             assertFalse(state.pricesWorking)
-            while (state.metadataWorking) state = awaitItem()
-            assertFalse(state.riskWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `en bytesplansskanning snurrar inte riskkortet - planen visas pa Beslut`() = runTest(dispatcher) {
+    fun `en bytesplansskanning beror inte Oversikt - planen visas pa Beslut`() = runTest(dispatcher) {
         // Sedan 0.61.0 ligger bytesplanen på Beslut (NAV-9); riskkortet visar bara fördelningen
         // och vilar på metadatan. En snurra här hade sagt att fördelningen är osäker när den inte är det.
         setUpHoldingWithMetadataForSwitchPlan()
         fakeScheduler.runningWork.value = setOf(BackgroundWork.SWITCH_PLAN_SCAN)
 
         viewModel().uiState.test {
-            var state = awaitItemSkipping { it.loading || it.metadataWorking }
-            assertFalse(state.riskWorking)
+            val state = awaitItemSkipping { it.loading || it.metadataWorking }
+            assertFalse(state.benchmarkWorking)
             assertFalse(state.pricesWorking)
             cancelAndIgnoreRemainingEvents()
         }

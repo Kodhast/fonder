@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +39,9 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
+import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.APP_HEADER_TAG
+import se.kodhast.ui.components.EntityDetailScreen
 
 /**
  * Fonders navigationsram (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s `AppNavHost` med Fonders
@@ -81,13 +84,33 @@ class FonderNavHostTest {
         val viewModel: StubViewModel = viewModel()
         viewModels[key] = viewModel
         var taps by rememberSaveable { mutableIntStateOf(0) }
-        Column {
-            Text("skärm:${name(key)}", Modifier.clickable { taps++ })
-            Text("tryck:$taps")
-            if (key == InnehavKey) {
-                Text("öppna fond", Modifier.clickable { backStack.push(FondDetaljKey(FUND_ID)) })
+        val body: @Composable () -> Unit = {
+            Column {
+                Text("skärm:${name(key)}", Modifier.clickable { taps++ })
+                Text("tryck:$taps")
+                if (key == InnehavKey) {
+                    Text("öppna fond", Modifier.clickable { backStack.push(FondDetaljKey(FUND_ID)) })
+                }
             }
         }
+        tabTitle(key)?.let { TabFrame(it, body) } ?: body()
+    }
+
+    /**
+     * Översikt, Innehav och Beslut står på bibliotekets detalj- eller listram i flikläge och ritar sitt eget
+     * Kodhäst-sidhuvud (#266 F3) – ersättarna gör likadant, så att skalets del (identiteten och prickarna)
+     * syns. Händelser och underskärmarna ritas som de är.
+     */
+    @Composable
+    private fun TabFrame(title: String, content: @Composable () -> Unit) {
+        EntityDetailScreen(state = DetailUiState.Content(Unit), header = null, onBack = null, title = title) { content() }
+    }
+
+    private fun tabTitle(key: AppKey): String? = when (key) {
+        OversiktKey -> "Översikt"
+        InnehavKey -> "Innehav"
+        BeslutKey -> "Beslut"
+        else -> null
     }
 
     private val viewModels = mutableMapOf<AppKey, StubViewModel>()
@@ -201,10 +224,12 @@ class FonderNavHostTest {
     }
 
     @Test
-    fun `inställningsikonen på Översikt öppnar Inställningar med bakåtpil`() {
+    fun `Inställningar är en underskärm med bakåtpil och utan flikrad`() {
+        // Kugghjulet sitter i Översikts sidhuvud (HemContent, testat i HemScreenshotTest); här skalets del.
         setShell()
 
-        composeRule.onNodeWithContentDescription("Inställningar").performClick()
+        composeRule.runOnUiThread { backStack.push(SettingsKey) }
+        composeRule.waitForIdle()
 
         assertOnScreen("settings")
         composeRule.onNodeWithText("Inställningar").assertIsDisplayed()
@@ -405,7 +430,10 @@ class FonderNavHostTest {
     }
 
     /** Skärmdumpens ersättare – bara skärmens namn, som före Navigation 3. */
-    private fun stubEntryWithoutTaps(key: AppKey): NavEntry<AppKey> = NavEntry(key) { Text("skärm:${name(key)}") }
+    private fun stubEntryWithoutTaps(key: AppKey): NavEntry<AppKey> = NavEntry(key) {
+        val body: @Composable () -> Unit = { Text("skärm:${name(key)}") }
+        tabTitle(key)?.let { TabFrame(it, body) } ?: body()
+    }
 
     class StubViewModel : ViewModel() {
         var cleared = false

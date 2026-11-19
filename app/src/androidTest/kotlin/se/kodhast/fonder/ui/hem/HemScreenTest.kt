@@ -3,6 +3,7 @@ package se.kodhast.fonder.ui.hem
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -50,15 +51,12 @@ class HemScreenTest {
     val composeRule = createComposeRule()
 
     /**
-     * Riskkortet är sista `item {}` i Hems `LazyColumn` och komponeras inte förrän listan
-     * skrollats dit — `onNodeWithText(...)` hittar då ingen nod alls, oavsett `performScrollTo()`,
-     * som kräver att noden **redan** är komponerad (UI-5, issue #66). Testerna klarade sig
-     * tidigare bara på att korten råkade rymmas i testviewporten: rubrikraderna med väntesnurra
-     * (NAV-6) gjorde varje kort några dp högre och slog ut dem. Samma `testTag`-mönster som
-     * Portfölj, Facit och Pågående byte redan använder.
+     * Riskkortet står sist på Översikten, under sidhuvudet och de andra korten – utanför testfönstret
+     * (320 × 640). Detaljramen rullar en vanlig kolumn, så kortet finns i semantikträdet och rullas fram
+     * med `performScrollTo()` (UI-5).
      */
     private fun scrollToRiskCard() {
-        composeRule.onNodeWithTag(HEM_LIST_TEST_TAG).performScrollToIndex(RISK_CARD_INDEX)
+        composeRule.onNodeWithText("Riskprofil").performScrollTo()
     }
 
     @Test
@@ -88,9 +86,9 @@ class HemScreenTest {
             FonderTheme { HemContent(state = state, onOpenBackup = { opened++ }) }
         }
 
-        composeRule.onNodeWithText("Ändringar sedan senaste säkerhetskopian").assertIsDisplayed()
+        composeRule.onNodeWithText("Ändringar sedan senaste säkerhetskopian").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("3 nya transaktioner · senast", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Säkerhetskopiera").performClick()
+        composeRule.onNodeWithText("Ändringar sedan senaste säkerhetskopian").performClick()
         assertEquals(1, opened)
     }
 
@@ -100,7 +98,7 @@ class HemScreenTest {
 
         composeRule.setContent { FonderTheme { HemContent(state = state) } }
 
-        composeRule.onNodeWithText("Ingen säkerhetskopia än").assertIsDisplayed()
+        composeRule.onNodeWithText("Ingen säkerhetskopia än").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -113,47 +111,28 @@ class HemScreenTest {
     }
 
     @Test
-    fun kurskorten_visar_vantesnurra_medan_kurserna_hamtas() {
-        // NAV-6: chromets indikator säger bara att *något* kör. Snurran på kortet säger vilket
-        // korts siffror som håller på att bli till.
+    fun korten_har_ingen_egen_vantesnurra_medan_kurserna_hamtas() {
+        // NAV-6 (#266 F3): bakgrundshämtningen syns bara som sidhuvudets prickar – inga snurror i korten.
         val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)), pricesWorking = true)
 
         composeRule.setContent {
             FonderTheme { HemContent(state = state) }
         }
 
-        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertExists()
-        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertExists()
+        composeRule.onNodeWithText("Totalt värde").assertExists()
+        composeRule.onAllNodesWithContentDescription("Uppdaterar", substring = true).assertCountEquals(0)
     }
 
     @Test
-    fun kurskorten_star_stilla_i_vila() {
-        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)))
-
+    fun avkastningskortet_sager_hamtar_medan_referensfonden_hamtas() {
+        // "Vet inte än" ska inte se ut som "vet inte" (ANA-4-principen): utan jämförelse och med
+        // skanningen igång säger kortet att jämförelsen är på väg.
         composeRule.setContent {
-            FonderTheme { HemContent(state = state) }
+            FonderTheme { HemContent(state = returnState().copy(benchmarkWorking = true)) }
         }
 
-        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertDoesNotExist()
-    }
-
-    @Test
-    fun bara_avkastningskortet_snurrar_for_en_referensfondsskanning() {
-        // Referensfonden (HEM-10) rör bara avkastningskurvan. Snurrar totalkortet med, slutar
-        // snurran betyda något — den skulle då bara säga "appen jobbar", vilket chromet redan
-        // säger (NAV-6).
-        val state = HemUiState(portfolio = DetailUiState.Content(HemPortfolio(hasHoldings = true)), benchmarkWorking = true)
-
-        composeRule.setContent {
-            FonderTheme { HemContent(state = state) }
-        }
-
-        composeRule.onNodeWithContentDescription("Uppdaterar Avkastning över tid").assertExists()
-        composeRule.onNodeWithContentDescription("Uppdaterar Totalt värde").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Uppdaterar Utveckling").assertDoesNotExist()
+        composeRule.onNodeWithText("Hämtar jämförelseindex …").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Ingen indexjämförelse än", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -598,7 +577,7 @@ class HemScreenTest {
 
     @Test
     fun riskkortet_visar_mal_mot_faktisk_per_niva() {
-        // Andelarna är medvetet olika sinsemellan — annars kan flera ExposureBar-rader råka
+        // Andelarna är medvetet olika sinsemellan — annars kan flera ShareBar-rader råka
         // rendera samma procenttext, vilket gör onNodeWithText tvetydig (kräver exakt en träff).
         val target = mapOf(3 to 0.31, 4 to 0.46, 5 to 0.23)
         val actual = mapOf(3 to 120.0, 4 to 530.0, 5 to 350.0)
@@ -618,7 +597,7 @@ class HemScreenTest {
 
         scrollToRiskCard()
 
-        // En stapel per nivå med målstreck; raden läses som en mening (ExposureBar med mål).
+        // En stapel per nivå med målstreck; raden läses som en mening (ShareBar med mål).
         composeRule.onNodeWithText("Du har mer risk än ditt mål").assertExists()
         composeRule.onNodeWithContentDescription("Nivå 3: 12,0 %, mål 31,0 %").assertExists()
         composeRule.onNodeWithContentDescription("Nivå 4: 53,0 %, mål 46,0 %").assertExists()
@@ -645,7 +624,6 @@ class HemScreenTest {
         }
 
         composeRule.onNodeWithText("1 föreslaget").assertExists()
-        composeRule.onNodeWithTag(HEM_LIST_TEST_TAG).performScrollToIndex(RISK_CARD_INDEX + 1)
 
         composeRule.onNodeWithText("Bytesplan").assertDoesNotExist()
         composeRule.onNodeWithText("Sälj Dyr fond", substring = true).assertDoesNotExist()
@@ -727,10 +705,11 @@ class HemScreenTest {
     fun avkastningsdiagrammet_har_samma_perioder_som_ovriga_diagram() {
         composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
 
-        // Chipraden skrollar, så de sista perioderna är inte komponerade förrän listan skrollats
-        // dit — `performScrollTo` hade letat i semantikträdet och inte hittat dem (UI-5, samma
-        // metod som Portföljs innehavslista, issue #66).
-        composeRule.onNodeWithText("1 mån").performScrollTo().assertIsDisplayed()
+        // Chipraden skrollar själv i sidled, så `performScrollTo` på ett chip rullar bara raden. Rulla först
+        // skärmen till raden, sedan raden till de sista perioderna, som inte är komponerade förrän dess
+        // (UI-5, issue #66).
+        composeRule.onNodeWithTag(CHART_PERIOD_ROW_TEST_TAG).performScrollTo()
+        composeRule.onNodeWithText("1 mån").assertIsDisplayed()
         composeRule.onNodeWithText("3 mån").assertIsDisplayed()
 
         composeRule.onNodeWithTag(CHART_PERIOD_ROW_TEST_TAG).performScrollToIndex(5)
@@ -867,12 +846,12 @@ class HemScreenTest {
 
         composeRule.setContent { FonderTheme { HemContent(state = state, onOpenBeslut = { opened++ }) } }
 
-        composeRule.onNodeWithText("Att besluta").assertIsDisplayed()
+        composeRule.onNodeWithText("4 beslut väntar").assertIsDisplayed()
         // Varje slag för sig (HEM-13) ur listan Byten (BYT-4): föreslagna, sålda och billigare alternativ (ANA-9).
         composeRule.onNodeWithText("2 föreslagna · 1 sålt, väntar på köp · 1 billigare alternativ").assertIsDisplayed()
         // Själva bytet visas inte här — det har flyttat till Beslut (NAV-9).
         composeRule.onNodeWithText("Fond A", substring = true).assertDoesNotExist()
-        composeRule.onNodeWithText("Att besluta").performClick()
+        composeRule.onNodeWithText("4 beslut väntar").performClick()
 
         assertEquals(1, opened)
     }
@@ -891,7 +870,7 @@ class HemScreenTest {
 
         composeRule.setContent { FonderTheme { HemContent(state = state) } }
 
-        composeRule.onNodeWithText("Att besluta").assertDoesNotExist()
+        composeRule.onNodeWithText("beslut väntar", substring = true).assertDoesNotExist()
     }
 
     /** Ett förslag i bytesplanen (HEM-8) — underlaget för Att besluta-testerna ovan. */
@@ -901,11 +880,3 @@ class HemScreenTest {
         fromLevel = 5, toLevel = 3, feeDeltaPercent = -0.7, switchValueKr = 250.0
     )
 }
-
-/**
- * Riskkortets plats i Hems lista: total, avkastning, utveckling, analys, avgifter, risk — utan
- * "Att besluta" och utan påminnelse om säkerhetskopia, som testerna ovan inte har. Ett index och inte en sökning på rubriken:
- * rubriken finns inte i semantikträdet förrän kortet komponerats, vilket är just det som ska
- * åstadkommas.
- */
-private const val RISK_CARD_INDEX = 5

@@ -143,11 +143,11 @@ data class HemUiState(
      * läser ([PendingDecisionsSource]), så "Att besluta" aldrig kan visa ett annat antal.
      */
     val decisions: PendingDecisions = PendingDecisions(),
-    /** Kurserna hämtas just nu ([BackgroundWork.PRICE_REFRESH]) — kurskortens väntesnurra (NAV-6). */
+    /** Kurserna hämtas just nu ([BackgroundWork.PRICE_REFRESH]) — dra-för-att-uppdaterans indikator (UI-11). */
     val pricesWorking: Boolean = false,
-    /** Referensfonden väljs/hämtas just nu ([BackgroundWork.BENCHMARK_SCAN]) — bara avkastningskortet berörs. */
+    /** Referensfonden väljs/hämtas just nu ([BackgroundWork.BENCHMARK_SCAN]) — avkastningskortet säger "Hämtar …" i stället för att jämförelsen saknas. */
     val benchmarkWorking: Boolean = false,
-    /** Fondmetadatan slås upp just nu (nätverk per okänd ISIN) — avgifts- och riskkortet vilar på den. */
+    /** Fondmetadatan slås upp just nu (nätverk per okänd ISIN) — avgiftskortet säger "Hämtar …" i stället för att avgifter saknas. */
     val metadataWorking: Boolean = false,
     /** Påminnelsen om att säkerhetskopiera (HEM-12), null när innehållet redan finns i en kopia. */
     val backupReminder: BackupReminder? = null
@@ -158,24 +158,12 @@ data class HemUiState(
     val error: UiError? get() = portfolio.errorOrNull()
 
     /**
-     * Det korten visar: portföljen, eller nollor under den första laddningen — då snurrar varje
-     * kort (se nedan), så nollorna aldrig ser ut som svar. Vid ett läsfel visas felet i stället.
+     * Portföljen, eller nollor under den första laddningen — då visar ramen sin laddning i stället för
+     * korten, så nollorna aldrig ser ut som svar. Vid ett läsfel visas felet i stället.
      */
     val content: HemPortfolio get() = portfolio.valueOrNull() ?: HemPortfolio()
 
     val isEmpty: Boolean get() = portfolio.valueOrNull()?.hasHoldings == false
-
-    // Per kort, inte ett gemensamt "något kör" (NAV-6): korten visar olika data, och en snurra
-    // på avkastningskortet medan bytesplanen skannas hade sagt att kurvan är osäker när den
-    // inte är det. Härlett här i stället för i skärmen, så kopplingen kort → jobb är
-    // enhetstestbar utan Compose. Den första laddningen räknas alltid som pågående: då är
-    // varje siffra på skärmen en nolla som ännu inte fyllts i.
-    val totalWorking: Boolean get() = loading || pricesWorking
-    val performanceWorking: Boolean get() = loading || pricesWorking
-    val returnChartWorking: Boolean get() = loading || pricesWorking || benchmarkWorking
-    val analysisWorking: Boolean get() = loading || pricesWorking
-    val feeWorking: Boolean get() = loading || pricesWorking || metadataWorking
-    val riskWorking: Boolean get() = loading || metadataWorking
 }
 
 /**
@@ -297,15 +285,15 @@ class HemViewModel internal constructor(
     private var metadataIsins: List<String>? = null
 
     /**
-     * Sant medan uppslaget ovan pågår — avgifts- och riskkortets väntesnurra (NAV-6). Utan den
-     * står de två korten med tomma avgifter och okänd risknivå utan att något säger att svaret
-     * är på väg; det ser ut som ANA-4:s "vet inte", som är ett helt annat besked.
+     * Sant medan uppslaget ovan pågår — avgiftskortets "Hämtar …". Utan det står kortet med tomma
+     * avgifter utan att något säger att svaret är på väg; det ser ut som ANA-4:s "vet inte", som är
+     * ett helt annat besked.
      */
     private val metadataLoading = MutableStateFlow(false)
 
     /**
-     * Löpnummer per begäran, så bara den **senaste** hämtningen får släcka snurran. En avbruten
-     * hämtnings `finally` kör efter att nästa redan tänt den, och utan numret hade snurran
+     * Löpnummer per begäran, så bara den **senaste** hämtningen får släcka "Hämtar …". En avbruten
+     * hämtnings `finally` kör efter att nästa redan tänt det, och utan numret hade det
      * slocknat mitt under det pågående uppslaget.
      */
     private var metadataRequestId = 0

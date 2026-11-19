@@ -13,7 +13,7 @@
 # Avstånd är literala dp bara i en delad komponent; storlekar (ikon, bredd, strokebredd, hörn) är inte avstånd.
 # Avståndsmönstren stannar vid första ')' och går rad för rad: Spacer-bredder, dp efter en inre parentes och
 # anrop över flera rader fångas inte (skill ui-style → Avstånd).
-# Scaffold är fortfarande tillåten i navigationens TabPage och SubPage (toppraden runt skärmar utan ram); topprad, flikrad och plusknapp
+# Scaffold är fortfarande tillåten i navigationens SubPage (toppraden runt underskärmar utan ram); topprad, flikrad och plusknapp
 # har sina delade komponenter i android-ui (AppTopBar, AppFloatingToolbar med ToolbarAction).
 # Importrader och kommentarer kontrolleras inte.
 # Regexarna ska fungera både i JavaScript och Kotlin (ingen lookbehind).

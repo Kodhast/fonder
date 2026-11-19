@@ -13,7 +13,7 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
-import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.SectionCard
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
@@ -22,7 +22,7 @@ import se.kodhast.ui.theme.Spacing
  * − avgifter, kr + %), **årsavkastning** (pengaviktad, XIRR) och "Varav orealiserat" på de andelar
  * som finns kvar, "Värde per <datum>" (POR-7) och en utfällbar förklaring av vad som räknas in
  * (issue #191, mockup i issuet). **En** komponent för Hem och Portfölj (regel 4, skill
- * `shared-ui-components`); tar primitiver och [PortfolioTotalCalc.Result], inte en skärms tillstånd.
+ * `shared-ui-components`), en [SectionCard] från android-ui; tar primitiver och [PortfolioTotalCalc.Result], inte en skärms tillstånd.
  *
  * Årsavkastningen visas först när portföljen är minst ett år gammal ([PortfolioTotalCalc.ANNUALIZE_MIN_DAYS])
  * — dessförinnan texten "Visas efter ett år", aldrig en årstakt extrapolerad ur några månader.
@@ -47,15 +47,10 @@ fun TotalCard(
     total: PortfolioTotalCalc.Result,
     navEpochDay: Long?,
     modifier: Modifier = Modifier,
-    working: Boolean = false,
     afterTotalResult: (@Composable ColumnScope.() -> Unit)? = null,
     footer: (@Composable ColumnScope.() -> Unit)? = null
 ) {
-    AppCard(modifier = modifier.fillMaxWidth()) {
-        CardTitleRow(
-            title = stringResource(R.string.portfolj_total_value),
-            working = working
-        )
+    SectionCard(title = stringResource(R.string.portfolj_total_value), modifier = modifier.fillMaxWidth()) {
         if (gainLossFraction != null) {
             val priceMissing = if (total.partial) stringResource(R.string.portfolj_price_missing) else null
             Text(MoneyFormat.kr(totalValue), style = MonoAmountStyle.merge(AppTheme.typography.bigNumber))
