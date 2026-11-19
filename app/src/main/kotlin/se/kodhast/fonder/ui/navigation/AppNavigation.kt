@@ -17,9 +17,7 @@ import androidx.navigation3.runtime.entryProvider
 import se.kodhast.fonder.BuildConfig
 import se.kodhast.fonder.R
 import se.kodhast.fonder.ui.beslut.BeslutScreen
-import se.kodhast.fonder.ui.bytesfonster.SwitchWatchEvent
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchScreen
-import se.kodhast.fonder.ui.bytesfonster.SwitchWatchViewModel
 import se.kodhast.fonder.ui.components.ComponentGallery
 import se.kodhast.fonder.ui.facit.FacitScreen
 import se.kodhast.fonder.ui.fond.FondDetaljScreen
@@ -29,9 +27,7 @@ import se.kodhast.fonder.ui.imports.ImportHoldingsScreen
 import se.kodhast.fonder.ui.imports.ImportOrdersScreen
 import se.kodhast.fonder.ui.portfolj.PortfoljScreen
 import se.kodhast.fonder.ui.riskprofil.RiskProfilScreen
-import se.kodhast.fonder.ui.settings.SettingsEvent
 import se.kodhast.fonder.ui.settings.SettingsScreen
-import se.kodhast.fonder.ui.settings.SettingsViewModel
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
 import se.kodhast.ui.common.SyncUiState
@@ -58,9 +54,11 @@ fun AppNavigation(
     // Engångsbegäran från Översiktens påminnelse: Inställningar skrollar fram säkerhetskopieringen
     // och kvitterar. Sparad så den överlever rotation mellan trycket och skrollningen.
     val scrollSettingsToBackup = rememberSaveable { mutableStateOf(false) }
+    // Ett val i Fondsöks valläge, på väg till skärmen under (FundPick).
+    val fundPick = rememberFundPick()
     val backStack = rememberAppBackStack()
     val tabOwner = checkNotNull(LocalViewModelStoreOwner.current) { "AppNavigation kräver en ViewModelStoreOwner" }
-    val entries = remember(backStack, tabOwner) { fonderEntries(backStack, scrollSettingsToBackup, tabOwner) }
+    val entries = remember(backStack, tabOwner) { fonderEntries(backStack, scrollSettingsToBackup, fundPick, tabOwner) }
 
     FonderNavHost(
         backStack = backStack,
@@ -120,11 +118,13 @@ private fun addMenu(backStack: AppBackStack): List<AppMenuItem> = listOf(
  * (AppKey är förseglad; en saknad är ett programfel). En skärm som stänger sig själv gör det med `popIfTop(key)`, så att ett
  * andra anrop inte stänger skärmen under. Flikarnas ViewModels hämtas från [tabOwner] (aktiviteten), så att
  * en flik behåller sitt innehåll när man byter flik; undersidornas hör till sin post. [scrollSettingsToBackup]
- * läses när Inställningar ritas, inte när posten skapas, så kvitteringen slår igenom direkt.
+ * läses när Inställningar ritas, inte när posten skapas, så kvitteringen slår igenom direkt. [fundPick] bär
+ * Fondsöks val i valläget till skärmen under, som sparar det med sin egen ViewModel ([FundPick]).
  */
 fun fonderEntries(
     backStack: AppBackStack,
     scrollSettingsToBackup: MutableState<Boolean>,
+    fundPick: MutableState<FundPick?>,
     tabOwner: ViewModelStoreOwner
 ): (AppKey) -> NavEntry<AppKey> = entryProvider(fallback = { key -> error("Ingen skärm för $key") }) {
     // Påminnelsen (HEM-12) och det tomma lägets "Återställ från säkerhetskopia" (HEM-15) går samma väg.
@@ -182,7 +182,9 @@ fun fonderEntries(
             onOpenBenchmarkPicker = { backStack.push(BenchmarkPickerKey) },
             onOpenGallery = if (BuildConfig.DEBUG) ({ backStack.push(ComponentGalleryKey) }) else null,
             scrollToBackup = scrollSettingsToBackup.value,
-            onScrolledToBackup = { scrollSettingsToBackup.value = false }
+            onScrolledToBackup = { scrollSettingsToBackup.value = false },
+            pickedBenchmark = (fundPick.value as? FundPick.Benchmark)?.fund,
+            onPickedBenchmarkAcknowledge = { fundPick.value = null }
         )
     }
     // Komponentgalleriet – bara nåbart i debug-bygget (Inställningar visar länken bara då).
@@ -213,15 +215,14 @@ fun fonderEntries(
         RiskProfilScreen(onClose = { backStack.popIfTop(key) })
     }
     // Fondsök i valläge (HEM-10, issue #102): samma skärm, men träffraden pekar ut en
-    // jämförelsefond i stället för att lägga till den i bevakningen. Valet skrivs av
-    // SettingsViewModel, som redan äger inställningarna — fondsök förblir en sökskärm.
+    // jämförelsefond i stället för att lägga till den i bevakningen. Valet går tillbaka till
+    // Inställningar ([FundPick]), vars ViewModel redan äger inställningarna — fondsök förblir en sökskärm.
     entry<BenchmarkPickerKey> { key ->
-        val settingsViewModel: SettingsViewModel = hiltViewModel()
         FundSearchScreen(
             title = stringResource(R.string.settings_benchmark_section),
             onBack = { backStack.popIfTop(key) },
             onPickFund = { fund ->
-                settingsViewModel.onEvent(SettingsEvent.ChooseBenchmark(fund))
+                fundPick.value = FundPick.Benchmark(fund)
                 backStack.popIfTop(key)
             }
         )
@@ -231,21 +232,20 @@ fun fonderEntries(
             watchId = key.watchId,
             onAddCandidate = { backStack.push(SwitchWatchPickerKey(key.watchId)) },
             onBuy = { isin -> backStack.push(TransactionFormKey.bought(key.watchId, isin)) },
-            onClose = { backStack.popIfTop(key) }
+            onClose = { backStack.popIfTop(key) },
+            pickedCandidate = (fundPick.value as? FundPick.Candidate)?.takeIf { it.watchId == key.watchId }?.fund,
+            onPickedCandidateAcknowledge = { fundPick.value = null }
         )
     }
     // Fondsök i valläge (ANA-13): samma skärm som HEM-10:s referensval, men träffen
-    // läggs till som bevakat alternativ i stället för att bli ny bevakad fond. Egen
-    // ViewModel för posten — den får bevakningens id ur sin nyckel.
+    // läggs till som bevakat alternativ i stället för att bli ny bevakad fond. Valet går
+    // tillbaka till Pågående byte för bevakningen i nyckeln ([FundPick]).
     entry<SwitchWatchPickerKey> { key ->
-        val switchWatchViewModel = hiltViewModel<SwitchWatchViewModel, SwitchWatchViewModel.Factory> {
-            it.create(key.watchId)
-        }
         FundSearchScreen(
             title = stringResource(R.string.switch_watch_add_candidate),
             onBack = { backStack.popIfTop(key) },
             onPickFund = { fund ->
-                switchWatchViewModel.onEvent(SwitchWatchEvent.AddCandidate(fund))
+                fundPick.value = FundPick.Candidate(key.watchId, fund)
                 backStack.popIfTop(key)
             }
         )

@@ -23,6 +23,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import se.kodhast.fonder.R
 import se.kodhast.fonder.data.common.DataError
+import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.ui.components.PeriodRow
@@ -31,6 +32,7 @@ import se.kodhast.fonder.ui.components.RiskLevelPicker
 import se.kodhast.fonder.ui.components.copyableFundName
 import se.kodhast.fonder.ui.diagram.ChartSeries
 import se.kodhast.fonder.ui.diagram.ComparisonChart
+import se.kodhast.fonder.ui.navigation.PickedFundEffect
 import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
@@ -61,9 +63,19 @@ fun SwitchWatchScreen(
     onBuy: (String) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    pickedCandidate: Fund? = null,
+    onPickedCandidateAcknowledge: () -> Unit = {},
     viewModel: SwitchWatchViewModel = hiltViewModel<SwitchWatchViewModel, SwitchWatchViewModel.Factory> { it.create(watchId) }
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Alternativet som valts i Fondsöks valläge (ANA-13) läggs till av den här skärmens ViewModel, som
+    // ligger kvar och visar meddelandet om ISIN saknas eller taket är nått.
+    PickedFundEffect(
+        fund = pickedCandidate,
+        onPick = { viewModel.onEvent(SwitchWatchEvent.AddCandidate(it)) },
+        onAcknowledge = onPickedCandidateAcknowledge
+    )
 
     // En stängd bevakning har ingen egen skärm att fylla — kvitteringen är avslutet, och att
     // ligga kvar på en död vy hade sett ut som att något mer skulle hända.
