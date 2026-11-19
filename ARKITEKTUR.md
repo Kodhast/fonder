@@ -152,9 +152,10 @@ ui/
 │                 itemsOrEmpty, errorOrNull, catchAsListError – NFR-6/#173) · DetailStates (DetailUiState-
 │                 hjälpare: valueOrNull, errorOrNull, catchAsDetailError) · Retry (RetrySignal + restartOn:
 │                 "Försök igen" efter ett läsfel, NFR-6/#174)
-├── navigation/   AppNavigation (Navigation 3: NavDisplay, en dekorerad stack per flik) · AppBackStack (stack per
-│                 flik, sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
-│                 Transitions · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
+├── navigation/   AppNavigation (android-ui:s AppNavHost med AppTransitions, flikraden och plusmenyn; FonderPage
+│                 lägger toppraden runt skärmar utan ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
+│                 sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
+│                 Pages (TabPage med AppHeader, SubPage med AppTopBar) · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
 ├── components/   Delade komponenter (CenteredState, SelectField, LoadingDialog, PeriodRow, AnalysisStatusBanner/StatusDot,
 │                 ExposureBar — proportionell radlista, POR-9/#66 · ChoiceChipRow — val-chiprad, #68 ·
 │                 ExpandableSection/ExpandableInfoRow — utfällning, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
@@ -191,14 +192,14 @@ till `Network` och resten till `Unknown`; importerna sätter sina egna (`ImportU
 `ImportEmpty`, `ImportNoTransactions`). `AppErrors` gör ett `UiError` av det med texten ur
 `DataError.toMessage()`, och skärmen visar det med android-ui:s `LoadErrorState` ("Försök igen" läser om källan:
 ViewModelns `RetrySignal` och `restartOn` efter felfångsten, #174) – Händelser och Fondsök via listramen
-`EntityListScreen` (nycklar som är `FrameKey`; Händelser även `TabKey`). Fondsök sätter
+`EntityListScreen` (Händelser i flikläget med Kodhäst-sidhuvudet). Fondsök sätter
 `DataError.Network` när katalogen inte kom (källan svarar `null`) med sin egen text.
 
 Detaljskärmarna (Översikt, Fonddetalj, Pågående byte) har det lästa som ett `DetailUiState<T>`-fält
 (`HemPortfolio`, `FundDetail`, `SwitchWatchDetail`) bredvid körstatus, förslag och engångshändelser;
 `catchAsDetailError` sist i flödet gör ett fel i källan till `DetailUiState.Error`, och skärmen visar
 felet (`LoadErrorState` med Försök igen på Översikt) före allt annat. Fonddetalj står på android-ui:s detaljram
-`EntityDetailScreen` (`FondDetaljKey` är en `FrameKey`): fältet `fund` är ramens tillstånd – laddning, läsfel med
+`EntityDetailScreen`: fältet `fund` är ramens tillstånd – laddning, läsfel med
 Försök igen och en fond som inte finns längre (`DataError.NotFound`, utan knapp) – och fondnamnet står i ramens
 lilla topprad. Getters (`content`, `loading`, `error`) håller skärmkoden enkel;
 `content` är ett standardvärde bara för de grenar som aldrig nås vid fel. En bevakning som inte finns

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 
 /**
- * Driver bakgrundsindikatorn (`WorkerStatusIcon`, NAV-6, issue #27) i navigeringschromet — ren
+ * Driver sidhuvudets prickar under en kursuppdatering (NAV-6, issue #27) — ren
  * observation av [FundPriceRefreshScheduler.observeIsRunning], inget eget tillstånd.
  */
 @HiltViewModel

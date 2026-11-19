@@ -16,22 +16,5 @@ enum class Screen(val key: TabKey, @param:DrawableRes val icon: Int, val labelRe
 
     companion object {
         val START = Oversikt
-
-        /** Fliken vars rot [key] är, eller null för en skärm djupare i stacken. */
-        fun forKey(key: AppKey?): Screen? = entries.firstOrNull { it.key == key }
     }
-}
-
-/**
- * Rubrik för en skärm djupare i stacken (flikarnas rubriker bor i [Screen.labelRes]). Null för en
- * flik — den har sin stora rubrik i stället för en topprad — och för en ramskärm ([FrameKey]), som
- * ritar sin rubrik själv.
- */
-fun titleResFor(key: AppKey): Int? = when (key) {
-    is TabKey, is FrameKey -> null
-    SettingsKey -> R.string.nav_settings
-    ImportHoldingsKey -> R.string.import_title
-    ImportOrdersKey -> R.string.import_orders_title
-    FacitKey -> R.string.facit_title
-    is SwitchWatchKey -> R.string.switch_watch_title
 }

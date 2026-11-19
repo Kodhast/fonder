@@ -71,7 +71,7 @@ AppDivider(Modifier.padding(top = Spacing.s))
 AppFloatingToolbar(items = tabs, selectedIndex = 0, onSelect = {}, action = ToolbarAction("Lägg till", UiR.drawable.ic_add, menu))
 AppTopBar(title = "Fond", size = TopBarSize.Small, onBack = {})
 AppPullToRefresh(refreshing = false, onRefresh = {}) { }
-AppTabHeading(title = "Översikt") { }
+AppHeader(title = "Översikt", scrollBehavior = scroll)
 import androidx.compose.material3.Card
 // Card(modifier) i en kommentar
  * Card(modifier) i en KDoc

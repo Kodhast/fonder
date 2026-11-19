@@ -36,7 +36,7 @@ import kotlinx.coroutines.flow.map
  * - [triggerSwitchPlanScan] — bytesplanen på begäran (HEM-8, issue #88), när dess indata just
  *   ändrats eller användaren bett om det.
  *
- * [observeRunningWork] driver bakgrundsindikatorerna (NAV-6): chromets `WorkerStatusIcon` via
+ * [observeRunningWork] driver bakgrundsindikatorerna (NAV-6): sidhuvudets prickar via
  * [observeIsRunning], och korten via varje skärms egna flaggor. Den är **sorterad per sorts
  * jobb**, inte ett enda booleskt "något kör": ett kort ska snurra när just dess data bearbetas.
  */

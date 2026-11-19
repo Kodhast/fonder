@@ -15,8 +15,9 @@
     <string name="error_network">Kunde inte nå källan. Kontrollera uppkopplingen och försök igen.</string>
     <string name="error_not_found">Det finns inte längre.</string>
     <string name="error_unknown">Något gick fel. Försök igen.</string>
-    <!-- Bakgrundsindikator för pågående kursuppdatering (NAV-6, issue #27) -->
-    <string name="worker_status_running">Uppdaterar kurser i bakgrunden</string>
+    <!-- Sidhuvudets prickar under en kursuppdatering (NAV-6). Ersätter android-ui:s "Ändringar väntar på
+         servern" (samma namn, appens sträng går före bibliotekets): i Fonder betyder prickarna att något hämtas. -->
+    <string name="sync_pending">Uppdaterar kurser i bakgrunden</string>
     <!-- Kortens egen väntesnurra (NAV-6) — %1$s är kortets rubrik, så flera samtidiga snurror går att skilja åt -->
     <string name="format_card_working">Uppdaterar %1$s</string>
     <!-- Rubrik för kort som tidigare saknade en, men som behövde en rad att bära snurran i (NAV-6) -->

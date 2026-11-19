@@ -111,11 +111,13 @@ security rules – `android:firebase-security-rules-auditor` gäller inte här.
 
 Googles referens är generell. Här gäller `ui/navigation/`: `@Serializable sealed interface AppKey : NavKey`
 i `AppKeys.kt` (flikarna `OversiktKey`, `InnehavKey`, `BeslutKey`, `HandelserKey`; argument i
-nyckeln, t.ex. `FondDetaljKey(fundId)`), `AppBackStack` med en stack per flik som sparas med
-`rememberSaveable` (`AppBackStack.Saver`), skärmarna kopplade i `fonderEntries`
-(`AppNavigation.kt`) med `push`, `select` och `popIfTop(key)` – aldrig från ViewModeln – och
-övergångarna bara i `Transitions.kt`. Inställningar och Facit är skärmar i stacken, inte flikar
-(NAV-7); flikraden är `AppFloatingToolbar` (UI-14).
+nyckeln, t.ex. `FondDetaljKey(fundId)`), `AppBackStack` = android-ui:s `TabBackStack` med en stack per
+flik (`rememberAppBackStack`), skärmarna kopplade i `fonderEntries` (`AppNavigation.kt`) med `push`,
+`select` och `popIfTop(key)` – aldrig från ViewModeln – och flikarnas ViewModels från aktiviteten
+(`hiltViewModel(tabOwner)`), så att en flik behåller sitt innehåll vid flikbyte. Ramen är android-ui:s
+`AppNavHost` (flikraden, plusmenyn, `AppTransitions`, sidhuvudets prickar via `sync`); `FonderPage` lägger
+`TabPage` (`AppHeader`) eller `SubPage` (`AppTopBar`) runt skärmarna utan egen ram. Inställningar och
+Facit är skärmar i stacken, inte flikar (NAV-7).
 
 ## Tillgänglighet (android:accessibility-compose)
 
@@ -129,13 +131,13 @@ UI-10 (risknivå i text). Semantiken ligger i komponenten, aldrig hos anroparen.
   Kontrollera i båda temana – vinst/förlust har egna ljusa och mörka toner.
 - `FundLineChart` sätter en `contentDescription` med period, antal punkter, lägsta och högsta
   värde och i procentläge kurvornas namn (`format_fond_chart_description*` i `strings.xml`).
-- `WorkerStatusIcon` och väntesnurran säger vilket kort som uppdateras (NAV-6).
+- Sidhuvudets prickar säger "Uppdaterar kurser i bakgrunden" (`sync_pending`, NAV-6); väntesnurran säger vilket kort som uppdateras.
 - Periodknapparna och `ChoiceChipRow` följer M3:s knappstorlek och läses som radioval;
   `RiskLevelPicker` använder `minimumInteractiveComponentSize()`.
 - `ExpandableSection`, `ExpandableInfoRow` och `FollowedToggleRow` kommunicerar läget.
 - Belopp i `MonoAmountStyle` behåller kolumnerna vid stor text; etiketten kapas, värdet aldrig.
 - Tester: Robolectric i `app/src/test` (`EmptyStateTest`, `ChoiceChipRowTest`) och instrument i
-  `app/src/androidTest` (`RiskBadgeTest`, `CardTitleRowTest`, `WorkerStatusIconTest`). Det finns
+  `app/src/androidTest` (`RiskBadgeTest`, `CardTitleRowTest`). Det finns
   inget komponentgalleri med `fontScale = 1.3` än; komponenternas skärmdumpar ligger i
   `ComponentScreenshotTest`.
 

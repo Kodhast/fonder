@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.4.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.5.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.5.0 | **Navigationen från biblioteket** (NAV-6, NAV-7, NAV-8, UI-14, android-ui 3.0.0): flikarna har Kodhäst-sidhuvudet med Fonders ikon och namn, och rubriken krymper när man rullar; prickarna före rubriken hoppar medan kurserna uppdateras, i stället för snurran i rubrikraden. Flikraden har en ljus ton, plusmenyns val har ikoner, och skärmbytena glider in som i ReseApoteket och Dagboken. |
 | 1.4.0 | **Samma form som ReseApoteket och Dagboken** (UI-12, UI-13, android-ui 3.0.0): korten har bibliotekets 22 dp hörn (förut 18) och bibliotekets standardluft; fält, menyer, dialoger och ark har bibliotekets former. Fonder sätter ingen egen form eller kortstil längre. Färger och typsnitt är desamma. |
 | 1.3.0 | **Djup och tryckkänsla** (UI-18, android-ui 1.4.1): knappar, valda chips och flikar, kryss, stegare, växlar, fältet i fokus, meddelanden, menyer och dialoger får ljuskant, svagt skimmer och mjuk blåtonad skugga, och knappar sjunker in när de trycks. Korten får en hårfin blå kant och mjuk skugga i stället för den grå konturen. Färgerna är desamma. |
 | 1.2.0 | Fonder ser ut som ReseApoteket och Dagboken men behåller sina färger: större knappar utan formbyte, flikraden med vald flik i blått och plusknappen i koppar sist i raden, som öppnar en meny med samma fyra val; tonad tillbakapil, bibliotekets kryssrader på importen och "Försök igen" när en import eller ett pågående byte inte gick att läsa (#261). Textstilar och avstånd hämtas ur android-ui:s roller och steg, utan att något syns (#261 del 2). Facits rader fälls ut från rubriken som appens övriga utfällbara delar och läses upp som utfällda eller hopfällda (#261 del 3). |

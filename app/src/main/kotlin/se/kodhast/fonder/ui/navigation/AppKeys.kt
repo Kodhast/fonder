@@ -1,27 +1,19 @@
 package se.kodhast.fonder.ui.navigation
 
 import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 
 /**
  * Alla skärmar i appen (NAV-7). Sparas med kotlinx.serialization i [AppBackStack], så att
- * flikarnas stackar överlever rotation och processdöd. En skärm med argument bär dem i nyckeln
+ * flikarnas stackar överlever rotation och processdöd. Varje skärm ritar sin egen topprad eller sitt
+ * sidhuvud (en ram, `TabPage` eller `SubPage`); navigationsramen ritar bara flikraden. En skärm med argument bär dem i nyckeln
  * (t.ex. [FondDetaljKey.fundId]) och skickar dem till sin ViewModel med assisted injection.
  */
 @Serializable
 sealed interface AppKey : NavKey
-
-/**
- * En skärm byggd på en av android-ui:s skärmramar (`EntityListScreen`, `EntityEditScreen`,
- * `EntityDetailScreen`) eller annars med egen `Scaffold` och bibliotekets `AppTopBar`. Skalet
- * ([AppNavigationShell]) ritar då ingen egen rubrik ([titleResFor] är `null`) och lägger ingen
- * `imePadding` – ramen gör båda själv; chromets bakgrundsindikator (NAV-6) får ramens topprad via
- * `LocalTopBarStatus`. Kan kombineras med [TabKey] när en flik går över till en ram.
- */
-@Serializable
-sealed interface FrameKey : AppKey
 
 /** En flik i den flytande flikraden – roten i en egen bakåtstack ([Screen]). */
 @Serializable
@@ -39,27 +31,24 @@ data object InnehavKey : TabKey
 @Serializable
 data object BeslutKey : TabKey
 
-/**
- * Händelser (NAV-1, NAV-5) – en flik på android-ui:s listram med egen stor rubrik ([FrameKey]); skalet
- * ritar flikraden och plusmenyn men ingen flikrubrik.
- */
+/** Händelser (NAV-1, NAV-5) – en flik på android-ui:s listram, som ritar sidhuvudet själv. */
 @Serializable
-data object HandelserKey : TabKey, FrameKey
+data object HandelserKey : TabKey
 
 /** Inställningar — en skärm bakom ikonen på Översikt, inte en flik (NAV-7). */
 @Serializable
 data object SettingsKey : AppKey
 
 /**
- * Fonddetalj för [fundId] (Handelsbankens fondlista-id, TP-9) – en ramskärm på android-ui:s
- * detaljram ([FrameKey]) med fondens namn i den lilla toppraden.
+ * Fonddetalj för [fundId] (Handelsbankens fondlista-id, TP-9) – på android-ui:s detaljram med fondens
+ * namn i den lilla toppraden.
  */
 @Serializable
-data class FondDetaljKey(val fundId: String) : FrameKey
+data class FondDetaljKey(val fundId: String) : AppKey
 
-/** Sök och lägg till en Handelsbanken-fond i bevakningen – en ramskärm på android-ui:s listram ([FrameKey]). */
+/** Sök och lägg till en Handelsbanken-fond i bevakningen – på android-ui:s listram. */
 @Serializable
-data object FundSearchKey : FrameKey
+data object FundSearchKey : AppKey
 
 /**
  * Registrera en ny fondtransaktion (köp/sälj, NAV-4). Utan argument det tomma formuläret från
@@ -73,17 +62,19 @@ data object FundSearchKey : FrameKey
  * sällan en fond appen redan bevakar och slås då upp på ISIN; fondväljaren är reserven när
  * uppslaget inte ger något.
  *
- * En ramskärm på android-ui:s `EntityEditScreen` med egen topprad ([FrameKey], UI-15).
+ * På android-ui:s `EntityEditScreen` med egen topprad (UI-15).
  */
 @Serializable
 data class TransactionFormKey(
     val fundId: String? = null,
     val fundIsin: String? = null,
-    val type: TransactionType? = null,
+    // "type" är JSON-diskriminatorn när stacken sparas (polymorf AppKey); med samma namn gick formulärets
+    // nyckel inte att spara, och appen kraschade när läget sparades med formuläret öppet.
+    @SerialName("transactionType") val type: TransactionType? = null,
     val suggestionRecordId: Long? = null,
     val watchId: Long? = null,
     val prefillAmountKr: Double? = null
-) : FrameKey {
+) : AppKey {
     /** Förifyllt från ett förslag eller en bevakning — formuläret registrerar då en redan gjord affär. */
     val prefilled: Boolean get() = type != null && (fundId != null || fundIsin != null)
 
@@ -113,15 +104,15 @@ data object ImportHoldingsKey : AppKey
 data object ImportOrdersKey : AppKey
 
 /**
- * Riskprofil — engångsenkät och målfördelning, från Beslut och Inställningar (SET-3); en ramskärm
- * på android-ui:s `EntityEditScreen` med egen topprad ([FrameKey], UI-15).
+ * Riskprofil — engångsenkät och målfördelning, från Beslut och Inställningar (SET-3), på android-ui:s
+ * `EntityEditScreen` med egen topprad (UI-15).
  */
 @Serializable
-data object RiskProfileKey : FrameKey
+data object RiskProfileKey : AppKey
 
-/** Fondsök i valläge för jämförelsefonden (HEM-10) – samma ramskärm som [FundSearchKey]. */
+/** Fondsök i valläge för jämförelsefonden (HEM-10) – samma skärm som [FundSearchKey]. */
 @Serializable
-data object BenchmarkPickerKey : FrameKey
+data object BenchmarkPickerKey : AppKey
 
 /**
  * Facit — utfallet av bytesplanens inspelade förslag (SET-5); en skärm i stacken från Beslut och
@@ -140,11 +131,11 @@ data class SwitchWatchKey(val watchId: Long) : AppKey
  * rätt bevakning även om skärmen återskapas.
  */
 @Serializable
-data class SwitchWatchPickerKey(val watchId: Long) : FrameKey
+data class SwitchWatchPickerKey(val watchId: Long) : AppKey
 
 /**
  * Komponentgalleriet – alla delade komponenter med påhittad data. Nås från Inställningar, men bara
- * i debug-bygget (skill shared-ui-components); en ramskärm med egen topprad ([FrameKey]).
+ * i debug-bygget (skill shared-ui-components), med egen topprad.
  */
 @Serializable
-data object ComponentGalleryKey : FrameKey
+data object ComponentGalleryKey : AppKey

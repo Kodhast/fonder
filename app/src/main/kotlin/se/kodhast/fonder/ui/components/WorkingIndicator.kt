@@ -1,46 +1,23 @@
 package se.kodhast.fonder.ui.components
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import se.kodhast.fonder.R
-import se.kodhast.ui.theme.Spacing
-
-/**
- * Liten bakgrundsindikator för en pågående kursuppdatering (NAV-6, issue #27) — placeras i
- * navigeringschromets `TopAppBar`-`actions` (`AppNavigation`, regel 4: en delad byggsten i
- * stället för en egen variant per skärm). Renderar ingenting när [isRunning] är falskt, så den
- * aldrig stjäl utrymme eller uppmärksamhet i vila.
- *
- * Chromets indikator svarar på "kör appen något just nu". Vilket **kort** som väntar på data
- * svarar [WorkingIndicator] på, via [CardTitleRow].
- */
-@Composable
-fun WorkerStatusIcon(isRunning: Boolean, modifier: Modifier = Modifier) {
-    WorkingIndicator(
-        working = isRunning,
-        contentDescription = stringResource(R.string.worker_status_running),
-        size = 24.dp,
-        modifier = modifier.padding(horizontal = Spacing.m)
-    )
-}
 
 /** Storleken på kortens indikator — ska läsa som en del av rubrikraden, inte som ett eget element. */
 private val CARD_INDICATOR_SIZE = 18.dp
 
 /**
- * Snurran som säger att datan bakom just den här ytan håller på att bearbetas (NAV-6) — samma
- * byggsten som chromets [WorkerStatusIcon], bara mindre och utan chromets marginal (regel 4:
- * en snurra i appen, inte en per skärm).
+ * Snurran som säger att datan bakom just den här ytan håller på att bearbetas (NAV-6). Appens
+ * bakgrundsjobb syns i stället i sidhuvudets prickar (NAV-6); de här snurrorna ersätts av dem i
+ * flikarnas flytt till ramarna (#266).
  *
  * Renderar ingenting när [working] är falskt: en snurra som ligger kvar som tom yta hade fått
  * layouten att hoppa varje gång ett jobb startar eller slutar, och en ständigt närvarande

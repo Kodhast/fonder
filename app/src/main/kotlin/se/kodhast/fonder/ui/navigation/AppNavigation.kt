@@ -1,42 +1,26 @@
 package se.kodhast.fonder.ui.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.rememberDecoratedNavEntries
-import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
-import androidx.navigation3.ui.NavDisplay
 import se.kodhast.fonder.BuildConfig
 import se.kodhast.fonder.R
 import se.kodhast.fonder.ui.beslut.BeslutScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchEvent
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchViewModel
-import se.kodhast.fonder.ui.components.AppTabHeading
 import se.kodhast.fonder.ui.components.ComponentGallery
-import se.kodhast.fonder.ui.components.WorkerStatusIcon
 import se.kodhast.fonder.ui.facit.FacitScreen
 import se.kodhast.fonder.ui.fond.FondDetaljScreen
 import se.kodhast.fonder.ui.fondsok.FundSearchScreen
@@ -51,22 +35,20 @@ import se.kodhast.fonder.ui.settings.SettingsViewModel
 import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
-import se.kodhast.ui.components.AppFloatingToolbar
+import se.kodhast.ui.common.SyncUiState
 import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.AppMenuItem
-import se.kodhast.ui.components.AppTopBar
 import se.kodhast.ui.components.IconButtonVariant
-import se.kodhast.ui.components.LocalTopBarStatus
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
-import se.kodhast.ui.components.TopBarSize
-import se.kodhast.ui.theme.Spacing
+import se.kodhast.ui.navigation.AppNavHost
 import se.kodhast.ui.theme.Tone
 
 /**
- * Appens navigering: skalet ([AppNavigationShell]) med Fonders skärmar ([fonderEntries]). Körstatusen
- * för chromets bakgrundsindikator (NAV-6) hämtas här, så att skalet går att testa utan Hilt.
+ * Appens navigering: android-ui:s navigationsram ([AppNavHost]) med Fonders flikar, plusmenyn och
+ * skärmarna ([fonderEntries]). Bakgrundsjobbet (kursuppdateringen, NAV-6) får prickarna i sidhuvudet att
+ * hoppa; antalet väntande beslut står på Beslut (NAV-9).
  */
 @Composable
 fun AppNavigation(
@@ -81,171 +63,117 @@ fun AppNavigation(
     // och kvitterar. Sparad så den överlever rotation mellan trycket och skrollningen.
     val scrollSettingsToBackup = rememberSaveable { mutableStateOf(false) }
     val backStack = rememberAppBackStack()
-    val entries = remember(backStack) { fonderEntries(backStack, scrollSettingsToBackup) }
+    val tabOwner = checkNotNull(LocalViewModelStoreOwner.current) { "AppNavigation kräver en ViewModelStoreOwner" }
+    val entries = remember(backStack, tabOwner) { fonderEntries(backStack, scrollSettingsToBackup, tabOwner) }
 
-    AppNavigationShell(
-        isWorkerRunning = isRunning,
-        beslutBadgeCount = beslutBadgeCount,
+    FonderNavHost(
         backStack = backStack,
+        entryProvider = entries,
         modifier = modifier,
-        entryProvider = entries
+        isWorkerRunning = isRunning,
+        beslutBadgeCount = beslutBadgeCount
     )
 }
 
-/** Testtagg för flikraden – gör "raden döljs på djupare skärmar" (NAV-7) adresserbart i tester. */
-const val APP_FLOATING_TOOLBAR_TAG = "app_floating_toolbar"
-
 /**
- * Skalet runt `NavDisplay` (NAV-7, NAV-8, UI-14): på en flik en stor rubrik överst
- * ([AppTabHeading]) och android-ui:s flytande flikrad ([AppFloatingToolbar]) längs nederkanten, med
- * plusknappen i kopparen sist i raden ([ToolbarAction] med meny); på en skärm djupare i stacken i
- * stället bibliotekets lilla topprad med bakåtpil ([AppTopBar]) och varken flikrad eller plusknapp.
- * [beslutBadgeCount] är kopparmärket på Beslut (NAV-9) – 0 ritar inget. [entryProvider] ger skärmarna – i appen [fonderEntries], i testerna
- * enkla ersättare.
- *
- * Varje fliks stack dekoreras för sig (sparat tillstånd och ViewModels per post), så en flik som
- * lämnas via flikraden behåller sina skärmar tills man kommer tillbaka; [AppBackStack] släpper dem
- * när fliken lämnas med bakåt.
- *
- * En ramskärm ([FrameKey]) har egen `Scaffold` och topprad: skalet ritar då ingen rubrik och ingen
- * `imePadding` för den, och chromets indikator ([WorkerStatusIcon]) når ramens topprad via
- * `LocalTopBarStatus`.
+ * Navigationsramen med Fonders flikrad (NAV-1, NAV-7): fyra flikar, kopparmärket med antalet beslut på
+ * Beslut ([beslutBadgeCount], 0 ritar inget, NAV-9) och plusknappens FAB-meny (NAV-8). [isWorkerRunning]
+ * får sidhuvudets prickar att hoppa (NAV-6). [entryProvider] ger skärmarna – i appen [fonderEntries], i
+ * testerna enkla ersättare – och ramen lägger toppraden runt dem som inte har en egen ([FonderPage]).
  */
 @Composable
-fun AppNavigationShell(
-    isWorkerRunning: Boolean,
+fun FonderNavHost(
+    backStack: AppBackStack,
+    entryProvider: (AppKey) -> NavEntry<AppKey>,
     modifier: Modifier = Modifier,
-    beslutBadgeCount: Int = 0,
-    backStack: AppBackStack = rememberAppBackStack(),
-    entryProvider: (AppKey) -> NavEntry<AppKey>
+    isWorkerRunning: Boolean = false,
+    beslutBadgeCount: Int = 0
 ) {
-    val currentKey = backStack.current
-    val currentTab = Screen.forKey(currentKey)
-    val isFrame = currentKey is FrameKey
-    val topBarStatus: @Composable RowScope.() -> Unit = remember(isWorkerRunning) {
-        { WorkerStatusIcon(isRunning = isWorkerRunning) }
+    val tabs = Screen.entries.map { tab ->
+        ToolbarItem(
+            label = stringResource(tab.labelRes),
+            icon = tab.icon,
+            badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
+        )
     }
-
-    val decorators = listOf(
-        rememberSaveableStateHolderNavEntryDecorator<AppKey>(),
-        rememberViewModelStoreNavEntryDecorator<AppKey>()
-    )
-    val decoratedStacks = Screen.entries.associateWith { tab ->
-        rememberDecoratedNavEntries(backStack.stack(tab), decorators, entryProvider)
-    }
-    val shownEntries = Screen.entries
-        .filter { it == Screen.START || it == backStack.currentTab }
-        .flatMap { decoratedStacks.getValue(it) }
-
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            when {
-                // Ramskärmen ritar sin egen topprad (ramens AppTopBar) – annars två rubriker.
-                isFrame -> Unit
-
-                currentTab != null -> TabHeading(currentTab, isWorkerRunning, backStack)
-
-                // Varje skärm djupare i stacken har rubrik och bakåtpil (UI-8, issue #78).
-                else -> titleResFor(currentKey)?.let { title ->
-                    AppTopBar(title = stringResource(title), size = TopBarSize.Small, onBack = { backStack.pop() }, status = topBarStatus)
-                }
-            }
+    AppNavHost(
+        backStack = backStack,
+        tabs = tabs,
+        // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
+        entryProvider = { key ->
+            val entry = entryProvider(key)
+            NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { FonderPage(key, backStack) { entry.Content() } }
         },
-        bottomBar = {
-            if (currentTab != null) {
-                val tabs = Screen.entries.map { tab ->
-                    ToolbarItem(
-                        label = stringResource(tab.labelRes),
-                        icon = tab.icon,
-                        badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
-                    )
-                }
-                // Plusknappens meny (NAV-8): samma fyra val i samma ordning som tidigare FAB-menyn.
-                // Ett val eller bakåt stänger menyn; den hör till flikraden och försvinner med den.
-                val addMenu = listOf(
-                    AppMenuItem(stringResource(R.string.transaktioner_add), { backStack.push(TransactionFormKey()) }),
-                    AppMenuItem(stringResource(R.string.fab_import_orders), { backStack.push(ImportOrdersKey) }),
-                    AppMenuItem(stringResource(R.string.fab_import_holdings), { backStack.push(ImportHoldingsKey) }),
-                    AppMenuItem(stringResource(R.string.fab_watch_fund), { backStack.push(FundSearchKey) })
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(vertical = Spacing.m),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AppFloatingToolbar(
-                        items = tabs,
-                        selectedIndex = Screen.entries.indexOf(currentTab),
-                        onSelect = { index -> backStack.select(Screen.entries[index]) },
-                        modifier = Modifier.testTag(APP_FLOATING_TOOLBAR_TAG),
-                        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu)
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
-        // imePadding på ett ställe i stället för per skärm (regel 4): appen kör
-        // enableEdgeToEdge, och Scaffolds standardinsets är bara systemBars — tangentbordet
-        // låg därför **över** ISIN-fältet i Fonddetalj
-        // och sökfältet i Fondsök. `adjustResize` räcker inte edge-to-edge på API 30+, där
-        // IME är en inset appen själv måste konsumera (issue #78). En ramskärm har sin egen
-        // Scaffold med imePadding och systemfältens insets – skalets marginal räknas då som
-        // förbrukad, så att varken tangentbordet eller statusraden läggs på två gånger.
-        val contentModifier = if (isFrame) {
-            Modifier.padding(innerPadding).consumeWindowInsets(innerPadding)
-        } else {
-            Modifier.padding(innerPadding).imePadding()
-        }
-        CompositionLocalProvider(LocalTopBarStatus provides topBarStatus) {
-            NavDisplay(
-                entries = shownEntries,
-                modifier = contentModifier,
-                transitionSpec = Transitions.forward,
-                popTransitionSpec = Transitions.back,
-                predictivePopTransitionSpec = Transitions.predictiveBack,
-                onBack = { backStack.pop() }
-            )
-        }
-    }
+        modifier = modifier,
+        sync = SyncUiState(pending = isWorkerRunning),
+        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack))
+    )
 }
 
 /**
- * Flikens rubrik med dess egna åtgärder: Inställningar på Översikt (NAV-7). Chromets
- * bakgrundsindikator (NAV-6) på alla flikar. Sålda fonder har ingen egen länk längre – säljen och
- * deras realiserade resultat står i Händelsers lista (SLD-1, NAV-5).
+ * Toppraden runt [key]s skärm (NAV-7, UI-8): på Översikt, Innehav och Beslut Kodhäst-sidhuvudet ([TabPage]),
+ * med Inställningar som åtgärd på Översikt; på en underskärm utan ram den lilla toppraden med rubrik och
+ * tillbakapil ([SubPage], [subPageTitle]). Skärmarna på android-ui:s ramar (Händelser, Fonddetalj, Fondsök,
+ * formulären, galleriet) ritar sin egen och får ingen.
  */
 @Composable
-private fun TabHeading(tab: Screen, isWorkerRunning: Boolean, backStack: AppBackStack) {
-    AppTabHeading(title = stringResource(tab.labelRes)) {
-        WorkerStatusIcon(isRunning = isWorkerRunning)
-        when (tab) {
-            Screen.Oversikt -> AppIconButton(
-                icon = R.drawable.ic_settings,
-                contentDescription = stringResource(R.string.nav_settings),
-                onClick = { backStack.push(SettingsKey) },
-                variant = IconButtonVariant.Tonal,
-                tone = Tone.NeutralPrimary
-            )
-
-            // Händelser är en ramskärm med egen rubrik och kommer inte hit (FrameKey).
-            Screen.Innehav, Screen.Beslut, Screen.Handelser -> Unit
-        }
+fun FonderPage(key: AppKey, backStack: AppBackStack, content: @Composable () -> Unit) {
+    val subTitle = subPageTitle(key)
+    when {
+        key == OversiktKey -> TabPage(stringResource(R.string.nav_oversikt), actions = { SettingsButton { backStack.push(SettingsKey) } }, content = content)
+        key == InnehavKey || key == BeslutKey -> TabPage(stringResource(Screen.entries.first { it.key == key }.labelRes), content = content)
+        subTitle != null -> SubPage(stringResource(subTitle), onBack = { backStack.popIfTop(key) }, content = content)
+        else -> content()
     }
 }
 
+/** Rubriken för en underskärm utan ram ([SubPage]); `null` för flikarna och skärmarna på en ram. */
+fun subPageTitle(key: AppKey): Int? = when (key) {
+    SettingsKey -> R.string.nav_settings
+
+    ImportHoldingsKey -> R.string.import_title
+
+    ImportOrdersKey -> R.string.import_orders_title
+
+    FacitKey -> R.string.facit_title
+
+    is SwitchWatchKey -> R.string.switch_watch_title
+
+    is TabKey, is FondDetaljKey, FundSearchKey, is TransactionFormKey, RiskProfileKey, BenchmarkPickerKey,
+    is SwitchWatchPickerKey, ComponentGalleryKey -> null
+}
+
+@Composable
+private fun SettingsButton(onClick: () -> Unit) = AppIconButton(
+    icon = R.drawable.ic_settings,
+    contentDescription = stringResource(R.string.nav_settings),
+    onClick = onClick,
+    variant = IconButtonVariant.Tonal,
+    tone = Tone.NeutralPrimary
+)
+
+/** Plusknappens val (NAV-8) i samma ordning som förut, med ikoner som i FAB-menyn. */
+@Composable
+private fun addMenu(backStack: AppBackStack): List<AppMenuItem> = listOf(
+    AppMenuItem(stringResource(R.string.transaktioner_add), { backStack.push(TransactionFormKey()) }, icon = R.drawable.ic_receipt),
+    AppMenuItem(stringResource(R.string.fab_import_orders), { backStack.push(ImportOrdersKey) }, icon = R.drawable.ic_upload),
+    AppMenuItem(stringResource(R.string.fab_import_holdings), { backStack.push(ImportHoldingsKey) }, icon = R.drawable.ic_holdings),
+    AppMenuItem(stringResource(R.string.fab_watch_fund), { backStack.push(FundSearchKey) }, icon = R.drawable.ic_search)
+)
+
 /**
- * Fonders skärmar: de fyra flikarna och alla skärmar djupare i stacken, en per nyckel. En skärm som
- * stänger sig själv gör det med `popIfTop(key)`, så att ett andra anrop inte stänger skärmen under.
- * [scrollSettingsToBackup] läses när Inställningar ritas, inte när posten skapas, så kvitteringen
- * slår igenom direkt.
+ * Fonders skärmar: de fyra flikarna och alla skärmar djupare i stacken, en per nyckel – varje nyckel har en
+ * (AppKey är förseglad; en saknad är ett programfel). Toppraden runt skärmarna utan ram lägger
+ * [FonderNavHost] till ([FonderPage]). En skärm som stänger sig själv gör det med `popIfTop(key)`, så att ett
+ * andra anrop inte stänger skärmen under. Flikarnas ViewModels hämtas från [tabOwner] (aktiviteten), så att
+ * en flik behåller sitt innehåll när man byter flik; undersidornas hör till sin post. [scrollSettingsToBackup]
+ * läses när Inställningar ritas, inte när posten skapas, så kvitteringen slår igenom direkt.
  */
 fun fonderEntries(
     backStack: AppBackStack,
-    scrollSettingsToBackup: MutableState<Boolean>
-): (AppKey) -> NavEntry<AppKey> = entryProvider {
+    scrollSettingsToBackup: MutableState<Boolean>,
+    tabOwner: ViewModelStoreOwner
+): (AppKey) -> NavEntry<AppKey> = entryProvider(fallback = { key -> error("Ingen skärm för $key") }) {
     // Påminnelsen (HEM-12) och det tomma lägets "Återställ från säkerhetskopia" (HEM-15) går samma väg.
     val openBackup = {
         scrollSettingsToBackup.value = true
@@ -254,17 +182,19 @@ fun fonderEntries(
     entry<OversiktKey> {
         HemScreen(
             onFundClick = { fundId -> backStack.push(FondDetaljKey(fundId)) },
-            onOpenBeslut = { backStack.select(Screen.Beslut) },
+            onOpenBeslut = { backStack.select(BeslutKey) },
             onOpenBackup = openBackup,
             onWatchFund = { backStack.push(FundSearchKey) },
-            onImportHoldings = { backStack.push(ImportHoldingsKey) }
+            onImportHoldings = { backStack.push(ImportHoldingsKey) },
+            viewModel = hiltViewModel(tabOwner)
         )
     }
     entry<InnehavKey> {
         PortfoljScreen(
             onFundClick = { fundId -> backStack.push(FondDetaljKey(fundId)) },
             onNewTransaction = { backStack.push(TransactionFormKey()) },
-            onImportOrders = { backStack.push(ImportOrdersKey) }
+            onImportOrders = { backStack.push(ImportOrdersKey) },
+            viewModel = hiltViewModel(tabOwner)
         )
     }
     entry<BeslutKey> {
@@ -272,7 +202,8 @@ fun fonderEntries(
             onOpenSwitchWatch = { watchId -> backStack.push(SwitchWatchKey(watchId)) },
             onOpenRiskProfile = { backStack.push(RiskProfileKey) },
             onOpenFacit = { backStack.push(FacitKey) },
-            onFollow = { suggestion -> backStack.push(TransactionFormKey.follow(suggestion)) }
+            onFollow = { suggestion -> backStack.push(TransactionFormKey.follow(suggestion)) },
+            viewModel = hiltViewModel(tabOwner)
         )
     }
     // Facit (SET-5) — en skärm i stacken med bakåtpil, från Beslut och från Inställningar (NAV-9).
@@ -283,7 +214,8 @@ fun fonderEntries(
         TransaktionerScreen(
             onOpenSwitchWatch = { watchId -> backStack.push(SwitchWatchKey(watchId)) },
             onNewTransaction = { backStack.push(TransactionFormKey()) },
-            onImportOrders = { backStack.push(ImportOrdersKey) }
+            onImportOrders = { backStack.push(ImportOrdersKey) },
+            viewModel = hiltViewModel(tabOwner)
         )
     }
     entry<SettingsKey> {

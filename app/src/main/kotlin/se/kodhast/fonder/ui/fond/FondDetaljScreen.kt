@@ -70,7 +70,7 @@ private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
  * man öppnar kortet för. Saknar fonden ISIN visas fältet för att ange/bekräfta det (förifyllt
  * med ett namnbaserat förslag om ett hittades), se KRAVLISTA TP-14.
  *
- * Skärmen står på android-ui:s detaljram (`EntityDetailScreen`, nyckeln är en `FrameKey`): liten
+ * Skärmen står på android-ui:s detaljram (`EntityDetailScreen`): liten
  * topprad med fondens namn och bakåtpil; laddning, läsfel med "Försök igen" och "finns inte längre"
  * är ramens lägen (NFR-6), och dra ned hämtar om kursen (UI-11).
  */
