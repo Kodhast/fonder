@@ -49,7 +49,7 @@ class AppCardTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `FonderTheme ger korten djupets kant i stället för egen kontur, 16 dp luft och inget extra mellanrum`() {
+    fun `FonderTheme ger korten djupets kant i stället för egen kontur och bibliotekets standardluft`() {
         var style: AppCardStyle? = null
         var flush: AppCardStyle? = null
         var depth: AppDepth? = null
@@ -64,10 +64,8 @@ class AppCardTest {
         // Ingen egen kontur (UI-18): kortets kant och skugga kommer från djupet, tonade i nordisk blå.
         assertEquals(null, style?.border)
         assertEquals(FonderLightDepth, depth)
-        assertEquals(16.dp, style?.padding)
-        assertEquals(0.dp, style?.contentSpacing)
-        // Ett korts bitar (CardSegment) har samma 16 dp luft som ett helt kort, så att raderna inte trycks ihop.
-        assertEquals(16.dp, style?.segmentGap)
+        // Fonder sätter ingen egen kortstil: kortets luft och avstånd är bibliotekets standard (alla appar lika).
+        assertEquals(AppCardStyle(), style)
         assertEquals(0.dp, flush?.padding)
         assertEquals(0.dp, flush?.segmentGap)
         assertEquals(style?.border, flush?.border)

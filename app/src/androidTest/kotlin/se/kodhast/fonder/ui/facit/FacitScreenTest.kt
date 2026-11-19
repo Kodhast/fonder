@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -213,7 +214,8 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("Såld fond → Köpt fond").performClick()
-        composeRule.onNodeWithText("Genomförd").performClick()
+        // Testfönstret är bara 320 × 640 px: utfälld ligger raden utanför det synliga och måste rullas fram.
+        composeRule.onNodeWithText("Genomförd").performScrollTo().performClick()
 
         assertEquals(7L to true, callback)
     }
