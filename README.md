@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.9.1 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.9.2 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.9.2 | **Valet i Fondsök tappas inte längre** (HEM-10, ANA-13): referensfonden som väljs från Inställningar och alternativet som läggs till i Pågående byte sparas av skärmen man kommer tillbaka till. Förut sparade valskärmen själv och stängdes direkt, så en sparning som väntade på fondens ISIN kunde avbrytas, och felen "ISIN saknas" och "taket nått" syntes aldrig. |
 | 1.9.1 | **Komponentgalleriet är bibliotekets** (UI-13, bara debug-bygget): Inställningar → Komponenter visar android-ui:s `ComponentGallery` med alla delade komponenter först och Fonders egna (belopp och andelar, kort, märken och val, analys, diagram) som `appSections` efter – ingen kopia av bibliotekets delar längre. Ingen ändring i release-bygget. |
 | 1.9.0 | **Facit, Pågående byte och importerna från biblioteket** (SET-5, ANA-12, IMP-4, IMP-6, UI-8, UI-19): de sista underskärmarna står på bibliotekets list- och detaljramar, som i ReseApoteket och Dagboken. Facit visar förslagen som hopfällbara rader i en grupp, med fördelningen per horisont och plats i planen hopfälld i summeringen. Importerna börjar med filvalet som ett tomt läge och visar raderna som kort med importknappen fast under. Inga snurror i kort eller diagram längre – ett jämförelsediagram som hämtas säger "Hämtar …". Besluts kort har bibliotekets vanliga luft. |
 | 1.8.0 | **Val, fält och hopfällbart från biblioteket** (UI-12, UI-13, UI-16, UI-19, TRX-3, android-ui 3.1.0): valen är bibliotekets – tema, kontotyp, bevakningstid, Händelsers filter och Köp/Sälj är segmentval i stället för en knappgrupp som skrollar i sidled, och riskenkätens svar och diagrammets sex perioder är chips som bryts på flera rader i stället för att klippas. Fondväljarna och importens väntedialog (nu med Kodhäst-prickarna) är bibliotekets, liksom långtrycks-kopieringen av fondnamn och de hopfällbara sektionerna (Analys, ordlistan, Avslutade och överhoppade, Facits radkort). Typen i ett förifyllt formulär från Följ visas som ett låst fält. Tillståndshjälparna (`itemsOrEmpty`, `catchAsListError`, `RetrySignal` m.fl.) kommer från `ui-common`; de lokala kopiorna är borta. |

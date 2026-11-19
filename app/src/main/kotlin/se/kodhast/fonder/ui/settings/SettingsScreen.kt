@@ -41,8 +41,10 @@ import se.kodhast.fonder.data.datastore.ThemeMode
 import se.kodhast.fonder.domain.model.AccountType
 import se.kodhast.fonder.domain.model.BackupRecord
 import se.kodhast.fonder.domain.model.BackupTarget
+import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.usecase.BackupReminderCalc
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
+import se.kodhast.fonder.ui.navigation.PickedFundEffect
 import se.kodhast.fonder.ui.theme.Error
 import se.kodhast.ui.components.AboutCard
 import se.kodhast.ui.components.AccountRow
@@ -87,10 +89,20 @@ fun SettingsScreen(
     onOpenGallery: (() -> Unit)? = null,
     scrollToBackup: Boolean = false,
     onScrolledToBackup: () -> Unit = {},
+    pickedBenchmark: Fund? = null,
+    onPickedBenchmarkAcknowledge: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+
+    // Referensfonden som valts i Fondsöks valläge (HEM-10) sparas av den här skärmens ViewModel, som
+    // ligger kvar – valskärmen har redan stängts – och visar ett fel om fondens ISIN inte går att slå upp.
+    PickedFundEffect(
+        fund = pickedBenchmark,
+        onPick = { viewModel.onEvent(SettingsEvent.ChooseBenchmark(it)) },
+        onAcknowledge = onPickedBenchmarkAcknowledge
+    )
 
     // SAF: appen får skriva/läsa precis den fil användaren pekar ut, utan lagringsbehörighet.
     // Själva I/O:n ligger här och inte i ViewModel:en — den känner bara till JSON-strängen,
