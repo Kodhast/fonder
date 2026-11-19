@@ -116,7 +116,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("ISK/KF").performClick()
+        composeRule.onNodeWithText("ISK/KF").performScrollTo().performClick()
 
         assertEquals(AccountType.ISK_KF, selected)
     }
