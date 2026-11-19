@@ -39,6 +39,7 @@ import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.StatusDot
 import se.kodhast.fonder.ui.components.copyableFundName
+import se.kodhast.fonder.ui.components.statusTitle
 import se.kodhast.fonder.ui.diagram.ChartSeries
 import se.kodhast.fonder.ui.diagram.ComparisonChart
 import se.kodhast.fonder.ui.diagram.FundLineChart
@@ -697,7 +698,8 @@ private fun SignalExplanations(analysis: FundAnalysisCalc.Analysis, modifier: Mo
 private fun SignalRow(level: FundAnalysisCalc.SignalLevel, label: String, explanation: String) {
     ExpandableInfoRow(explanation = explanation) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(level, modifier = Modifier.padding(end = Spacing.s))
+            // En enskild indikator, inte den summerade säljsignalen: bara nivåns namn, före indikatorns.
+            StatusDot(level, modifier = Modifier.padding(end = Spacing.s), contentDescription = statusTitle(level))
             ItemRowText(title = label, subtitle = null)
         }
     }

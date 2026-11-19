@@ -30,6 +30,11 @@ val GainDark = Color(0xFF5FD39B)
 val LossLight = Color(0xFFA9453C)
 val LossDark = Color(0xFFE58C82)
 
+// Säljsignalens gula (StatusColors.gul, ANA-3): bärnsten, långt från både förlustens rödbruna och kopparen i kulör,
+// minst 3:1 mot ytan i båda temana (en prick är ingen text).
+val SignalAmberLight = Color(0xFFB07800)
+val SignalAmberDark = Color(0xFFF2C14E)
+
 // Tonad vinstbehållare med text i samma kulör — InfoPill "Köpt" (BYT-4); skiljer sig i ljushet från koppar och blått.
 val GainContainerLight = Color(0xFFD3F2E1)
 val OnGainContainerLight = Color(0xFF0B3D24)
@@ -186,13 +191,13 @@ val FonderDarkExtendedColors = extendedColors(FonderDarkColorScheme, GainContain
 
 /**
  * Fonders egna färger utöver Material 3 och [ExtendedColors]: vinst- och förlustkulören för text,
- * pilar och kurvor (UI-3). Ges av [FonderTheme] för det läge appen faktiskt valt.
+ * pilar och kurvor (UI-3), och säljsignalens gula (ANA-3). Ges av [FonderTheme] för det läge appen faktiskt valt.
  */
 @Immutable
-data class FonderColors(val gain: Color, val loss: Color)
+data class FonderColors(val gain: Color, val loss: Color, val signalAmber: Color)
 
-val FonderLightColors = FonderColors(gain = GainLight, loss = LossLight)
-val FonderDarkColors = FonderColors(gain = GainDark, loss = LossDark)
+val FonderLightColors = FonderColors(gain = GainLight, loss = LossLight, signalAmber = SignalAmberLight)
+val FonderDarkColors = FonderColors(gain = GainDark, loss = LossDark, signalAmber = SignalAmberDark)
 
 /**
  * Djupet (android-ui `AppDepth`, UI-18): i ljust skuggor och kortkant tonade mot nordisk blå, i mörkt en ljus kant

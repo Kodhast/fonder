@@ -291,6 +291,8 @@
     <string name="analys_status_gron">Inga signaler</string>
     <string name="analys_status_gul">Värt att se över</string>
     <string name="analys_status_rod">Bör ses över</string>
+    <!-- Säljsignalens prick för skärmläsaren (UI-3): nivåns namn, t.ex. "Säljsignal: Bör ses över". -->
+    <string name="format_status_dot_description">Säljsignal: %1$s</string>
     <string name="analys_status_insufficient">Otillräcklig kurshistorik för säljsignal ännu</string>
     <string name="format_analys_signal_distance">%1$s från toppen (52 veckor)</string>
     <string name="analys_signal_trend">Under 200-dagars snitt</string>

@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.usecase.AnalysisGuidance
@@ -83,9 +85,24 @@ fun statusTriggerMessages(analysis: FundAnalysisCalc.Analysis): List<String> {
     return messages
 }
 
+/**
+ * Säljsignalens nivå som en färgad prick (ANA-3). Färgen är aldrig ensam bärare (UI-3): skärmläsaren läser
+ * [contentDescription], som standard den summerade statusen ("Säljsignal: Bör ses över"). En enskild
+ * indikator skickar bara nivåns namn; `null` bara där nivåns namn redan står i text bredvid.
+ */
 @Composable
-fun StatusDot(level: FundAnalysisCalc.SignalLevel, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.size(10.dp).clip(CircleShape).background(statusColor(level)))
+fun StatusDot(
+    level: FundAnalysisCalc.SignalLevel,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = stringResource(R.string.format_status_dot_description, statusTitle(level))
+) {
+    Box(
+        modifier = modifier
+            .then(if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier)
+            .size(10.dp)
+            .clip(CircleShape)
+            .background(statusColor(level))
+    )
 }
 
 /** Statusbanner (färg + rubrik + triggertexter) ovanför kurshistoriken i Fonddetalj (ANA-3). */
@@ -107,7 +124,7 @@ fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifie
         colors = CardDefaults.cardColors(containerColor = statusColor(level).copy(alpha = 0.14f))
     ) {
         Row(modifier = Modifier.padding(Spacing.l), verticalAlignment = Alignment.Top) {
-            StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = Spacing.m))
+            StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = Spacing.m), contentDescription = null)
             Column {
                 Text(statusTitle(level), style = MaterialTheme.typography.titleMedium)
                 val messages = statusTriggerMessages(analysis)
