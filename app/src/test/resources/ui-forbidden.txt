@@ -35,16 +35,16 @@
 \bListItem\s*[({]	ItemRow (android-ui)
 \b(Basic)?AlertDialog\s*[({]	ConfirmDialog (android-ui, dismissLabel = null för en knapp) / ImportCompleteDialog
 \b[A-Za-z]*DatePicker[A-Za-z]*\s*[({]	DateField (android-ui)
-\bDropdownMenu(Item)?\s*[({]	SelectField
-\b(Filter|Assist|Suggestion|Input)Chip\s*[({]	ChoiceChipRow / InfoPill (android-ui)
-\b[A-Za-z]*ProgressIndicator\s*[({]	WorkingIndicator / CardTitleRow / ProgressBar / LoadingDialog
+\bDropdownMenu(Item)?\s*[({]	SelectField (android-ui)
+\b(Filter|Assist|Suggestion|Input)Chip\s*[({]	ChoiceChips / AppSegmentedChoice / InfoPill (android-ui)
+\b[A-Za-z]*ProgressIndicator\s*[({]	WorkingIndicator / CardTitleRow / ProgressBar / android-ui:s LoadingDialog
 \bBadge\s*[({]	InfoPill (android-ui) / RiskBadge / ProfitTakeBadge / StatusDot
 \bCheckbox\s*[({]	CheckRow (android-ui) / FollowedToggleRow
 \bSwitch\s*[({]	SwitchRow (android-ui)
 \b(Text|Outlined|Elevated|Filled|FilledTonal)?Button\s*[({]	AppButton (android-ui, ButtonVariant)
 \b(Outlined|Filled|FilledTonal)?IconButton\s*[({]	AppIconButton (android-ui)
 \b(Outlined|Basic)?TextField\s*[({]	AppTextField (android-ui)
-\bDialog\s*[({]	ConfirmDialog (android-ui) / LoadingDialog
+\bDialog\s*[({]	ConfirmDialog / LoadingDialog (android-ui)
 \b(Short|Flexible)?NavigationBar(Item)?\s*[({]	AppFloatingToolbar (android-ui)
 \b(Horizontal|Vertical)FloatingToolbar\s*[({]	AppFloatingToolbar (android-ui)
 \b[A-Za-z]*FloatingActionButton(Menu|MenuItem)?\s*[({]	AppFloatingToolbar med ToolbarAction (android-ui)
@@ -53,12 +53,12 @@
 
 [component-only]
 \bPullToRefreshBox\b	AppPullToRefresh (android-ui)
-\bExposedDropdownMenuBox\b	SelectField
+\bExposedDropdownMenuBox\b	SelectField (android-ui)
 \bModalBottomSheet\b	AppBottomSheet (android-ui)
-\b(Local)?Clipboard(Manager)?\b	Modifier.copyableFundName (ui/components)
-\bCLIPBOARD_SERVICE\b	Modifier.copyableFundName (ui/components)
-\bClipData\b	Modifier.copyableFundName (ui/components)
-\b(ClipEntry|setClipEntry)\b	Modifier.copyableFundName (ui/components)
+\b(Local)?Clipboard(Manager)?\b	Modifier.copyOnLongPress (android-ui; Fonders copyableFundName för fondnamn)
+\bCLIPBOARD_SERVICE\b	Modifier.copyOnLongPress (android-ui; Fonders copyableFundName för fondnamn)
+\bClipData\b	Modifier.copyOnLongPress (android-ui; Fonders copyableFundName för fondnamn)
+\b(ClipEntry|setClipEntry)\b	Modifier.copyOnLongPress (android-ui; Fonders copyableFundName för fondnamn)
 
 [vico]
 \bcom\.patrykandpatrick\.vico\b	FundLineChart i ui/diagram – Vico bara där (TP-12)

@@ -166,6 +166,7 @@
     <string name="format_transaktion_delete_confirm">Transaktionen för \"%s\" raderas permanent.</string>
     <string name="transaktionsform_title">Ny transaktion</string>
     <string name="transaktionsform_fund_label">Fond</string>
+    <string name="transaktionsform_type_label">Typ</string>
     <string name="transaktionsform_date_label">Datum</string>
     <string name="transaktionsform_shares_label">Antal andelar</string>
     <string name="transaktionsform_price_label">Kurs per andel</string>

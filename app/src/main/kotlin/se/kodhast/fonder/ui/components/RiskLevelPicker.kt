@@ -11,6 +11,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonColors
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -32,8 +34,8 @@ import se.kodhast.fonder.ui.theme.MonoAmountStyle
  * skärmläsaren läses varje knapp som ett radioval "Risknivå 4 av 7" (samma text som `RiskBadge`), med [markedDescription] tillagd
  * på den markerade, så ramen aldrig är ensam bärare av sin betydelse (UI-3).
  *
- * Skild från [ChoiceChipRow]: nivåerna är en skala, inte en sammanhängande grupp av ord, och
- * ska få plats utan att skrolla — samma färger ([choiceButtonColors]) och samma radiosemantik.
+ * Skild från android-ui:s val (`AppSegmentedChoice`, `ChoiceChips`): nivåerna är en skala, inte en grupp
+ * av ord, och ska få plats utan att skrolla — radiosemantik som i övriga val.
  * Tryckytan är 48 dp även när knappen är smalare än så synligt (`minimumInteractiveComponentSize`
  * i `ToggleButton`).
  *
@@ -97,3 +99,11 @@ fun RiskLevelPicker(
 
 /** Fondernas riskskala (SRI 1–7). */
 val RISK_LEVELS: IntRange = 1..7
+
+/** Färgerna för en ovald/vald nivå — ytvariant ovald, primärfärg vald. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun choiceButtonColors(): ToggleButtonColors = ToggleButtonDefaults.colors(
+    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+    contentColor = MaterialTheme.colorScheme.onSurface
+)

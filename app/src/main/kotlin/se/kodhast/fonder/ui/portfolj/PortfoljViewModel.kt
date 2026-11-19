@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.repository.FundMetadataRepository
 import se.kodhast.fonder.data.repository.FundPriceRepository
 import se.kodhast.fonder.data.repository.TransactionRepository
@@ -40,15 +41,15 @@ import se.kodhast.fonder.domain.usecase.PortfolioCalc
 import se.kodhast.fonder.domain.usecase.PortfolioExposureCalc
 import se.kodhast.fonder.domain.usecase.PortfolioPerformanceCalc
 import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsListError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.itemsOrEmpty
-import se.kodhast.fonder.ui.common.restartOn
 import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.ListUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsListError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.itemsOrEmpty
+import se.kodhast.ui.common.restartOn
 import se.kodhast.ui.common.toListUiState
 
 @Immutable
@@ -231,7 +232,7 @@ class PortfoljViewModel @Inject constructor(
                     }.toMap().toImmutableMap()
                 )
             }
-        }.catchAsListError { PortfoljUiState(list = it) }.restartOn(retrySignal).combine(workState) { state, work ->
+        }.catchAsListError(AppErrors) { PortfoljUiState(list = it) }.restartOn(retrySignal).combine(workState) { state, work ->
             // Eget flöde, inte en gren i combinen ovan: körstatusen kommer från WorkManager och
             // från ViewModel:ens egna jobb — den ska inte kunna räkna om portföljen bara för att
             // ett jobb startade (samma gräns som HemViewModel drar).

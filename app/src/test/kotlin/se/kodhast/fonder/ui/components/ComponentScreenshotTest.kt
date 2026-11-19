@@ -16,7 +16,11 @@ import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.domain.usecase.FundAnalysisCalc
 import se.kodhast.fonder.domain.usecase.FundAnalysisCalc.SignalLevel
 import se.kodhast.fonder.testing.captureLightAndDark
+import se.kodhast.ui.components.AppSegmentedChoice
+import se.kodhast.ui.components.ChoiceChips
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.components.Foldout
+import se.kodhast.ui.components.SelectField
 
 /**
  * Skärmdumpar ljust + mörkt av varje delad komponent i `ui/components` (UI-12, skill
@@ -50,20 +54,13 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun `ChoiceChipRow som knappgrupp`() = composeRule.captureLightAndDark("ChoiceChipRow_theme") {
+    fun `val som segment och chips`() = composeRule.captureLightAndDark("ChoiceControls_default") {
+        val modes = listOf("Ljust", "Mörkt", "Auto")
+        val answers = listOf("Under 1 år", "1–3 år", "3–10 år", "Mer än 10 år", "Vet inte")
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ChoiceChipRow(
-                options = listOf("Ljust", "Mörkt", "Auto"),
-                selected = "Auto",
-                optionLabel = { it },
-                onSelect = {}
-            )
-            ChoiceChipRow(
-                options = listOf("Under 1 år", "1–3 år", "3–10 år", "Mer än 10 år", "Vet inte"),
-                selected = "3–10 år",
-                optionLabel = { it },
-                onSelect = {}
-            )
+            AppSegmentedChoice(options = modes, selectedIndex = 2, onSelect = {})
+            ChoiceChips(options = answers, selected = "3–10 år", onSelect = {}, label = { it })
+            RiskLevelPicker(selected = 4, onSelect = {}, marked = 5)
         }
     }
 
@@ -142,9 +139,9 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun `ExpandableSection och ExpandableInfoRow`() = composeRule.captureLightAndDark("Expandable_default") {
+    fun `Foldout och ExpandableInfoRow`() = composeRule.captureLightAndDark("Expandable_default") {
         Column {
-            ExpandableSection(title = "Avgifter") { Text("Visas när sektionen fälls ut.") }
+            Foldout(title = "Avgifter", expanded = true, onToggle = {}) { Text("Visas när sektionen fälls ut.") }
             ExpandableInfoRow(
                 explanation = "Risknivån bygger på hur mycket kursen svängt de senaste fem åren, på en skala 1–7.",
                 initiallyExpanded = true

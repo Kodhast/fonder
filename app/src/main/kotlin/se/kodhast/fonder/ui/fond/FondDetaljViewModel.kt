@@ -62,13 +62,13 @@ import se.kodhast.fonder.domain.usecase.RecordTransaction
 import se.kodhast.fonder.domain.usecase.SuggestionDismissals
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.TaxCalc
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsDetailError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.restartOn
-import se.kodhast.fonder.ui.common.valueOrNull
 import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsDetailError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.restartOn
+import se.kodhast.ui.common.valueOrNull
 
 /**
  * Det Fonddetalj läser ur Room för fonden: namn, ISIN, kurshistorik, innehavets utgångsläge och
@@ -473,7 +473,7 @@ class FondDetaljViewModel @AssistedInject constructor(
     }
         // Sist i kedjan: ett läsfel i vilken källa som helst (fonden, kurserna, planen,
         // bevakningarna) visas som fel i stället för att krascha fondkortet (NFR-6).
-        .catchAsDetailError { FondDetaljUiState(fund = it) }
+        .catchAsDetailError(AppErrors) { FondDetaljUiState(fund = it) }
         // Varje läsning – även efter "Försök igen" – börjar i laddningsläget, så att ramen visar
         // laddningen och inte det gamla felet medan fonden läses om (NFR-6).
         .onStart { emit(FondDetaljUiState()) }

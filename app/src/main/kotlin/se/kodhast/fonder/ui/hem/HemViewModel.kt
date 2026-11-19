@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.datastore.BenchmarkComponentRef
 import se.kodhast.fonder.data.datastore.PreferencesRepository
 import se.kodhast.fonder.data.repository.BackupStatusRepository
@@ -51,15 +52,15 @@ import se.kodhast.fonder.domain.usecase.PortfolioRiskSource
 import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
 import se.kodhast.fonder.domain.usecase.RiskSummary
 import se.kodhast.fonder.domain.usecase.TaxCalc
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsDetailError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.restartOn
-import se.kodhast.fonder.ui.common.valueOrNull
 import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsDetailError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.restartOn
+import se.kodhast.ui.common.valueOrNull
 
 /** Ett innehav flaggat gul eller röd i analysen (HEM-4), med det underliggande resultatet för visning av triggade signaler. */
 data class FlaggedHolding(val fund: Fund, val analysis: FundAnalysisCalc.Analysis)
@@ -420,7 +421,7 @@ class HemViewModel internal constructor(
             }
             // Sist i kedjan: ett läsfel i vilken källa som helst (innehav, kurser, förslag,
             // påminnelsen) visas som fel i stället för att krascha Hem (NFR-6).
-            .catchAsDetailError { HemUiState(portfolio = it) }
+            .catchAsDetailError(AppErrors) { HemUiState(portfolio = it) }
             .restartOn(retrySignal)
             .stateIn(
                 scope = viewModelScope,

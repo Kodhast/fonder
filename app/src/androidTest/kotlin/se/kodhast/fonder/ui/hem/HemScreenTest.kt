@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.time.LocalDate
 import kotlinx.collections.immutable.persistentListOf
@@ -705,15 +704,10 @@ class HemScreenTest {
     fun avkastningsdiagrammet_har_samma_perioder_som_ovriga_diagram() {
         composeRule.setContent { FonderTheme { HemContent(state = returnState()) } }
 
-        // Chipraden skrollar själv i sidled, så `performScrollTo` på ett chip rullar bara raden. Rulla först
-        // skärmen till raden, sedan raden till de sista perioderna, som inte är komponerade förrän dess
-        // (UI-5, issue #66).
+        // Perioderna är android-ui:s segmentval: alla sex delar bredden, så ingen rad skrollar i sidled (UI-5).
+        // Rulla skärmen till raden, därefter ska varje period synas.
         composeRule.onNodeWithTag(CHART_PERIOD_ROW_TEST_TAG).performScrollTo()
-        composeRule.onNodeWithText("1 mån").assertIsDisplayed()
-        composeRule.onNodeWithText("3 mån").assertIsDisplayed()
-
-        composeRule.onNodeWithTag(CHART_PERIOD_ROW_TEST_TAG).performScrollToIndex(5)
-        listOf("3 år", "5 år", "Allt").forEach { period ->
+        listOf("1 mån", "3 mån", "1 år", "3 år", "5 år", "Allt").forEach { period ->
             composeRule.onNodeWithText(period).assertIsDisplayed()
         }
     }

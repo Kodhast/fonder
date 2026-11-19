@@ -27,14 +27,13 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwedishNumberFormat
 import se.kodhast.fonder.domain.usecase.SwitchOption
 import se.kodhast.fonder.ui.components.CenteredState
-import se.kodhast.fonder.ui.components.ChoiceChipRow
-import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.navigation.TransactionFormKey
 import se.kodhast.fonder.ui.theme.Filled
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.common.EditorEvents
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
+import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
@@ -42,6 +41,7 @@ import se.kodhast.ui.components.DateField
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityEditScreen
+import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -144,19 +144,31 @@ fun TransactionFormContent(
             optionLabel = { it.name },
             onSelect = { fund -> fund?.let(onFundSelect) },
             enabled = !state.fundLocked,
-            supportingText = when {
+            error = when {
                 state.fundLookupFailed -> stringResource(R.string.transaktionsform_fund_not_found)
                 else -> editor.errorFor(TRANSACTION_FUND)?.let { stringResource(it) }
             }
         )
 
-        ChoiceChipRow(
-            options = TransactionType.entries,
-            selected = state.type,
-            optionLabel = { type -> stringResource(type.labelRes()) },
-            onSelect = onTypeChange,
-            enabled = !state.typeLocked
-        )
+        val types = TransactionType.entries
+        val typeLabels = types.map { type -> stringResource(type.labelRes()) }
+        if (state.typeLocked) {
+            // Förifyllt från Följ (BYT-2): typen går inte att ändra, så den visas som ett låst fält – som fonden.
+            SelectField(
+                label = stringResource(R.string.transaktionsform_type_label),
+                options = types,
+                selected = state.type,
+                optionLabel = { type -> typeLabels[types.indexOf(type)] },
+                onSelect = {},
+                enabled = false
+            )
+        } else {
+            AppSegmentedChoice(
+                options = typeLabels,
+                selectedIndex = types.indexOf(state.type),
+                onSelect = { onTypeChange(types[it]) }
+            )
+        }
 
         DateField(
             label = stringResource(R.string.transaktionsform_date_label),

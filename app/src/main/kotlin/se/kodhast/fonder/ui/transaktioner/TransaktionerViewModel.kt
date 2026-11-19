@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.datastore.PreferencesRepository
 import se.kodhast.fonder.data.repository.FundPriceRepository
 import se.kodhast.fonder.data.repository.SwitchWatchRepository
@@ -33,13 +34,13 @@ import se.kodhast.fonder.domain.usecase.RealizedTotal
 import se.kodhast.fonder.domain.usecase.RecordTransaction
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.domain.usecase.TaxCalc
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsListError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.itemsOrEmpty
-import se.kodhast.fonder.ui.common.restartOn
 import se.kodhast.ui.common.ListUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsListError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.itemsOrEmpty
+import se.kodhast.ui.common.restartOn
 import se.kodhast.ui.common.toListUiState
 
 /** Händelsers filter (TRX-3): alla transaktioner, bara köp eller bara sälj. */
@@ -234,7 +235,7 @@ class TransaktionerViewModel internal constructor(
                     startedSwitchWatchId = startedId
                 )
             }
-        }.catchAsListError { TransaktionerUiState(list = it) }.restartOn(retrySignal).stateIn(
+        }.catchAsListError(AppErrors) { TransaktionerUiState(list = it) }.restartOn(retrySignal).stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = TransaktionerUiState()

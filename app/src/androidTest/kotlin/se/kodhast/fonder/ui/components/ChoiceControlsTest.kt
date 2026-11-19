@@ -10,14 +10,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import se.kodhast.fonder.ui.theme.FonderTheme
+import se.kodhast.ui.components.AppSegmentedChoice
+import se.kodhast.ui.components.ChoiceChips
 
 /**
- * Isolerat Compose-test av den delade val-chipraden (issue #68, regel 4) — extraherad ur
- * Inställningars tidigare privata `ThemeChip`. Riskprofilens enkät och temaväljaren kan lita
- * på att den redan är verifierad.
+ * Fonders val på android-ui:s [ChoiceChips] och [AppSegmentedChoice] (UI-12, regel 4) på riktig enhet:
+ * riskenkätens svar och periodvalen visar alla alternativ, markerar det valda och väljer med ett tryck.
  */
 @RunWith(AndroidJUnit4::class)
-class ChoiceChipRowTest {
+class ChoiceControlsTest {
 
     @get:Rule
     val composeRule = createComposeRule()
@@ -26,12 +27,7 @@ class ChoiceChipRowTest {
     fun visar_alla_alternativ_och_markerar_det_valda() {
         composeRule.setContent {
             FonderTheme {
-                ChoiceChipRow(
-                    options = listOf("A", "B", "C"),
-                    selected = "B",
-                    optionLabel = { it },
-                    onSelect = {}
-                )
+                ChoiceChips(options = listOf("A", "B", "C"), selected = "B", onSelect = {}, label = { it })
             }
         }
 
@@ -45,12 +41,7 @@ class ChoiceChipRowTest {
         var selected: String? = null
         composeRule.setContent {
             FonderTheme {
-                ChoiceChipRow(
-                    options = listOf("A", "B", "C"),
-                    selected = null,
-                    optionLabel = { it },
-                    onSelect = { selected = it }
-                )
+                ChoiceChips<String?>(options = listOf("A", "B", "C"), selected = null, onSelect = { selected = it }, label = { it.orEmpty() })
             }
         }
 
@@ -63,17 +54,24 @@ class ChoiceChipRowTest {
     fun inget_alternativ_markerat_nar_selected_ar_null() {
         composeRule.setContent {
             FonderTheme {
-                ChoiceChipRow(
-                    options = listOf(1, 2, 3),
-                    selected = null,
-                    optionLabel = { it.toString() },
-                    onSelect = {}
-                )
+                ChoiceChips<Int?>(options = listOf(1, 2, 3), selected = null, onSelect = {}, label = { it.toString() })
             }
         }
 
         composeRule.onNodeWithText("1").assertIsNotSelected()
         composeRule.onNodeWithText("2").assertIsNotSelected()
         composeRule.onNodeWithText("3").assertIsNotSelected()
+    }
+
+    @Test
+    fun segmentval_visar_alla_perioder_och_markerar_den_valda() {
+        composeRule.setContent {
+            FonderTheme {
+                AppSegmentedChoice(options = listOf("1 mån", "3 mån", "1 år", "3 år", "5 år", "Allt"), selectedIndex = 5, onSelect = {})
+            }
+        }
+
+        composeRule.onNodeWithText("1 mån").assertIsNotSelected()
+        composeRule.onNodeWithText("Allt").assertIsSelected()
     }
 }

@@ -1,11 +1,16 @@
 package se.kodhast.fonder.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
@@ -14,14 +19,15 @@ import se.kodhast.ui.theme.Spacing
  * Radens synliga innehåll ([content]) — t.ex. en [PeriodRow] eller en signalrad — ligger kvar,
  * och en pil till höger fäller ut/ihop en pedagogisk [explanation] under.
  *
- * Ett tunt skal ovanpå [ExpandableSection] (issue #85): själva utfällningsmekaniken — klickbar
- * rad med ≥48 dp träffyta som läses som knapp med utfällt-läget (UI-3) och `rememberSaveable`-läge
- * (UI-9) — bor där, så samma mönster ser likadant ut oavsett om det som fälls ut är en mening
- * eller en hel sektion.
+ * Ett tunt skal ovanpå android-ui:s [Foldout] (UI-3): hela raden växlar med minst 48 dp träffyta, läses som
+ * knapp med läget "Hopfälld"/"Utfälld" och chevronen fjädrar. Det enda som läggs till är läget, som sparas
+ * med `rememberSaveable` så det överlever en rotation (UI-9), och [onExpand]. Hela sektioner (rubrik +
+ * innehåll) är [Foldout] direkt.
  *
  * @param extraContent valfritt innehåll som visas under [explanation] när raden är utfälld, t.ex.
  *   ett jämförelsediagram för ett bytesförslag (ANA-11).
- * @param onExpand se [ExpandableSection.onExpand] — körs när raden fälls ut.
+ * @param onExpand körs när raden fälls **ut** (inte ihop) — kroken för innehåll som är dyrt att hämta
+ *   och därför inte ska laddas förrän någon vill se det, t.ex. jämförelsediagrammets kurshistorik (ANA-11).
  */
 @Composable
 fun ExpandableInfoRow(
@@ -32,20 +38,26 @@ fun ExpandableInfoRow(
     extraContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    ExpandableSection(
+    var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
+    Foldout(
+        title = "",
+        expanded = expanded,
+        onToggle = {
+            expanded = !expanded
+            if (expanded) onExpand()
+        },
         modifier = modifier,
-        initiallyExpanded = initiallyExpanded,
-        onExpand = onExpand,
-        header = content
+        header = infoRowHeader(content),
+        contentSpacing = Spacing.s
     ) {
-        Column {
-            Text(
-                text = explanation,
-                style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = Spacing.s)
-            )
-            extraContent?.invoke()
-        }
+        Text(
+            text = explanation,
+            style = AppTheme.typography.itemSubtitle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        extraContent?.invoke()
     }
 }
+
+/** Radens innehåll tar bredden före chevronen. */
+private fun infoRowHeader(content: @Composable () -> Unit): @Composable RowScope.() -> Unit = { Box(Modifier.weight(1f)) { content() } }

@@ -24,9 +24,9 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.DownturnReaction
 import se.kodhast.fonder.domain.model.PrimaryGoal
 import se.kodhast.fonder.domain.model.TimeHorizon
-import se.kodhast.fonder.ui.components.ChoiceChipRow
 import se.kodhast.ui.common.EditorEvents
 import se.kodhast.ui.components.AppTextField
+import se.kodhast.ui.components.ChoiceChips
 import se.kodhast.ui.components.EntityEditScreen
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -93,26 +93,26 @@ fun RiskProfilContent(
         )
 
         QuestionSection(stringResource(R.string.riskprofile_q_horizon)) {
-            ChoiceChipRow(
+            AnswerChips(
                 options = TimeHorizon.entries,
                 selected = state.horizon,
-                optionLabel = { stringResource(it.labelRes()) },
+                label = { stringResource(it.labelRes()) },
                 onSelect = onHorizonSelect
             )
         }
         QuestionSection(stringResource(R.string.riskprofile_q_reaction)) {
-            ChoiceChipRow(
+            AnswerChips(
                 options = DownturnReaction.entries,
                 selected = state.reaction,
-                optionLabel = { stringResource(it.labelRes()) },
+                label = { stringResource(it.labelRes()) },
                 onSelect = onReactionSelect
             )
         }
         QuestionSection(stringResource(R.string.riskprofile_q_goal)) {
-            ChoiceChipRow(
+            AnswerChips(
                 options = PrimaryGoal.entries,
                 selected = state.goal,
-                optionLabel = { stringResource(it.labelRes()) },
+                label = { stringResource(it.labelRes()) },
                 onSelect = onGoalSelect
             )
         }
@@ -225,4 +225,18 @@ fun PrimaryGoal.labelRes(): Int = when (this) {
     PrimaryGoal.BEVARA -> R.string.risk_goal_bevara
     PrimaryGoal.BALANSERAD -> R.string.risk_goal_balanserad
     PrimaryGoal.MAXIMAL_TILLVAXT -> R.string.risk_goal_maximal_tillvaxt
+}
+
+/**
+ * Ett svar på en enkätfråga: android-ui:s [ChoiceChips] som bryts på flera rader, så inget alternativ klipps.
+ * Ingen är vald förrän frågan besvarats, därför är valet nullbart här.
+ */
+@Composable
+private fun <T : Any> AnswerChips(options: List<T>, selected: T?, label: @Composable (T) -> String, onSelect: (T) -> Unit) {
+    ChoiceChips<T?>(
+        options = options,
+        selected = selected,
+        onSelect = { answer -> answer?.let(onSelect) },
+        label = { answer -> answer?.let { label(it) }.orEmpty() }
+    )
 }

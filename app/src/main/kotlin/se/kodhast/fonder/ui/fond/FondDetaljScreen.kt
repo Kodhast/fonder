@@ -35,7 +35,6 @@ import se.kodhast.fonder.ui.components.AnalysisGuidanceCard
 import se.kodhast.fonder.ui.components.AnalysisStatusBanner
 import se.kodhast.fonder.ui.components.ApproxTaxRow
 import se.kodhast.fonder.ui.components.ExpandableInfoRow
-import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.StatusDot
@@ -50,6 +49,7 @@ import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityDetailScreen
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.components.GroupLabel
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.SectionHeader
@@ -209,11 +209,21 @@ private fun ColumnScope.FondDetaljSections(
     // Allt förklarande material ligger hopfällt (ANA-10): analysen och ordlistan är referens man
     // slår upp, inte det man öppnar kortet för.
     if (fund.analysis != null) {
-        ExpandableSection(title = stringResource(R.string.analys_section_title)) {
+        var analysisExpanded by rememberSaveable { mutableStateOf(false) }
+        Foldout(
+            title = stringResource(R.string.analys_section_title),
+            expanded = analysisExpanded,
+            onToggle = { analysisExpanded = !analysisExpanded }
+        ) {
             AnalysisSection(analysis = fund.analysis)
         }
     }
-    ExpandableSection(title = stringResource(R.string.analys_glossary_title)) {
+    var glossaryExpanded by rememberSaveable { mutableStateOf(false) }
+    Foldout(
+        title = stringResource(R.string.analys_glossary_title),
+        expanded = glossaryExpanded,
+        onToggle = { glossaryExpanded = !glossaryExpanded }
+    ) {
         AnalysisGlossary()
     }
     if (fund.isin == null) {

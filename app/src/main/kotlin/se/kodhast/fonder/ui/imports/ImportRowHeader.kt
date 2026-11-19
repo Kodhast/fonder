@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.Fund
-import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.components.CheckRow
+import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 

@@ -32,7 +32,6 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.RealizedSale
 import se.kodhast.fonder.domain.usecase.TaxCalc
 import se.kodhast.fonder.ui.components.ApproxTaxRow
-import se.kodhast.fonder.ui.components.ChoiceChipRow
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
@@ -41,6 +40,7 @@ import se.kodhast.ui.common.toListUiState
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppCardStyle
+import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.ConfirmDialog
 import se.kodhast.ui.components.DateField
@@ -122,11 +122,11 @@ fun TransaktionerContent(
         modifier = modifier,
         onRetry = onRetry,
         filter = {
-            ChoiceChipRow(
-                options = HandelseFilter.entries,
-                selected = state.filter,
-                optionLabel = { stringResource(it.labelRes()) },
-                onSelect = onFilterSelect
+            val filters = HandelseFilter.entries
+            AppSegmentedChoice(
+                options = filters.map { stringResource(it.labelRes()) },
+                selectedIndex = filters.indexOf(state.filter),
+                onSelect = { onFilterSelect(filters[it]) }
             )
         },
         header = if (state.showRealizedCard) {

@@ -29,16 +29,16 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.domain.usecase.MoneyFormat
-import se.kodhast.fonder.ui.components.ChoiceChipRow
 import se.kodhast.fonder.ui.components.ImportCompleteDialog
-import se.kodhast.fonder.ui.components.LoadingDialog
 import se.kodhast.fonder.ui.transaktioner.labelRes
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppIconButton
+import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.components.LoadingDialog
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -120,7 +120,7 @@ fun ImportHoldingsScreen(
     if (state.loading) {
         LoadingDialog(
             title = stringResource(R.string.import_loading_title),
-            body = stringResource(R.string.import_loading_body)
+            message = stringResource(R.string.import_loading_body)
         )
     }
 }
@@ -163,11 +163,11 @@ private fun ImportRowCard(
                 modifier = Modifier.fillMaxWidth().padding(top = Spacing.s)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    ChoiceChipRow(
-                        options = TransactionType.entries,
-                        selected = occasion.type,
-                        optionLabel = { type -> stringResource(type.labelRes()) },
-                        onSelect = { type -> onOccasionTypeChange(index, type) }
+                    val types = TransactionType.entries
+                    AppSegmentedChoice(
+                        options = types.map { type -> stringResource(type.labelRes()) },
+                        selectedIndex = types.indexOf(occasion.type),
+                        onSelect = { onOccasionTypeChange(index, types[it]) }
                     )
                     DateField(
                         label = stringResource(R.string.import_date_label),

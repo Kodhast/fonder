@@ -11,20 +11,21 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.repository.SuggestionRecordRepository
 import se.kodhast.fonder.domain.usecase.FacitRad
 import se.kodhast.fonder.domain.usecase.FacitSnapshot
 import se.kodhast.fonder.domain.usecase.FacitSummary
 import se.kodhast.fonder.domain.usecase.SwitchOutcomeCalc
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsListError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.itemsOrEmpty
-import se.kodhast.fonder.ui.common.restartOn
 import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.ListUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsListError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.itemsOrEmpty
+import se.kodhast.ui.common.restartOn
 import se.kodhast.ui.common.toListUiState
 
 @Immutable
@@ -94,7 +95,7 @@ class FacitViewModel @Inject constructor(
     val uiState: StateFlow<FacitUiState> =
         facitSummary.observe().map { snapshot ->
             FacitUiState().withFacit(snapshot)
-        }.catchAsListError { FacitUiState(list = it) }.restartOn(retrySignal).combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
+        }.catchAsListError(AppErrors) { FacitUiState(list = it) }.restartOn(retrySignal).combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
             // Eget led, inte en gren i combinen ovan: körstatusen kommer från WorkManager och
             // ska inte kunna räkna om facit bara för att ett jobb startade (samma gräns som
             // HemViewModel drar).

@@ -4,46 +4,44 @@ import app.cash.turbine.test
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.common.DataError
-import se.kodhast.ui.common.ListUiState
-import se.kodhast.ui.common.UiError
-import se.kodhast.ui.common.toListUiState
+import se.kodhast.ui.common.catchAsDetailError
+import se.kodhast.ui.common.catchAsListError
 
-/** Fonders hjälpare kring android-ui:s [ListUiState] för listskärmar med mer än listan i tillståndet (NFR-6). */
+/** Fonders felmappning ([AppErrors]) kopplad till android-ui:s tillståndshjälpare (NFR-6). */
 class ListStatesTest {
 
     @Test
-    fun `raderna finns bara i innehållsläget`() {
-        assertEquals(listOf("a", "b"), listOf("a", "b").toListUiState().itemsOrEmpty())
-        assertTrue(ListUiState.Loading.itemsOrEmpty().isEmpty())
-        assertTrue(ListUiState.Empty.itemsOrEmpty().isEmpty())
-        assertTrue(ListUiState.Error(UiError(DataError.Unknown, 0)).itemsOrEmpty().isEmpty())
-    }
-
-    @Test
-    fun `felet finns bara i felläget`() {
-        val error = UiError(DataError.Database, 0)
-        assertSame(error, ListUiState.Error(error).errorOrNull())
-        assertNull(ListUiState.Loading.errorOrNull())
-        assertNull(ListUiState.Empty.errorOrNull())
-        assertNull(listOf(1).toListUiState().errorOrNull())
-    }
-
-    @Test
-    fun `ett fel i källan blir skärmens tillstånd med ett mappat fel i stället för en krasch`() = runTest {
+    fun `ett fel i källan blir skärmens tillstånd med appens mappade fel i stället för en krasch`() = runTest {
         val source = flow<String> {
             emit("laddad")
             throw DataError.Database
         }
 
-        source.catchAsListError { "fel: ${it.error.cause}" }.test {
+        source.catchAsListError(AppErrors) { "fel: ${it.error.cause}" }.test {
             assertEquals("laddad", awaitItem())
             assertEquals("fel: ${DataError.Database}", awaitItem())
             awaitComplete()
         }
+    }
+
+    @Test
+    fun `ett fel i en detaljskärms källa mappas på samma sätt`() = runTest {
+        val source = flow<String> { throw DataError.Network }
+
+        source.catchAsDetailError(AppErrors) { "fel: ${it.error.cause}" }.test {
+            assertEquals("fel: ${DataError.Network}", awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun `felet mappas till appens text och försök igen finns utom för saknad post`() {
+        assertEquals(DataError.Database.toMessage(), AppErrors.map(DataError.Database).message)
+        assertTrue(AppErrors.map(DataError.Network).retryable)
+        assertTrue(!AppErrors.notFound().retryable)
     }
 }

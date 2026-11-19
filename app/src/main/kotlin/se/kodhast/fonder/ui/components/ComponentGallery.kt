@@ -57,23 +57,28 @@ import se.kodhast.ui.components.AppFloatingToolbar
 import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.AppMenuItem
 import se.kodhast.ui.components.AppPullToRefresh
+import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.CardSegment
 import se.kodhast.ui.components.CheckRow
+import se.kodhast.ui.components.ChoiceChips
 import se.kodhast.ui.components.ConfirmDialog
 import se.kodhast.ui.components.DateField
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.LoadErrorState
+import se.kodhast.ui.components.LoadingDialog
 import se.kodhast.ui.components.LocalTopBarStatus
 import se.kodhast.ui.components.MakerMark
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SectionHeader
+import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.SwitchRow
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
@@ -92,6 +97,7 @@ import se.kodhast.ui.theme.Tone
  */
 @Composable
 fun ComponentGallery(onBack: () -> Unit, modifier: Modifier = Modifier) {
+    var chartExpanded by remember { mutableStateOf(false) }
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -121,7 +127,11 @@ fun ComponentGallery(onBack: () -> Unit, modifier: Modifier = Modifier) {
             GallerySection(R.string.gallery_section_navigation) { Navigation() }
             GallerySection(R.string.gallery_section_dialogs) { Dialogs() }
             GallerySection(R.string.gallery_section_library) { Library() }
-            ExpandableSection(title = stringResource(R.string.gallery_section_chart), titleStyle = AppTheme.typography.headline) {
+            Foldout(
+                title = stringResource(R.string.gallery_section_chart),
+                expanded = chartExpanded,
+                onToggle = { chartExpanded = !chartExpanded }
+            ) {
                 Chart()
             }
         }
@@ -236,8 +246,11 @@ private fun ColumnScope.CardsAndRows() {
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
         SignalLevel.entries.forEach { StatusDot(it) }
     }
-    Label("ExpandableSection · ExpandableInfoRow")
-    ExpandableSection(title = "Ordlista") { Text("Innehållet visas när sektionen fälls ut.") }
+    Label("Foldout (android-ui) · ExpandableInfoRow")
+    var glossaryExpanded by remember { mutableStateOf(false) }
+    Foldout(title = "Ordlista", expanded = glossaryExpanded, onToggle = { glossaryExpanded = !glossaryExpanded }) {
+        Text("Innehållet visas när sektionen fälls ut.")
+    }
     ExpandableInfoRow(explanation = "Årstakten är den genomsnittliga avkastningen per år sedan första köpet.") {
         Text("Årstakt 6,1 %")
     }
@@ -256,7 +269,7 @@ private fun ColumnScope.Fields() {
     Label("AppTextField (android-ui)")
     AppTextField(amount, { amount = it }, label = "Belopp", suffix = "kr", helper = "Courtage ingår")
     AppTextField("SE00", {}, label = "ISIN", error = "ISIN har 12 tecken")
-    Label("DateField (android-ui) · SelectField")
+    Label("DateField · SelectField (android-ui)")
     DateField(label = "Affärsdag", date = date, onDateChange = { date = it })
     SelectField(
         label = "Typ",
@@ -266,8 +279,10 @@ private fun ColumnScope.Fields() {
         onSelect = { type = it },
         clearOptionLabel = "Alla"
     )
-    Label("ChoiceChipRow · RiskLevelPicker")
-    ChoiceChipRow(options = listOf("Ljust", "Mörkt", "Auto"), selected = mode, optionLabel = { it }, onSelect = { mode = it })
+    Label("AppSegmentedChoice · ChoiceChips (android-ui) · RiskLevelPicker")
+    val modes = listOf("Ljust", "Mörkt", "Auto")
+    AppSegmentedChoice(options = modes, selectedIndex = modes.indexOf(mode), onSelect = { mode = modes[it] })
+    ChoiceChips(options = modes, selected = mode, onSelect = { mode = it }, label = { it })
     RiskLevelPicker(selected = level, onSelect = { level = it }, marked = 5, markedDescription = "Säljfondens nivå")
     Label("CheckRow · SwitchRow (android-ui) · FollowedToggleRow")
     CheckRow("Global Indexfond A", checked, { checked = it }, subtitle = "120,5 andelar", done = false, tinted = false)
@@ -381,7 +396,7 @@ private fun ColumnScope.Dialogs() {
                 delay(LOADING_DIALOG_MS)
                 close()
             }
-            LoadingDialog(title = "Importerar", body = "Läser avräkningsnotorna …")
+            LoadingDialog(title = "Importerar", message = "Läser avräkningsnotorna …")
         }
 
         GalleryDialog.Import -> ImportCompleteDialog(importedCount = 7, onDismiss = close)
