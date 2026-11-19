@@ -42,6 +42,7 @@ import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.APP_HEADER_TAG
 import se.kodhast.ui.components.EntityDetailScreen
+import se.kodhast.ui.components.SettingsPage
 
 /**
  * Fonders navigationsram (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s `AppNavHost` med Fonders
@@ -93,7 +94,14 @@ class FonderNavHostTest {
                 }
             }
         }
-        tabTitle(key)?.let { TabFrame(it, body) } ?: body()
+        when {
+            tabTitle(key) != null -> TabFrame(tabTitle(key)!!, body)
+
+            // Inställningar står på bibliotekets SettingsPage och ritar sin egen topprad (#266 F4).
+            key == SettingsKey -> SettingsPage("Inställningar", onBack = { backStack.popIfTop(key) }) { body() }
+
+            else -> body()
+        }
     }
 
     /**
@@ -432,7 +440,14 @@ class FonderNavHostTest {
     /** Skärmdumpens ersättare – bara skärmens namn, som före Navigation 3. */
     private fun stubEntryWithoutTaps(key: AppKey): NavEntry<AppKey> = NavEntry(key) {
         val body: @Composable () -> Unit = { Text("skärm:${name(key)}") }
-        tabTitle(key)?.let { TabFrame(it, body) } ?: body()
+        when {
+            tabTitle(key) != null -> TabFrame(tabTitle(key)!!, body)
+
+            // Inställningar står på bibliotekets SettingsPage och ritar sin egen topprad (#266 F4).
+            key == SettingsKey -> SettingsPage("Inställningar", onBack = { backStack.popIfTop(key) }) { body() }
+
+            else -> body()
+        }
     }
 
     class StubViewModel : ViewModel() {

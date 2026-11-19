@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.ui.theme.FonderTheme
 
 /**
- * Inställningarnas väg till komponentgalleriet: kortet finns bara när navigeringen ger en väg dit
+ * Inställningarnas väg till komponentgalleriet: raden finns bara när navigeringen ger en väg dit
  * (debug-bygget, `BuildConfig.DEBUG` i `AppNavigation`) och öppnar galleriet. Kodhästs signatur
  * står sist (SET-9).
  */
@@ -32,16 +32,16 @@ class SettingsGalleryEntryTest {
     fun `utan väg till galleriet visas inget kort`() {
         rule.setContent { FonderTheme { SettingsContent(state = SettingsUiState()) } }
 
-        rule.onNodeWithText("Visa komponenter").assertDoesNotExist()
+        rule.onNodeWithText("Komponenter").assertDoesNotExist()
     }
 
     @Test
-    fun `kortet öppnar galleriet`() {
+    fun `raden öppnar galleriet`() {
         var opened = 0
         rule.setContent { FonderTheme { SettingsContent(state = SettingsUiState(), onOpenGallery = { opened++ }) } }
 
-        rule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToNode(hasText("Visa komponenter"))
-        rule.onNodeWithText("Visa komponenter").performClick()
+        rule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).performScrollToNode(hasText("Komponenter"))
+        rule.onNodeWithText("Komponenter").performClick()
 
         assertEquals(1, opened)
     }

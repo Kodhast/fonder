@@ -119,8 +119,6 @@ fun FonderPage(key: AppKey, backStack: AppBackStack, content: @Composable () -> 
 
 /** Rubriken för en underskärm utan ram ([SubPage]); `null` för flikarna och skärmarna på en ram. */
 fun subPageTitle(key: AppKey): Int? = when (key) {
-    SettingsKey -> R.string.nav_settings
-
     ImportHoldingsKey -> R.string.import_title
 
     ImportOrdersKey -> R.string.import_orders_title
@@ -129,7 +127,7 @@ fun subPageTitle(key: AppKey): Int? = when (key) {
 
     is SwitchWatchKey -> R.string.switch_watch_title
 
-    is TabKey, is FondDetaljKey, FundSearchKey, is TransactionFormKey, RiskProfileKey, BenchmarkPickerKey,
+    is TabKey, SettingsKey, is FondDetaljKey, FundSearchKey, is TransactionFormKey, RiskProfileKey, BenchmarkPickerKey,
     is SwitchWatchPickerKey, ComponentGalleryKey -> null
 }
 
@@ -200,8 +198,9 @@ fun fonderEntries(
             viewModel = hiltViewModel(tabOwner)
         )
     }
-    entry<SettingsKey> {
+    entry<SettingsKey> { key ->
         SettingsScreen(
+            onBack = { backStack.popIfTop(key) },
             onImportHoldings = { backStack.push(ImportHoldingsKey) },
             onImportOrders = { backStack.push(ImportOrdersKey) },
             onOpenRiskProfile = { backStack.push(RiskProfileKey) },

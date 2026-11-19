@@ -9,7 +9,7 @@ import se.kodhast.fonder.domain.model.AccountType
 import se.kodhast.fonder.testing.captureLightAndDark
 
 /**
- * Skärmdump ljust + mörkt av Inställningar: korten överst (tema, riskprofil, kontotyp, jämförelse, facit).
+ * Skärmdump ljust + mörkt av Inställningar: grupperna överst (konto, utseende, portfölj).
  * Vaktar kortens kontur, rubriker och knappar (UI-13).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -18,7 +18,7 @@ class SettingsScreenshotTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    private val state = SettingsUiState(accountType = AccountType.ISK_KF, chosenBenchmarkName = "Global Indexfond A", priceRefreshWorking = true)
+    private val state = SettingsUiState(accountType = AccountType.ISK_KF, chosenBenchmarkName = "Global Indexfond A")
 
     @Test
     fun `skärmdump av korten överst`() = composeRule.captureLightAndDark("SettingsScreen_top", animated = true) {
