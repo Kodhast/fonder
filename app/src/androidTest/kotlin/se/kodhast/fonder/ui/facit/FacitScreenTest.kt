@@ -1,6 +1,7 @@
 package se.kodhast.fonder.ui.facit
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -98,6 +100,9 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("Fond A → Fond B").assertExists()
+        // Raderna är lazy: på emulatorns 320×640 ligger andra kortet under summeringen och är inte
+        // komponerat förrän listan rullats dit (UI-5) – värderaderna blev högre med android-ui:s ValueRow.
+        composeRule.onNodeWithTag(FACIT_LIST_TEST_TAG).performScrollToNode(hasText("Fond C → Fond D"))
         composeRule.onNodeWithText("Fond C → Fond D").assertExists()
     }
 
