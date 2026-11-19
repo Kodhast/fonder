@@ -17,7 +17,6 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.FundCompany
 import se.kodhast.fonder.ui.components.RiskBadge
-import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.components.copyableFundName
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppTextField
@@ -25,6 +24,7 @@ import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyContent
 import se.kodhast.ui.components.EntityListScreen
 import se.kodhast.ui.components.ItemRow
+import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.Spacing
 

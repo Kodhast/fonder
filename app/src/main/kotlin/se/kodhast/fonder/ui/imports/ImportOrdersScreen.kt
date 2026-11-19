@@ -29,13 +29,13 @@ import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.ImportedOrderTransaction
 import se.kodhast.fonder.domain.usecase.SwitchOption
 import se.kodhast.fonder.ui.components.ImportCompleteDialog
-import se.kodhast.fonder.ui.components.LoadingDialog
 import se.kodhast.fonder.ui.transaktioner.SwitchDecisionField
 import se.kodhast.fonder.ui.transaktioner.labelRes
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.components.LoadingDialog
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
@@ -99,7 +99,7 @@ fun ImportOrdersScreen(
     if (state.loading) {
         LoadingDialog(
             title = stringResource(R.string.import_orders_loading_title),
-            body = stringResource(R.string.import_orders_loading_body)
+            message = stringResource(R.string.import_orders_loading_body)
         )
     }
 }

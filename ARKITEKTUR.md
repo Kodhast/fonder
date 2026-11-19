@@ -148,17 +148,16 @@ ui/
 ├── riskprofil/   RiskProfilScreen (EntityEditScreen) + ViewModel (enkät + målfördelning, SET-3, UI-15)
 ├── bytesfonster/ SwitchWatchScreen + ViewModel (pågående byte: jämförelse av bevakade alternativ mellan
 │                 sälj och köp, ANA-12/ANA-13, #114)
-├── common/       DataErrorMessage (DataError.toMessage(), felens svenska texter) · ListStates (ListUiState-hjälpare:
-│                 itemsOrEmpty, errorOrNull, catchAsListError – NFR-6/#173) · DetailStates (DetailUiState-
-│                 hjälpare: valueOrNull, errorOrNull, catchAsDetailError) · Retry (RetrySignal + restartOn:
-│                 "Försök igen" efter ett läsfel, NFR-6/#174)
+├── common/       DataErrorMessage (DataError.toMessage(), felens svenska texter). Tillståndshjälparna (itemsOrEmpty,
+│                 valueOrNull, errorOrNull, catchAsListError/catchAsDetailError(AppErrors), RetrySignal + restartOn,
+│                 NFR-6/#173/#174) är android-ui:s ui-common (3.1.0, Fonder 1.8.0)
 ├── navigation/   AppNavigation (android-ui:s AppNavHost med AppTransitions, flikraden och plusmenyn; FonderPage
 │                 lägger toppraden runt skärmar utan ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
 │                 sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
 │                 Pages (SubPage med AppTopBar; flikarna ritar sitt sidhuvud i ramen) · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
-├── components/   Delade komponenter (CenteredState, SelectField, LoadingDialog, PeriodRow, AnalysisStatusBanner/StatusDot,
-│                 ChoiceChipRow — val-chiprad, #68 ·
-│                 ExpandableSection/ExpandableInfoRow — utfällning, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
+├── components/   Delade komponenter (CenteredState, PeriodRow, AnalysisStatusBanner/StatusDot, RiskLevelPicker,
+│                 copyableFundName — Fonders texter på android-ui:s copyOnLongPress ·
+│                 ExpandableInfoRow — förklaringsrad på android-ui:s Foldout, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
 │                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0;
 │                 topprad, flikrad med plusknapp, kryssrad, tomt läge och dra ned sedan 1.2.0)
 ├── diagram/      Delade diagram (FundLineChart — en eller flera indexerade serier, ANA-11/#85)
@@ -186,7 +185,7 @@ Compose → ViewModel (StateFlow<UiState>) → Repository → Room / DataStore
 **Tillstånd och fel (NFR-6, #173):** listskärmarnas tillstånd (Händelser, Beslut, Facit, Fondsök,
 Portfölj) har listan som ett `ListUiState<T>`-fält från android-ui:s `ui-common` – laddning, tomt, fel
 eller innehåll – bredvid skärmens övriga fält (filter, summeringar, körstatus). Ett fel i källan
-fångas med `catchAsListError` och blir `ListUiState.Error` i stället för en krasch. Felmappningen
+fångas med `catchAsListError(AppErrors)` och blir `ListUiState.Error` i stället för en krasch. Felmappningen
 finns på ett ställe: `DataError.of` översätter Room/SQLite till `Database`, ett I/O-fel från en källa
 till `Network` och resten till `Unknown`; importerna sätter sina egna (`ImportUnreadable`,
 `ImportEmpty`, `ImportNoTransactions`). `AppErrors` gör ett `UiError` av det med texten ur
@@ -197,7 +196,7 @@ ViewModelns `RetrySignal` och `restartOn` efter felfångsten, #174) – Händels
 
 Detaljskärmarna (Översikt, Fonddetalj, Pågående byte) har det lästa som ett `DetailUiState<T>`-fält
 (`HemPortfolio`, `FundDetail`, `SwitchWatchDetail`) bredvid körstatus, förslag och engångshändelser;
-`catchAsDetailError` sist i flödet gör ett fel i källan till `DetailUiState.Error`, och skärmen visar
+`catchAsDetailError(AppErrors)` sist i flödet gör ett fel i källan till `DetailUiState.Error`, och skärmen visar
 felet (`LoadErrorState` med Försök igen på Översikt) före allt annat. Fonddetalj står på android-ui:s detaljram
 `EntityDetailScreen`: fältet `fund` är ramens tillstånd – laddning, läsfel med
 Försök igen och en fond som inte finns längre (`DataError.NotFound`, utan knapp) – och fondnamnet står i ramens

@@ -41,14 +41,14 @@ import se.kodhast.fonder.domain.model.SwitchWatchCloseReason
 import se.kodhast.fonder.domain.usecase.SwitchPlanCalc
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.domain.usecase.TargetLevelPreselection
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsDetailError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.restartOn
-import se.kodhast.fonder.ui.common.valueOrNull
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsDetailError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.restartOn
+import se.kodhast.ui.common.valueOrNull
 
 /** Kurshistoriken för en bevakad kandidat — samma tre lägen som ANA-11:s jämförelse. */
 sealed interface CandidateHistory {
@@ -368,7 +368,7 @@ class SwitchWatchViewModel @AssistedInject constructor(
         SwitchWatchUiState(watch = DetailUiState.Content(detail), fillingCandidates = filling, message = msg)
     }
         // Ett läsfel i bevakningen visas som fel i stället för att krascha skärmen (NFR-6).
-        .catchAsDetailError { SwitchWatchUiState(watch = it) }
+        .catchAsDetailError(AppErrors) { SwitchWatchUiState(watch = it) }
         .restartOn(retrySignal)
         .stateIn(
             scope = viewModelScope,

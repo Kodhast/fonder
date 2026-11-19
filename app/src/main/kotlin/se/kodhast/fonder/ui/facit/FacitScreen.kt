@@ -12,6 +12,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,13 +32,13 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchOutcomeCalc
 import se.kodhast.fonder.ui.components.CardTitleRow
 import se.kodhast.fonder.ui.components.CenteredState
-import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.FollowedToggleRow
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -300,8 +303,8 @@ private fun HorizonRow(entry: SwitchOutcomeCalc.HorizonSummary, modifier: Modifi
 /**
  * Ett inspelat förslag. Hopfällbart av samma skäl som sälj-korten i Sålda fonder (SLD-4) —
  * stängt visas fonderna, sorten och datumet och utfallet, utfällt detaljerna. Byggt på den delade
- * [ExpandableSection] (regel 4): rubrik och undertext i rubrikraden (knapp med "Hopfälld"/"Utfälld",
- * UI-3), meravkastningen alltid synlig under den (`summary`) och detaljerna i det som fälls ut.
+ * android-ui:s [Foldout] (regel 4): rubrik, undertext och meravkastning i rubrikraden (knapp med
+ * "Hopfälld"/"Utfälld", UI-3) – meravkastningen alltid synlig – och detaljerna i det som fälls ut.
  * Läget sparas med `rememberSaveable` (UI-9).
  *
  * "Genomförd" ligger här *och* på Beslut (HEM-8): planen på Beslut försvinner efter
@@ -313,11 +316,15 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
     // Kortet utan inre luft: luften ovanför och under rubriken ligger innanför rubrikradens rundade
     // tryckyta, så att hörnen inte klipper rubrikens och undertextens första bokstäver. Sidornas och
     // nederkantens luft ligger utanför den, på sektionen.
+    var expanded by rememberSaveable { mutableStateOf(false) }
     AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = 6.dp), style = flushCardStyle) {
-        ExpandableSection(
+        Foldout(
+            title = "",
+            expanded = expanded,
+            onToggle = { expanded = !expanded },
             modifier = Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.l),
             header = {
-                Column(modifier = Modifier.padding(top = Spacing.l, bottom = Spacing.s)) {
+                Column(modifier = Modifier.weight(1f).padding(top = Spacing.l, bottom = Spacing.s)) {
                     Text(
                         stringResource(
                             R.string.format_facit_row_funds,
@@ -337,37 +344,35 @@ private fun FacitRadCard(row: FacitRad, onFollowedChange: (Long, Boolean) -> Uni
                         style = AppTheme.typography.itemSubtitle,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    // Utfallet via den delade PeriodRow (regel 4): procent + kronor, färgat efter
+                    // procenten. Är raden inte utvärderad ännu är båda talen null och komponenten
+                    // markerar den som otillräcklig data — aldrig som 0, som lästs som "gav ingenting".
+                    // Mätdagen står under etiketten (issue #197): båda fonderna mäts samma dag, och utan en
+                    // sådan dag efter förslaget är raden ej utvärderad. Saknar förslaget ett utgångsläge
+                    // (NAV ≤ 0 vid förslaget) blir det aldrig utvärderat — då "Otillräcklig data", inte "väntar".
+                    val measuredAt = row.outcome.measuredAtEpochDay
+                    val days = row.outcome.days
+                    val hasBaseNav = row.outcome.hasBaseNav
+                    PeriodRow(
+                        label = stringResource(R.string.facit_row_excess_label),
+                        amount = row.outcome.excessKr,
+                        fraction = row.outcome.excessReturn,
+                        stackValue = true,
+                        insufficientText = if (hasBaseNav) stringResource(R.string.facit_row_not_evaluated) else null,
+                        supportingLabel = when {
+                            measuredAt != null && days != null -> pluralStringResource(
+                                R.plurals.format_facit_measured_at,
+                                days.toInt(),
+                                LocalDate.ofEpochDay(measuredAt).format(dateFormatter),
+                                days.toInt()
+                            )
+
+                            hasBaseNav -> stringResource(R.string.facit_row_waiting_same_day)
+
+                            else -> null
+                        }
+                    )
                 }
-            },
-            summary = {
-                // Utfallet via den delade PeriodRow (regel 4): procent + kronor, färgat efter
-                // procenten. Är raden inte utvärderad ännu är båda talen null och komponenten
-                // markerar den som otillräcklig data — aldrig som 0, som lästs som "gav ingenting".
-                // Mätdagen står under etiketten (issue #197): båda fonderna mäts samma dag, och utan en
-                // sådan dag efter förslaget är raden ej utvärderad. Saknar förslaget ett utgångsläge
-                // (NAV ≤ 0 vid förslaget) blir det aldrig utvärderat — då "Otillräcklig data", inte "väntar".
-                val measuredAt = row.outcome.measuredAtEpochDay
-                val days = row.outcome.days
-                val hasBaseNav = row.outcome.hasBaseNav
-                PeriodRow(
-                    label = stringResource(R.string.facit_row_excess_label),
-                    amount = row.outcome.excessKr,
-                    fraction = row.outcome.excessReturn,
-                    stackValue = true,
-                    insufficientText = if (hasBaseNav) stringResource(R.string.facit_row_not_evaluated) else null,
-                    supportingLabel = when {
-                        measuredAt != null && days != null -> pluralStringResource(
-                            R.plurals.format_facit_measured_at,
-                            days.toInt(),
-                            LocalDate.ofEpochDay(measuredAt).format(dateFormatter),
-                            days.toInt()
-                        )
-
-                        hasBaseNav -> stringResource(R.string.facit_row_waiting_same_day)
-
-                        else -> null
-                    }
-                )
             }
         ) {
             Column(modifier = Modifier.padding(top = Spacing.s)) {

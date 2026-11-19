@@ -33,10 +33,10 @@ import se.kodhast.fonder.data.repository.TransactionRepository
 import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.model.FundCompany
 import se.kodhast.fonder.domain.usecase.FundNameKey
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.itemsOrEmpty
 import se.kodhast.ui.common.ListUiState
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.itemsOrEmpty
 import se.kodhast.ui.common.toListUiState
 
 @Immutable

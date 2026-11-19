@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.datastore.PreferencesRepository
 import se.kodhast.fonder.data.repository.FundMetadataRepository
 import se.kodhast.fonder.data.repository.SuggestionDismissalRepository
@@ -34,15 +35,15 @@ import se.kodhast.fonder.domain.usecase.SwitchEffectCalc
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.SwitchRow
 import se.kodhast.fonder.domain.usecase.SwitchRows
-import se.kodhast.fonder.ui.common.RetrySignal
-import se.kodhast.fonder.ui.common.catchAsListError
-import se.kodhast.fonder.ui.common.errorOrNull
-import se.kodhast.fonder.ui.common.restartOn
 import se.kodhast.fonder.ui.components.FundFacts
 import se.kodhast.fonder.worker.BackgroundWork
 import se.kodhast.fonder.worker.FundPriceRefreshScheduler
 import se.kodhast.ui.common.ListUiState
+import se.kodhast.ui.common.RetrySignal
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.catchAsListError
+import se.kodhast.ui.common.errorOrNull
+import se.kodhast.ui.common.restartOn
 import se.kodhast.ui.common.toListUiState
 
 @Immutable
@@ -208,7 +209,7 @@ class BeslutViewModel @Inject constructor(
         // finns förslaget inte längre stängs kortet — "Jag har sålt" ska aldrig gälla ett gammalt förslag.
         val current = openInfo?.let { open -> state.switches.active.firstOrNull { it.key == open.row.key } as? SwitchRow.Suggested }
         state.copy(info = current?.let { openInfo.copy(row = it) })
-    }.catchAsListError { BeslutUiState(list = it) }.restartOn(retrySignal).combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
+    }.catchAsListError(AppErrors) { BeslutUiState(list = it) }.restartOn(retrySignal).combine(fundPriceRefreshScheduler.observeRunningWork()) { state, running ->
         // Eget led: körstatusen kommer från WorkManager och ska inte kunna räkna om besluten.
         state.copy(
             pricesWorking = BackgroundWork.PRICE_REFRESH in running,

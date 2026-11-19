@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -119,7 +120,7 @@ class ImportOrdersScreenTest {
         composeRule.onNodeWithText(
             "Säljen importeras före köpen, så ett köp kan höra till ett byte som ett sälj i samma import startar."
         ).assertIsDisplayed()
-        composeRule.onNode(hasText("Byte") and hasText("Byte 1 · Sälj Swedbank Robur Ny Teknik → Köp Länsförsäkringar Global Indexnära"))
+        composeRule.onNode(hasContentDescription("Byte, Byte 1 · Sälj Swedbank Robur Ny Teknik → Köp Länsförsäkringar Global Indexnära"))
             .assertExists()
         composeRule.onNodeWithText("Importera 3 transaktioner").assertIsEnabled()
     }

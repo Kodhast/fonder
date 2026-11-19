@@ -1,5 +1,10 @@
 package se.kodhast.fonder.ui.transaktioner
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
@@ -17,7 +22,9 @@ import se.kodhast.fonder.domain.usecase.SwitchChoicesSource
 import se.kodhast.fonder.domain.usecase.SwitchDecision
 import se.kodhast.fonder.domain.usecase.SwitchOption
 import se.kodhast.fonder.domain.usecase.SwitchQuestion
-import se.kodhast.fonder.ui.components.SelectField
+import se.kodhast.ui.components.SelectField
+import se.kodhast.ui.theme.AppTheme
+import se.kodhast.ui.theme.Spacing
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
@@ -185,9 +192,9 @@ private fun switchHelpText(field: SwitchFieldUi, fundName: String?): String? {
 }
 
 /**
- * Bytesväljaren (BYT-2): den delade [SelectField] med etiketten "Byte" vid sälj och "Hör till
- * byte" vid köp, "Välj ett svar" när frågan saknar förval, och förklaringen som stödtext — så
- * skärmläsaren läser fältets namn, valet och vad valet gör i ett svep. Ritar ingenting när det
+ * Bytesväljaren (BYT-2): android-ui:s [SelectField] med etiketten "Byte" vid sälj och "Hör till
+ * byte" vid köp, "Välj ett svar" när frågan saknar förval, och förklaringen av vad valet gör som
+ * text under fältet. Ritar ingenting när det
  * bara finns "Inget byte".
  */
 @Composable
@@ -200,14 +207,24 @@ fun SwitchDecisionField(
     if (field.hidden) return
     // SelectFields etikett är ingen composable — texterna slås upp här, en gång per alternativ.
     val texts = field.options.associateWith { switchOptionText(it.label) }
-    SelectField(
-        label = stringResource(if (field.type == TransactionType.SALJ) R.string.switch_field_sale_label else R.string.switch_field_buy_label),
-        options = field.options,
-        selected = field.selected,
-        optionLabel = { texts.getValue(it) },
-        onSelect = { picked -> picked?.let { onSelect(it.option) } },
-        placeholder = stringResource(R.string.switch_field_required_placeholder),
-        supportingText = switchHelpText(field, fundName),
-        modifier = modifier
-    )
+    // Förklaringen står som egen text under fältet: bibliotekets SelectField läser bara fältets namn, valet och fel
+    // för skärmläsaren, inte `supportingText`, och förklaringen är det som talar om vad valet gör.
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        SelectField(
+            label = stringResource(if (field.type == TransactionType.SALJ) R.string.switch_field_sale_label else R.string.switch_field_buy_label),
+            options = field.options,
+            selected = field.selected,
+            optionLabel = { texts.getValue(it) },
+            onSelect = { picked -> picked?.let { onSelect(it.option) } },
+            placeholder = stringResource(R.string.switch_field_required_placeholder)
+        )
+        switchHelpText(field, fundName)?.let { help ->
+            Text(
+                text = help,
+                style = AppTheme.typography.itemSubtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = Spacing.m)
+            )
+        }
+    }
 }

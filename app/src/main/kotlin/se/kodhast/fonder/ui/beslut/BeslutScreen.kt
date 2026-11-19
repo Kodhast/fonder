@@ -12,7 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -34,7 +37,6 @@ import se.kodhast.fonder.domain.usecase.SwitchEffectCalc
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.SwitchRow
 import se.kodhast.fonder.domain.usecase.SwitchRowState
-import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.FundFactsCard
 import se.kodhast.fonder.ui.components.FundFactsRow
 import se.kodhast.fonder.ui.components.RiskCard
@@ -55,6 +57,7 @@ import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityDetailScreen
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
@@ -630,7 +633,12 @@ private fun SoldLeader(watch: OpenSwitchWatch) {
  */
 @Composable
 private fun ClosedSection(rows: List<SwitchRow>, ttlDays: Long, onUndo: (SwitchPlanResolver.Suggestion) -> Unit) {
-    ExpandableSection(title = stringResource(R.string.format_beslut_closed_title, rows.size)) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    Foldout(
+        title = stringResource(R.string.format_beslut_closed_title, rows.size),
+        expanded = expanded,
+        onToggle = { expanded = !expanded }
+    ) {
         Column {
             ItemRowText(
                 title = null,

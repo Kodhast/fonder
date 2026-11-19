@@ -13,6 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.components.ConfirmDialog
+import se.kodhast.ui.components.LoadingDialog
 
 /**
  * android-ui:s [ConfirmDialog] i Fonders tema och Fonders [LoadingDialog] (UI-13) i JVM: bekräfta och
@@ -83,7 +84,7 @@ class DialogTest {
     @Test
     fun `väntedialogen visar rubrik och text`() {
         composeRule.setContent {
-            FonderTheme { LoadingDialog(title = "Importerar", body = "Matchar fonder och hämtar kurser …") }
+            FonderTheme { LoadingDialog(title = "Importerar", message = "Matchar fonder och hämtar kurser …") }
         }
 
         composeRule.onNode(isDialog()).assertExists()
@@ -104,6 +105,6 @@ class DialogTest {
 
     @Test
     fun `skärmdump av väntedialogen`() = composeRule.captureLightAndDark("LoadingDialog_import", screen = true, animated = true) {
-        LoadingDialog(title = "Importerar", body = "Matchar fonder och hämtar kurser …")
+        LoadingDialog(title = "Importerar", message = "Matchar fonder och hämtar kurser …")
     }
 }

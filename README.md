@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.7.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.8.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.8.0 | **Val, fält och hopfällbart från biblioteket** (UI-12, UI-13, UI-16, UI-19, TRX-3, android-ui 3.1.0): valen är bibliotekets – tema, kontotyp, bevakningstid, Händelsers filter och Köp/Sälj är segmentval i stället för en knappgrupp som skrollar i sidled, och riskenkätens svar och diagrammets sex perioder är chips som bryts på flera rader i stället för att klippas. Fondväljarna och importens väntedialog (nu med Kodhäst-prickarna) är bibliotekets, liksom långtrycks-kopieringen av fondnamn och de hopfällbara sektionerna (Analys, ordlistan, Avslutade och överhoppade, Facits radkort). Typen i ett förifyllt formulär från Följ visas som ett låst fält. Tillståndshjälparna (`itemsOrEmpty`, `catchAsListError`, `RetrySignal` m.fl.) kommer från `ui-common`; de lokala kopiorna är borta. |
 | 1.7.0 | **Inställningar från biblioteket** (SET-1–SET-10, UI-13): Inställningar står på bibliotekets `SettingsPage` med en grupprubrik över varje kort (Google-konto, Utseende, Portfölj, Data, Säkerhetskopiering, Farozon, Om appen). Kontot är bibliotekets kontorad med "Logga ut" som frågar först, valen (tema, kontotyp, bevakningstid) är segmentknappar, och Riskprofil, Facit och importerna är rader med pil. Ingen snurra i korten – bakgrundsjobb syns som prickarna i toppraden. Om-kortet visar versionen och Kodhästs signatur. |
 | 1.6.0 | **Översikt, Innehav och Beslut från biblioteket** (NAV-6, HEM-12, HEM-13, POR-5, POR-8, POR-9, UI-13, android-ui 3.1.0): de tre flikarna står på bibliotekets ramar och kort, som i ReseApoteket och Dagboken. En laddningsindikator i sidhuvudet i stället för en snurra per kort – ett kort vars värde är på väg säger "Hämtar …". Översikten börjar med banderollen "N beslut väntar", och kugghjulet till Inställningar sitter i dess sidhuvud. Innehav visar fonderna som en lista med perioderna på en rad, och exponeringen och riskkortets nivåer är bibliotekets staplar. Djupare skärmar har prickarna före rubriken. Värderaderna (`PeriodRow`) är bibliotekets, så de är lite större även i Facit, Händelser och fondfaktakortet. |
 | 1.5.0 | **Navigationen från biblioteket** (NAV-6, NAV-7, NAV-8, UI-14, android-ui 3.0.0): flikarna har Kodhäst-sidhuvudet med Fonders ikon och namn, och rubriken krymper när man rullar; prickarna före rubriken hoppar medan kurserna uppdateras, i stället för snurran i rubrikraden. Flikraden har en ljus ton, plusmenyns val har ikoner, och skärmbytena glider in som i ReseApoteket och Dagboken. |

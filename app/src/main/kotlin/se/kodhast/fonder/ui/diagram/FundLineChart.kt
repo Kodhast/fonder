@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -76,11 +74,10 @@ import se.kodhast.fonder.domain.usecase.ChartPeriodFilter
 import se.kodhast.fonder.domain.usecase.ChartSeriesNormalizer
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.PurchaseMarkerFilter
-import se.kodhast.fonder.ui.components.ConnectedChoiceButton
-import se.kodhast.fonder.ui.components.ConnectedChoiceSpacing
 import se.kodhast.fonder.ui.components.WorkingIndicator
 import se.kodhast.fonder.ui.theme.ChartSeriesColors
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
+import se.kodhast.ui.components.ChoiceChips
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
@@ -356,25 +353,15 @@ fun FundLineChart(
                 modifier = Modifier.padding(top = Spacing.s)
             )
         }
-        // Skrollbar rad, inte en vanlig Row: sex perioder får inte plats på en telefonskärm,
-        // och en fast rad hade tyst klippt bort "Allt" i stället för att göra den nåbar (UI-5).
-        // Knapparna är samma sammanhängande knappgrupp som ChoiceChipRow (UI-12), men i en
-        // LazyRow så instrumenttesterna kan nå sista perioden med performScrollToIndex.
-        val periods = ChartPeriodFilter.Period.entries
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(ConnectedChoiceSpacing),
+        // Perioderna är android-ui:s chips, som bryts på flera rader: sex segment får inte plats på en telefon
+        // utan att det valda klipps av sin bock, och en rad som skrollar i sidled döljer val (UI-5).
+        ChoiceChips(
+            options = ChartPeriodFilter.Period.entries,
+            selected = period,
+            onSelect = { period = it },
+            label = { stringResource(periodLabelRes(it)) },
             modifier = Modifier.padding(top = Spacing.s).testTag(CHART_PERIOD_ROW_TEST_TAG)
-        ) {
-            itemsIndexed(periods, key = { _, option -> option.name }) { index, option ->
-                ConnectedChoiceButton(
-                    label = stringResource(periodLabelRes(option)),
-                    selected = option == period,
-                    index = index,
-                    count = periods.size,
-                    onClick = { period = option }
-                )
-            }
-        }
+        )
     }
 }
 
