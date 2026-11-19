@@ -5,9 +5,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
@@ -214,15 +214,10 @@ class FacitScreenTest {
         }
 
         composeRule.onNodeWithText("Såld fond → Köpt fond").performClick()
-        // Utfällningen är en animation: noden finns men har storlek noll tills den fällts ut.
-        composeRule.waitUntil(5_000) {
-            composeRule.onAllNodesWithText("Genomförd").fetchSemanticsNodes().firstOrNull()?.size?.height?.let { it > 0 } == true
-        }
-        val node = composeRule.onNodeWithText("Genomförd").fetchSemanticsNode()
-        val info = "bounds=${node.boundsInRoot} root=${composeRule.onRoot().fetchSemanticsNode().size} cfg=${node.config}"
-        composeRule.onNodeWithText("Genomförd").performClick()
+        // Testfönstret är bara 320 × 640 px: utfälld ligger raden utanför det synliga och måste rullas fram.
+        composeRule.onNodeWithText("Genomförd").performScrollTo().performClick()
 
-        assertEquals(info, 7L to true, callback)
+        assertEquals(7L to true, callback)
     }
 
     @Test
