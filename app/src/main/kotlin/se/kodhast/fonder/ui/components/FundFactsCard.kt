@@ -21,7 +21,6 @@ import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.theme.Filled
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
-import se.kodhast.fonder.ui.theme.nestedCardStyle
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
@@ -89,7 +88,7 @@ fun FundFactsCard(
     reason: String? = null
 ) {
     val unknown = stringResource(R.string.fund_facts_unknown)
-    AppCard(modifier = modifier.fillMaxWidth(), tone = Tone.Filled, style = nestedCardStyle) {
+    AppCard(modifier = modifier.fillMaxWidth(), tone = Tone.Filled) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),

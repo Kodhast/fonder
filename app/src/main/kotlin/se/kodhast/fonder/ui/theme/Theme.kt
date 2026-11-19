@@ -2,7 +2,6 @@ package se.kodhast.fonder.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.runtime.Composable
@@ -14,9 +13,7 @@ import androidx.compose.ui.unit.dp
 import se.kodhast.ui.components.AppBrandStyle
 import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.LocalAppBrandStyle
-import se.kodhast.ui.components.LocalAppCardStyle
 import se.kodhast.ui.theme.AppTheme
-import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
 
 /**
@@ -29,18 +26,12 @@ private val LocalFonderColors = staticCompositionLocalOf { FonderLightColors }
 
 /**
  * Fonders tema: android-ui:s [AppTheme] (Material 3 Expressive, `MotionScheme.expressive()`, UI-12)
- * med Fonders fasta palett, [FonderAppShapes] och [FonderTypography] – ingen dynamisk färg, identiteten
- * nordisk blå och koppar ska vara konsekvent (skill `ui-style`).
+ * med Fonders fasta palett och [FonderTypography] – ingen dynamisk färg, identiteten nordisk blå och koppar
+ * ska vara konsekvent (skill `ui-style`).
  *
- * Bibliotekets tema tar inte Material 3:s `Shapes`; den inre [MaterialExpressiveTheme] lägger
- * [FonderShapes] ovanpå och ärver färger, typografi och rörelse, så att M3-komponenterna behåller
- * sina hörn.
- *
- * Knapparna och tillbakapilen har bibliotekets standard (UI-13, UI-14): 56 dp knappar utan formmorf
- * och den tonade pilplattan, samma som ReseApoteket och Dagboken – Fonder sätter ingen egen stil.
- * [FonderCardStyle] ger bibliotekets kort ([LocalAppCardStyle]) 16 dp luft – även mellan ett korts bitar
- * ([se.kodhast.ui.components.CardSegment]) – utan extra mellanrum mellan innehållets delar (UI-13). Kortens kant och skugga
- * kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18), inte från en egen kontur.
+ * Former, kort, knappar och tillbakapil har bibliotekets standard (samma som ReseApoteket och Dagboken, UI-13,
+ * UI-14): 22 dp kort, 56 dp knappar utan formmorf och den tonade pilplattan – Fonder sätter ingen egen stil.
+ * Kortens kant och skugga kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18).
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -51,18 +42,15 @@ fun FonderTheme(
     AppTheme(
         colorScheme = if (darkTheme) FonderDarkColorScheme else FonderLightColorScheme,
         extendedColors = if (darkTheme) FonderDarkExtendedColors else FonderLightExtendedColors,
-        shapes = FonderAppShapes,
         typeScale = FonderTypography,
         motionScheme = MotionScheme.expressive(),
         depth = if (darkTheme) FonderDarkDepth else FonderLightDepth
     ) {
         CompositionLocalProvider(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
-            LocalAppCardStyle provides FonderCardStyle,
-            LocalAppBrandStyle provides FonderBrandStyle
-        ) {
-            MaterialExpressiveTheme(shapes = FonderShapes, content = content)
-        }
+            LocalAppBrandStyle provides FonderBrandStyle,
+            content = content
+        )
     }
 }
 
@@ -73,39 +61,10 @@ fun FonderTheme(
 private val FonderBrandStyle = AppBrandStyle(sectionDots = true, emptyStateMark = true)
 
 /**
- * Fonders kortstil för android-ui:s kort: 16 dp luft och inget extra mellanrum mellan innehållets delar – skärmarna
- * lägger sina egna avstånd (UI-13). Ingen egen kontur: djupets kortkant och skugga ritar kortets kant (UI-18).
+ * Kortstilen för ett kort vars rader själva går ut i kanten och har sin luft innanför klickytan (Facits
+ * utfällbara rader, Besluts bytesrader och Facit-raden): ingen inre luft. Allt annat tar bibliotekets standard.
  */
-private val FonderCardStyle = AppCardStyle(padding = Spacing.l, segmentGap = Spacing.l, contentSpacing = 0.dp)
-
-/**
- * Fonders kortstil utan inre luft – för ett kort vars rader själva går ut i kanten och har sin luft innanför
- * klickytan (Facits utfällbara rader, Besluts bytesrader och Facit-raden).
- */
-val flushCardStyle: AppCardStyle
-    @Composable @ReadOnlyComposable
-    get() = LocalAppCardStyle.current.copy(padding = 0.dp, segmentGap = 0.dp)
-
-/**
- * Fonders kortstil för ett kort inne i ett kort (`AppCard(tone = Tone.Filled)`): 12 dp luft i stället för 16,
- * så att raderna i Hems avgifts- och analyskort inte tar för mycket plats.
- */
-val nestedCardStyle: AppCardStyle
-    @Composable @ReadOnlyComposable
-    get() = LocalAppCardStyle.current.copy(padding = Spacing.m)
-
-/**
- * Listramens rader ([se.kodhast.ui.components.EntityListScreen]) som bibliotekets kortbitar – utan kontur
- * och med 12 dp luft, så att Händelsers och Fondsökens rader ser ut som innan Fonders kortstil kom in i temat.
- * Ett kort i ramens `header` som ska se ut som Fonders övriga kort tar [cardStyle] (Fonders stil, läst utanför).
- */
-@Composable
-fun ListFrameCards(content: @Composable (cardStyle: AppCardStyle) -> Unit) {
-    val cardStyle = LocalAppCardStyle.current
-    CompositionLocalProvider(LocalAppCardStyle provides ListFrameCardStyle) { content(cardStyle) }
-}
-
-private val ListFrameCardStyle = AppCardStyle()
+val flushCardStyle = AppCardStyle(padding = 0.dp, segmentGap = 0.dp)
 
 /** Semantiska avkastningsfärger. Får aldrig bäras av enbart färg — para med tecken/pil. */
 object ReturnColors {

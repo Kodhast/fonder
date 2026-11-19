@@ -42,7 +42,6 @@ import se.kodhast.fonder.ui.diagram.ChartSeries
 import se.kodhast.fonder.ui.diagram.ChartValueAxis
 import se.kodhast.fonder.ui.diagram.FundLineChart
 import se.kodhast.fonder.ui.theme.Filled
-import se.kodhast.fonder.ui.theme.nestedCardStyle
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
@@ -457,7 +456,6 @@ private fun FeeHoldingRow(holdingFee: PortfolioFeeCalc.HoldingFee, onClick: () -
     AppCard(
         onClick = onClick,
         tone = Tone.Filled,
-        style = nestedCardStyle,
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
     ) {
         PeriodRow(
@@ -495,7 +493,6 @@ private fun FlaggedFundRow(flagged: FlaggedHolding, onClick: () -> Unit) {
     AppCard(
         onClick = onClick,
         tone = Tone.Filled,
-        style = nestedCardStyle,
         modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
     ) {
         Row(

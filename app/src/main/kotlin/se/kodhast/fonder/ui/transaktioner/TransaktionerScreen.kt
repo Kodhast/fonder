@@ -34,7 +34,6 @@ import se.kodhast.fonder.domain.usecase.TaxCalc
 import se.kodhast.fonder.ui.components.ApproxTaxRow
 import se.kodhast.fonder.ui.components.ChoiceChipRow
 import se.kodhast.fonder.ui.components.PeriodRow
-import se.kodhast.fonder.ui.theme.ListFrameCards
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
 import se.kodhast.ui.common.ListUiState
@@ -114,36 +113,34 @@ fun TransaktionerContent(
     var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
     val pendingDelete = pendingDeleteId?.let { id -> state.allRows.firstOrNull { it.transaction.id == id } }
 
-    ListFrameCards { cardStyle ->
-        EntityListScreen(
-            title = stringResource(R.string.nav_handelser),
-            state = state.shownList(),
-            empty = emptyContent(state, onNewTransaction, onImportOrders),
-            add = null,
-            key = { it.transaction.id },
-            modifier = modifier,
-            onRetry = onRetry,
-            filter = {
-                ChoiceChipRow(
-                    options = HandelseFilter.entries,
-                    selected = state.filter,
-                    optionLabel = { stringResource(it.labelRes()) },
-                    onSelect = onFilterSelect
-                )
-            },
-            header = if (state.showRealizedCard) {
-                { RealizedCard(state, cardStyle) }
-            } else {
-                null
-            }
-        ) { row ->
-            HandelseRow(
-                row = row,
-                onLongPress = { pendingDeleteId = row.transaction.id },
-                onStartSwitchWatch = onStartSwitchWatch,
-                onCorrectDate = onCorrectDate
+    EntityListScreen(
+        title = stringResource(R.string.nav_handelser),
+        state = state.shownList(),
+        empty = emptyContent(state, onNewTransaction, onImportOrders),
+        add = null,
+        key = { it.transaction.id },
+        modifier = modifier,
+        onRetry = onRetry,
+        filter = {
+            ChoiceChipRow(
+                options = HandelseFilter.entries,
+                selected = state.filter,
+                optionLabel = { stringResource(it.labelRes()) },
+                onSelect = onFilterSelect
             )
+        },
+        header = if (state.showRealizedCard) {
+            { RealizedCard(state) }
+        } else {
+            null
         }
+    ) { row ->
+        HandelseRow(
+            row = row,
+            onLongPress = { pendingDeleteId = row.transaction.id },
+            onStartSwitchWatch = onStartSwitchWatch,
+            onCorrectDate = onCorrectDate
+        )
     }
 
     pendingDelete?.let { row ->
@@ -219,9 +216,9 @@ private fun HandelseFilter.labelRes(): Int = when (this) {
  * kvittning och på schablonintäkten – står under, dämpad och med "ca", följd av en förklaring.
  */
 @Composable
-private fun RealizedCard(state: TransaktionerUiState, cardStyle: AppCardStyle, modifier: Modifier = Modifier) {
+private fun RealizedCard(state: TransaktionerUiState, modifier: Modifier = Modifier) {
     val showTotal = state.filter == HandelseFilter.SALJ
-    AppCard(modifier = modifier.fillMaxWidth(), style = cardStyle) {
+    AppCard(modifier = modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
             if (state.showRealizedRow) {
                 PeriodRow(

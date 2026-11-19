@@ -1,7 +1,6 @@
 package se.kodhast.fonder.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -11,13 +10,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import se.kodhast.ui.theme.AppShapes
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.ExtendedColors
 
 /**
  * [FonderTheme] som omslutning av android-ui:s `AppTheme`: Material 3-komponenterna får Fonders
- * egna former och typskala (inte M3:s standard), bibliotekets tema får Fonders värden, och de
+ * typskala (inte M3:s standard), bibliotekets tema får Fonders värden, och de
  * semantiska färgerna följer det läge appen valt – inte systemets (UI-4).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -27,9 +25,7 @@ class FonderThemeTest {
     val composeRule = createComposeRule()
 
     private class Seen {
-        lateinit var shapes: Shapes
         lateinit var typography: Typography
-        lateinit var appShapes: AppShapes
         lateinit var extended: ExtendedColors
         var primary = Color.Unspecified
         var gain = Color.Unspecified
@@ -43,9 +39,7 @@ class FonderThemeTest {
         val seen = Seen()
         composeRule.setContent {
             FonderTheme(darkTheme = dark) {
-                seen.shapes = MaterialTheme.shapes
                 seen.typography = MaterialTheme.typography
-                seen.appShapes = AppTheme.shapes
                 seen.extended = AppTheme.extendedColors
                 seen.primary = MaterialTheme.colorScheme.primary
                 seen.gain = ReturnColors.gain
@@ -60,11 +54,9 @@ class FonderThemeTest {
     }
 
     @Test
-    fun `ljust läge ger Fonders former, typskala och ljusa färger`() {
+    fun `ljust läge ger Fonders typskala och ljusa färger`() {
         val seen = capture(dark = false)
-        assertSame(FonderShapes, seen.shapes)
         assertSame(FonderTypography, seen.typography)
-        assertSame(FonderAppShapes, seen.appShapes)
         assertSame(FonderLightExtendedColors, seen.extended)
         assertEquals(Blue700, seen.primary)
         assertEquals(GainLight, seen.gain)
@@ -78,7 +70,6 @@ class FonderThemeTest {
     fun `valt mörkt läge ger mörka semantiska färger oavsett systemets läge`() {
         // Robolectric kör i systemets ljusa läge – färgerna ska ändå följa darkTheme.
         val seen = capture(dark = true)
-        assertSame(FonderShapes, seen.shapes)
         assertSame(FonderDarkExtendedColors, seen.extended)
         assertEquals(Blue300, seen.primary)
         assertEquals(GainDark, seen.gain)

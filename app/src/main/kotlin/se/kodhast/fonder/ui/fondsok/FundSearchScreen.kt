@@ -19,7 +19,6 @@ import se.kodhast.fonder.domain.model.FundCompany
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.SelectField
 import se.kodhast.fonder.ui.components.copyableFundName
-import se.kodhast.fonder.ui.theme.ListFrameCards
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppTextField
 import se.kodhast.ui.components.ButtonVariant
@@ -83,35 +82,33 @@ fun FundSearchContent(
     onRetry: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    ListFrameCards { _ ->
-        EntityListScreen(
-            title = title,
-            state = state.list,
-            empty = EmptyContent(
-                icon = R.drawable.ic_search,
-                title = stringResource(R.string.fondsok_empty_title),
-                message = stringResource(R.string.fondsok_empty_body)
-            ),
-            add = null,
-            key = { it.fundId },
-            modifier = modifier,
-            onRetry = onRetry,
-            onBack = onBack,
-            filter = { SearchFields(state, onCompanySelect, onQueryChange) },
-            topBarSize = TopBarSize.Small,
-            refreshing = state.refreshing,
-            onRefresh = onRefresh,
-            // Nätverksfel och "inga träffar" är skilda lägen (issue #78) – felet säger att det är listan som inte kom.
-            errorTitle = stringResource(R.string.fondsok_load_failed_title)
-        ) { fund ->
-            FundResultRow(
-                fund = fund,
-                added = onPickFund == null && fund.fundId in state.addedFundIds,
-                riskLevel = state.riskLevels[fund.fundId],
-                actionLabelRes = if (onPickFund == null) R.string.add else R.string.fondsok_pick,
-                onAction = { onPickFund?.invoke(fund) ?: onAddFund(fund) }
-            )
-        }
+    EntityListScreen(
+        title = title,
+        state = state.list,
+        empty = EmptyContent(
+            icon = R.drawable.ic_search,
+            title = stringResource(R.string.fondsok_empty_title),
+            message = stringResource(R.string.fondsok_empty_body)
+        ),
+        add = null,
+        key = { it.fundId },
+        modifier = modifier,
+        onRetry = onRetry,
+        onBack = onBack,
+        filter = { SearchFields(state, onCompanySelect, onQueryChange) },
+        topBarSize = TopBarSize.Small,
+        refreshing = state.refreshing,
+        onRefresh = onRefresh,
+        // Nätverksfel och "inga träffar" är skilda lägen (issue #78) – felet säger att det är listan som inte kom.
+        errorTitle = stringResource(R.string.fondsok_load_failed_title)
+    ) { fund ->
+        FundResultRow(
+            fund = fund,
+            added = onPickFund == null && fund.fundId in state.addedFundIds,
+            riskLevel = state.riskLevels[fund.fundId],
+            actionLabelRes = if (onPickFund == null) R.string.add else R.string.fondsok_pick,
+            onAction = { onPickFund?.invoke(fund) ?: onAddFund(fund) }
+        )
     }
 }
 
