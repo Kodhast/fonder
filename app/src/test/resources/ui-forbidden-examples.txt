@@ -23,7 +23,7 @@ EmptyState(icon = R.drawable.ic_search, title = "Ingen portfölj ännu", message
 CardTitleRow(title = "Värde")
 PeriodRow(label = "1 år", amount = null, percent = 4.2)
 ValueAsOfRow(date)
-ExposureBar(segments)
+ShareBar(label, fraction, value)
 ExpandableSection(title = "Analys") { }
 ExpandableInfoRow(title = "Avgift")
 FollowedToggleRow(followed = true, onFollowedChange = {})

@@ -115,8 +115,8 @@ nyckeln, t.ex. `FondDetaljKey(fundId)`), `AppBackStack` = android-ui:s `TabBackS
 flik (`rememberAppBackStack`), skärmarna kopplade i `fonderEntries` (`AppNavigation.kt`) med `push`,
 `select` och `popIfTop(key)` – aldrig från ViewModeln – och flikarnas ViewModels från aktiviteten
 (`hiltViewModel(tabOwner)`), så att en flik behåller sitt innehåll vid flikbyte. Ramen är android-ui:s
-`AppNavHost` (flikraden, plusmenyn, `AppTransitions`, sidhuvudets prickar via `sync`); `FonderPage` lägger
-`TabPage` (`AppHeader`) eller `SubPage` (`AppTopBar`) runt skärmarna utan egen ram. Inställningar och
+`AppNavHost` (flikraden, plusmenyn, `AppTransitions`, sidhuvudets prickar via `sync`); flikarna ritar
+`AppHeader` i ramarnas flikläge, och `FonderPage` lägger `SubPage` (`AppTopBar`) runt underskärmarna utan egen ram. Inställningar och
 Facit är skärmar i stacken, inte flikar (NAV-7).
 
 ## Tillgänglighet (android:accessibility-compose)

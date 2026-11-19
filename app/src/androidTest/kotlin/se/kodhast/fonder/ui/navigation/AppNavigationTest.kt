@@ -4,13 +4,12 @@ import android.content.Context
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -38,7 +37,6 @@ import se.kodhast.fonder.domain.model.SwitchWatch
 import se.kodhast.fonder.domain.model.Transaction
 import se.kodhast.fonder.domain.model.TransactionType
 import se.kodhast.fonder.testing.NetworkGuard
-import se.kodhast.fonder.ui.portfolj.PORTFOLJ_LIST_TEST_TAG
 
 /**
  * Navigeringen på enhet med appens riktiga Hilt-graf (NAV-7, ANA-12): `MainActivity` startas med
@@ -98,10 +96,12 @@ class AppNavigationTest {
         ActivityScenario.launch(MainActivity::class.java).use {
             waitFor(hasContentDescription("Innehav"))
             composeRule.onNodeWithContentDescription("Innehav").performClick()
-            // Fondraden ligger i en LazyColumn under korten och komponeras inte förrän listan
-            // skrollats dit (issue #66) – skrolla listan till raden i stället för att vänta på den.
-            waitFor(hasTestTag(PORTFOLJ_LIST_TEST_TAG))
-            composeRule.onNodeWithTag(PORTFOLJ_LIST_TEST_TAG).performScrollToNode(hasText(FUND_NAME))
+            // Fondraden är en lazy-rad i listramen under korten och komponeras inte förrän listan
+            // rullats dit (issue #66, #266 F3) – rulla listan till raden i stället för att vänta på den.
+            // Bara Innehavs lista har ScrollToIndex (Översikten är en vanlig rullande kolumn), och den finns
+            // först när innehaven lästs – "Fonder" duger inte, appens namn står också i sidhuvudet.
+            waitFor(hasScrollToNodeAction())
+            composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(hasText(FUND_NAME))
             composeRule.onAllNodesWithText(FUND_NAME).onFirst().performClick()
 
             // Fonddetalj på detaljramen: liten topprad med bakåtpil och fondens namn (NAV-2). När

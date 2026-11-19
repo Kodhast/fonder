@@ -99,12 +99,6 @@ data class BeslutUiState(
     /** Effekten per nivå av ett planbyte ([SwitchEffectCalc], kumulativt) — null för avgiftsbyten och steg som inte går att räkna. */
     fun effectFor(suggestion: SwitchPlanResolver.Suggestion): SwitchEffectCalc.StepEffect? = riskSummary?.stepByRecordId?.get(suggestion.recordId)
 
-    /**
-     * Listans väntesnurra (NAV-6): de sålda bytenas ledare vilar på kurserna, förslagen på
-     * bytesplanens skanning — en lista, en rubrik, en snurra för båda.
-     */
-    val switchesWorking: Boolean get() = loading || pricesWorking || switchPlanWorking
-
     /** Tillståndet med [decisions] — listan och besluten ur samma rader, så de aldrig kan skilja sig. */
     fun withDecisions(decisions: PendingDecisions): BeslutUiState = copy(list = decisions.switches.active.toListUiState(), decisions = decisions)
 }

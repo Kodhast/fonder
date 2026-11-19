@@ -4,23 +4,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -40,7 +34,6 @@ import se.kodhast.fonder.domain.usecase.SwitchEffectCalc
 import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 import se.kodhast.fonder.domain.usecase.SwitchRow
 import se.kodhast.fonder.domain.usecase.SwitchRowState
-import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.ExpandableSection
 import se.kodhast.fonder.ui.components.FundFactsCard
 import se.kodhast.fonder.ui.components.FundFactsRow
@@ -53,25 +46,22 @@ import se.kodhast.fonder.ui.theme.Neutral
 import se.kodhast.fonder.ui.theme.ReturnColors
 import se.kodhast.fonder.ui.theme.Tertiary
 import se.kodhast.fonder.ui.theme.flushCardStyle
+import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppBottomSheet
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppDivider
 import se.kodhast.ui.components.AppIconButton
-import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.EntityDetailScreen
 import se.kodhast.ui.components.InfoPill
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
-import se.kodhast.ui.components.LoadErrorState
 import se.kodhast.ui.components.SectionHeader
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
-
-/** Gör Besluts lista adresserbar för `performScrollToIndex` i tester (UI-5, samma mönster som Hem och Facit). */
-const val BESLUT_LIST_TEST_TAG = "beslut_list"
 
 @Composable
 fun BeslutScreen(
@@ -113,10 +103,10 @@ fun BeslutScreen(
 
 /**
  * Tillståndsdriven, testbar del av [BeslutScreen] (NAV-9, issue #240, mockup C2) — inget
- * ViewModel/Hilt-beroende. Svaret på "varför?" först: riskkortet (HEM-7) med "Ändra mål", sedan
- * råden som dess konsekvens, ett kort per byte (BYT-4), och sist de avslutade och överhoppade och
- * vägen till Facit. En `LazyColumn` hela vägen, även i tomt läge, så allt som kan växa går att
- * skrolla (UI-5).
+ * ViewModel/Hilt-beroende. Fliken står på android-ui:s detaljram i flikläge (#266 F3): Kodhäst-sidhuvudet med
+ * antalet som väntar, ramens laddning och läsfel med "Försök igen" (NFR-6). Svaret på "varför?" först:
+ * riskkortet (HEM-7) med "Ändra mål", sedan råden som dess konsekvens, ett kort per byte (BYT-4), och sist de
+ * avslutade och överhoppade och vägen till Facit.
  *
  * Omräkningen är **dra för att uppdatera** (UI-11) och finns bara när planen alls kan ges
  * (profil + ISK/KF, [BeslutUiState.canRecomputeSwitchPlan]); annars säger en rad vad som saknas.
@@ -140,17 +130,27 @@ fun BeslutContent(
 ) {
     // Läsfel (NFR-6): bara felet med "Försök igen" – riskkortet och Facit-raden hade annars visat
     // standardvärden som om de vore data.
-    state.error?.let { error ->
-        CenteredState(modifier) { LoadErrorState(stringResource(R.string.error_load_title), error, onRetry) }
-        return
+    val error = state.error
+    val frame: DetailUiState<BeslutUiState> = when {
+        error != null -> DetailUiState.Error(error)
+        state.loading -> DetailUiState.Loading
+        else -> DetailUiState.Content(state)
     }
-    // Listans läge lyfts över grenen nedan: dragningen kommer och går med gaten, och skrollen ska stå kvar.
-    val listState = rememberLazyListState()
-    val list: @Composable (Modifier) -> Unit = { listModifier ->
-        BeslutList(
-            state = state,
-            listState = listState,
-            modifier = listModifier,
+    val waiting = state.switches.waitingCount
+    EntityDetailScreen(
+        state = frame,
+        header = null,
+        onBack = null,
+        modifier = modifier,
+        title = stringResource(R.string.nav_beslut),
+        subtitle = if (frame is DetailUiState.Content && waiting > 0) stringResource(R.string.format_beslut_switches_waiting, waiting) else null,
+        onRetry = onRetry,
+        // Ingen gest utan gaten: en dragning som inte kan ge något är värre än ingen (UI-11).
+        refreshing = state.switchPlanWorking,
+        onRefresh = onRefresh.takeIf { frame is DetailUiState.Content && state.canRecomputeSwitchPlan }
+    ) { content ->
+        BeslutBody(
+            state = content,
             onOpenRiskProfile = onOpenRiskProfile,
             onOpenSwitchWatch = onOpenSwitchWatch,
             onFollow = onFollow,
@@ -160,12 +160,6 @@ fun BeslutContent(
             onShowInfo = onShowInfo,
             onOpenFacit = onOpenFacit
         )
-    }
-    // Ingen gest utan gaten: en dragning som inte kan ge något är värre än ingen (UI-11).
-    if (state.canRecomputeSwitchPlan) {
-        AppPullToRefresh(refreshing = state.switchPlanWorking, onRefresh = onRefresh, modifier = modifier.fillMaxSize()) { list(Modifier) }
-    } else {
-        list(modifier)
     }
 
     state.info?.let { info ->
@@ -182,9 +176,8 @@ fun BeslutContent(
 }
 
 @Composable
-private fun BeslutList(
+private fun ColumnScope.BeslutBody(
     state: BeslutUiState,
-    listState: LazyListState,
     onOpenRiskProfile: () -> Unit,
     onOpenSwitchWatch: (Long) -> Unit,
     onFollow: (SwitchPlanResolver.Suggestion) -> Unit,
@@ -192,8 +185,7 @@ private fun BeslutList(
     onDismissSuggestion: (SwitchPlanResolver.Suggestion) -> Unit,
     onUndoDismissal: (SwitchPlanResolver.Suggestion) -> Unit,
     onShowInfo: (SwitchRow.Suggested) -> Unit,
-    onOpenFacit: () -> Unit,
-    modifier: Modifier = Modifier
+    onOpenFacit: () -> Unit
 ) {
     val switches = state.switches
     // Första planbytet som ännu inte gjorts — senare steg är räknade som om det är gjort.
@@ -201,20 +193,19 @@ private fun BeslutList(
         .filterIsInstance<SwitchRow.Suggested>()
         .filter { it.cheaper == null && !it.suggestion.followed }
         .minOfOrNull { it.suggestion.planIndex }
-    LazyColumn(modifier = modifier.fillMaxSize().testTag(BESLUT_LIST_TEST_TAG), state = listState) {
-        riskHeader(state, onOpenRiskProfile)
+    RiskHeader(state, onOpenRiskProfile)
 
-        if (state.isEmpty) {
-            item(contentType = "empty") {
-                EmptyState(
-                    icon = R.drawable.ic_decisions,
-                    title = stringResource(R.string.beslut_empty_title),
-                    message = stringResource(R.string.beslut_empty_body)
-                )
-            }
-        } else {
-            item(contentType = "switches-heading") { SwitchesHeading(waiting = switches.waitingCount, working = state.switchesWorking) }
-            items(switches.active, key = { it.key }, contentType = { "switch-row" }) { row ->
+    if (state.isEmpty) {
+        EmptyState(
+            icon = R.drawable.ic_decisions,
+            title = stringResource(R.string.beslut_empty_title),
+            message = stringResource(R.string.beslut_empty_body)
+        )
+    } else {
+        // Antalet som väntar står i sidhuvudets underrad, inte en gång till här.
+        SectionHeading(stringResource(R.string.beslut_switches_title))
+        switches.active.forEach { row ->
+            key(row.key) {
                 SwitchRowCard(
                     row = row,
                     effect = (row as? SwitchRow.Suggested)?.let { state.effectFor(it.suggestion) },
@@ -226,22 +217,17 @@ private fun BeslutList(
                     onShowInfo = onShowInfo
                 )
             }
-            // Förbehållet (HEM-8): appen byter aldrig, och planens träffsäkerhet så länge ett planbyte står på listan.
-            item(contentType = "caption") {
-                val accuracy = if (switches.active.any { it.state == SwitchRowState.PROPOSED }) " " + stringResource(R.string.beslut_plan_accuracy) else ""
-                CaptionText(stringResource(R.string.beslut_never_switches) + accuracy)
-            }
         }
-
-        // Avslutade (bevakningstiden efter stängningen, SET-8) och överhoppade (HEM-14) — hopfällt; ingen snackbar finns
-        // i appen, så ångra-vägen är raden här.
-        if (switches.closed.isNotEmpty()) {
-            item(contentType = "closed") { ClosedSection(switches.closed, switches.watchTtlDays, onUndo = onUndoDismissal) }
-        }
-
-        item(contentType = "section-heading") { SectionHeading(stringResource(R.string.beslut_outcome_title)) }
-        item(contentType = "facit-row") { FacitRow(followedCount = state.followedCount, followedExcessKr = state.followedExcessKr, onOpen = onOpenFacit) }
+        // Förbehållet (HEM-8): appen byter aldrig, och planens träffsäkerhet så länge ett planbyte står på listan.
+        val accuracy = if (switches.active.any { it.state == SwitchRowState.PROPOSED }) " " + stringResource(R.string.beslut_plan_accuracy) else ""
+        CaptionText(stringResource(R.string.beslut_never_switches) + accuracy)
     }
+
+    // Avslutade (bevakningstiden efter stängningen, SET-8) och överhoppade (HEM-14) — hopfällt; ångra-vägen är raden här.
+    if (switches.closed.isNotEmpty()) ClosedSection(switches.closed, switches.watchTtlDays, onUndo = onUndoDismissal)
+
+    SectionHeading(stringResource(R.string.beslut_outcome_title))
+    FacitRow(followedCount = state.followedCount, followedExcessKr = state.followedExcessKr, onOpen = onOpenFacit)
 }
 
 /**
@@ -249,77 +235,49 @@ private fun BeslutList(
  * gaten (profil + ISK/KF) säger en rad vad som krävs för att byten ska föreslås — i stället för
  * den gamla omräkningsknappen, som lovade något SET-4 ändå vägrade.
  */
-private fun LazyListScope.riskHeader(state: BeslutUiState, onOpenRiskProfile: () -> Unit) {
+@Composable
+private fun RiskHeader(state: BeslutUiState, onOpenRiskProfile: () -> Unit) {
     val risk = state.riskSummary
     when {
-        risk != null -> item(contentType = "risk") {
-            RiskCard(
-                risk = risk,
-                // Kortets andelar räknas ur kurscachen — snurran när kurserna uppdateras (NAV-6).
-                working = state.pricesWorking,
-                goal = state.riskProfile?.answers?.goal?.let { stringResource(it.labelRes()) },
-                footer = {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text)
-                    }
+        risk != null -> RiskCard(
+            risk = risk,
+            goal = state.riskProfile?.answers?.goal?.let { stringResource(it.labelRes()) },
+            footer = {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text)
                 }
+            }
+        )
+
+        // Profil utan kort (underlaget läses ännu, eller målet saknar fördelning): Ändra mål ska ändå nås.
+        state.riskProfile != null -> AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+            ItemRow(
+                title = stringResource(R.string.hem_risk_title),
+                subtitle = state.riskProfile.answers?.goal?.let { stringResource(R.string.format_risk_card_goal, stringResource(it.labelRes())) },
+                trailing = { AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text) }
             )
         }
 
-        // Profil utan kort (underlaget läses ännu, eller målet saknar fördelning): Ändra mål ska ändå nås.
-        state.riskProfile != null && !state.loading -> item(contentType = "goal") {
-            AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l), style = flushCardStyle) {
-                ItemRow(
-                    title = stringResource(R.string.hem_risk_title),
-                    subtitle = state.riskProfile.answers?.goal?.let { stringResource(R.string.format_risk_card_goal, stringResource(it.labelRes())) },
-                    trailing = { AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text) }
-                )
-            }
-        }
-
-        state.riskProfile == null && !state.loading -> item(contentType = "no-goal") {
-            AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l), style = flushCardStyle) {
-                ItemRow(
-                    title = stringResource(R.string.beslut_no_goal_title),
-                    subtitle = stringResource(R.string.beslut_gate_body),
-                    trailing = { AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text) }
-                )
-            }
+        else -> AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+            ItemRow(
+                title = stringResource(R.string.beslut_no_goal_title),
+                subtitle = stringResource(R.string.beslut_gate_body),
+                trailing = { AppButton(text = stringResource(R.string.beslut_change_goal), onClick = onOpenRiskProfile, variant = ButtonVariant.Text) }
+            )
         }
     }
-    if (state.riskProfile != null && !state.loading && !state.canRecomputeSwitchPlan) {
-        item(contentType = "gate") { CaptionText(stringResource(R.string.beslut_gate_body)) }
-    }
+    if (state.riskProfile != null && !state.canRecomputeSwitchPlan) CaptionText(stringResource(R.string.beslut_gate_body))
 }
 
-/**
- * Avsnittsrubrik (20 sp) med plats för väntesnurran (NAV-6) och ett antal i en rund pill – android-ui:s
- * [SectionHeader], i linje med korten under.
- */
+/** Avsnittsrubrik med ett antal i en rund pill – android-ui:s [SectionHeader], i linje med korten under. */
 @Composable
-private fun SectionHeading(title: String, working: Boolean = false, count: String? = null) {
-    SectionHeader(
-        title = title,
-        modifier = Modifier.padding(start = Spacing.m, end = Spacing.m, top = Spacing.m),
-        count = count,
-        working = working,
-        workingDescription = stringResource(R.string.format_card_working, title)
-    )
+private fun SectionHeading(title: String) {
+    SectionHeader(title = title, modifier = Modifier.padding(top = Spacing.s))
 }
 
 @Composable
 private fun CaptionText(text: String) {
-    ItemRowText(title = null, subtitle = text, modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s))
-}
-
-/** "Så kommer du närmare målet · N väntar på dig" — listans rubrik med väntesnurran (NAV-6) och antalet som väntar i en pill. */
-@Composable
-private fun SwitchesHeading(waiting: Int, working: Boolean) {
-    SectionHeading(
-        title = stringResource(R.string.beslut_switches_title),
-        working = working,
-        count = if (waiting > 0) stringResource(R.string.format_beslut_switches_waiting, waiting) else null
-    )
+    ItemRowText(title = null, subtitle = text)
 }
 
 /**
@@ -451,10 +409,7 @@ private fun SwitchRowCard(
     onDismiss: (SwitchPlanResolver.Suggestion) -> Unit,
     onShowInfo: (SwitchRow.Suggested) -> Unit
 ) {
-    AppCard(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = Spacing.xs),
-        style = flushCardStyle
-    ) {
+    AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
         when (row) {
             is SwitchRow.Suggested -> SuggestedRow(row, effect, firstOpenStep, onFollow, onStartSwitchWatch, onDismiss, onShowInfo)
 
@@ -675,10 +630,7 @@ private fun SoldLeader(watch: OpenSwitchWatch) {
  */
 @Composable
 private fun ClosedSection(rows: List<SwitchRow>, ttlDays: Long, onUndo: (SwitchPlanResolver.Suggestion) -> Unit) {
-    ExpandableSection(
-        title = stringResource(R.string.format_beslut_closed_title, rows.size),
-        modifier = Modifier.padding(start = Spacing.l, end = Spacing.l, top = Spacing.s, bottom = Spacing.s)
-    ) {
+    ExpandableSection(title = stringResource(R.string.format_beslut_closed_title, rows.size)) {
         Column {
             ItemRowText(
                 title = null,
@@ -735,10 +687,7 @@ private fun ClosedRow(row: SwitchRow, onUndo: (SwitchPlanResolver.Suggestion) ->
  */
 @Composable
 private fun FacitRow(followedCount: Int, followedExcessKr: Double?, onOpen: () -> Unit) {
-    AppCard(
-        modifier = Modifier.fillMaxWidth().padding(start = Spacing.l, end = Spacing.l, top = Spacing.xs, bottom = Spacing.l),
-        style = flushCardStyle
-    ) {
+    AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
         ItemRow(
             title = pluralStringResource(R.plurals.format_beslut_facit_row, followedCount, followedCount),
             trailing = if (followedCount > 0 && followedExcessKr != null) {

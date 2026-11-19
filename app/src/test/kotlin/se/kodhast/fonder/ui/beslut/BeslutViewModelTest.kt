@@ -670,27 +670,27 @@ class BeslutViewModelTest {
     }
 
     @Test
-    fun `en kursuppdatering snurrar listan`() = runTest(dispatcher) {
+    fun `en kursuppdatering syns i tillstandet`() = runTest(dispatcher) {
         scheduler.runningWork.value = setOf(BackgroundWork.PRICE_REFRESH)
 
         viewModel().uiState.test {
             var state = awaitItem()
             while (state.loading || !state.pricesWorking) state = awaitItem()
-            // Ledaren i ett sålt byte räknas ur kurscachen — listan Byten snurrar.
-            assertTrue(state.switchesWorking)
+            // Ledaren i ett sålt byte räknas ur kurscachen — sidhuvudets prickar säger det (NAV-6).
+            assertTrue(state.pricesWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun `en bytesplansskanning snurrar forslagen`() = runTest(dispatcher) {
+    fun `en bytesplansskanning syns i tillstandet`() = runTest(dispatcher) {
         // Flyttad från Hems riskkort (NAV-6): skanningen skriver planen, och planen visas här.
         scheduler.runningWork.value = setOf(BackgroundWork.SWITCH_PLAN_SCAN)
 
         viewModel().uiState.test {
             var state = awaitItem()
             while (state.loading || !state.switchPlanWorking) state = awaitItem()
-            assertTrue(state.switchesWorking)
+            assertTrue(state.switchPlanWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }

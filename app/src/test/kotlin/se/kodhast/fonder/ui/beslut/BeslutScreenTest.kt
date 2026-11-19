@@ -14,7 +14,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.text.AnnotatedString
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
@@ -238,7 +238,7 @@ class BeslutScreenTest {
 
         composeRule.onNodeWithText("Inga byten att besluta om").assertIsDisplayed()
         composeRule.onNodeWithText("Så kommer du närmare målet").assertDoesNotExist()
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText("Facit · 1 följt förslag"))
+        composeRule.onNode(hasText("Facit · 1 följt förslag")).performScrollTo()
         composeRule.onNodeWithText("Facit · 1 följt förslag").performClick()
 
         assertEquals(1, facit)
@@ -252,7 +252,7 @@ class BeslutScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Kunde inte visa innehållet").assertIsDisplayed()
+        composeRule.onNodeWithText("Kunde inte hämta uppgifterna").assertIsDisplayed()
         composeRule.onNodeWithText("Sätt ett mål").assertDoesNotExist()
         composeRule.onNodeWithText("Facit · 1 följt förslag").assertDoesNotExist()
     }
@@ -261,7 +261,7 @@ class BeslutScreenTest {
     fun `facitraden visar de foljda radernas resultat i kronor med tecken`() {
         composeRule.setContent { FonderTheme { BeslutContent(state = full.copy(followedExcessKr = -1_250.0)) } }
 
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText("Facit · 7 följda förslag"))
+        composeRule.onNode(hasText("Facit · 7 följda förslag")).performScrollTo()
         // Beloppet sitter i samma klickbara kort som antalet, och tecknet bär förlusten även utan
         // färg (ReturnColors får aldrig stå ensam).
         composeRule.onNode(hasText("Facit · 7 följda förslag"))
@@ -273,7 +273,7 @@ class BeslutScreenTest {
     fun `facitraden visar bara antalet utan matbart resultat`() {
         composeRule.setContent { FonderTheme { BeslutContent(state = full.copy(followedExcessKr = null)) } }
 
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText("Facit · 7 följda förslag"))
+        composeRule.onNode(hasText("Facit · 7 följda förslag")).performScrollTo()
         // Kortet bär bara antalet — inget belopp, och särskilt inte "0 kr" (ANA-4-principen).
         composeRule.onNode(hasText("Facit · 7 följda förslag"))
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.Text, listOf(AnnotatedString("Facit · 7 följda förslag"))))
@@ -282,11 +282,9 @@ class BeslutScreenTest {
     @Test
     fun `raden visar rad som konsekvens med chip effekt och avgift`() {
         composeRule.setContent { FonderTheme { BeslutContent(state = full) } }
-
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasText("Så kommer du närmare målet"))
+        composeRule.onNode(hasText("Så kommer du närmare målet")).performScrollTo()
         // Föreslaget (1) + Avgift (1) + Sålt (1); det kvitterade väntar inte.
-        composeRule.onNodeWithText("3 väntar på dig").assertIsDisplayed()
+        composeRule.onNodeWithText("3 väntar på dig").assertExists()
         // Varje rad är en nod (chip, rubrik, effekt) — exakt textmatchning per del.
         listOf(
             "Sålt · dag 2 av 30 · välj köpfond",
@@ -303,7 +301,7 @@ class BeslutScreenTest {
             "Avslutade och överhoppade (3)",
             "Så har råden gått"
         ).forEach { text ->
-            list.performScrollToNode(hasText(text))
+            composeRule.onNode(hasText(text)).performScrollTo()
             composeRule.onAllNodesWithText(text).assertCountEquals(1)
         }
         // Inga av de gamla orden (acceptanskriterierna i #240).
@@ -318,7 +316,7 @@ class BeslutScreenTest {
         composeRule.setContent { FonderTheme { BeslutContent(state = full) } }
 
         val text = "Appen byter aldrig åt dig – du gör bytet hos din bank. Råden stämmer ungefär 3 gånger av 4."
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText(text))
+        composeRule.onNode(hasText(text)).performScrollTo()
         composeRule.onNodeWithText(text).assertExists()
     }
 
@@ -328,7 +326,7 @@ class BeslutScreenTest {
         val state = full.withDecisions(PendingDecisions(switchPlan = listOf(planRow2, second)).withSwitches(emptyList(), today))
         composeRule.setContent { FonderTheme { BeslutContent(state = state) } }
 
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText("Gör steg 2 först.", substring = true))
+        composeRule.onNode(hasText("Gör steg 2 först.", substring = true)).performScrollTo()
         composeRule.onAllNodesWithText("Gör steg", substring = true).assertCountEquals(1)
     }
 
@@ -337,7 +335,7 @@ class BeslutScreenTest {
         var opened: Long? = null
         composeRule.setContent { FonderTheme { BeslutContent(state = full, onOpenSwitchWatch = { opened = it }) } }
 
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasContentDescription("Välj köpfond: Tillväxtmarknad Bred"))
+        composeRule.onNode(hasContentDescription("Välj köpfond: Tillväxtmarknad Bred")).performScrollTo()
         composeRule.onNodeWithText("Bäst hittills: Global Indexfond A ${MoneyFormat.percentSigned(0.018)}", substring = true).assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Välj köpfond: Tillväxtmarknad Bred").performClick()
 
@@ -358,9 +356,7 @@ class BeslutScreenTest {
                 )
             }
         }
-
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasContentDescription("Hoppa över: Sverige Småbolag → Räntefond Kort"))
+        composeRule.onNode(hasContentDescription("Hoppa över: Sverige Småbolag → Räntefond Kort")).performScrollTo()
         composeRule.onNodeWithContentDescription("Hoppa över: Sverige Småbolag → Räntefond Kort").performClick()
         composeRule.onNodeWithContentDescription("Registrera sälj: Sverige Småbolag → Räntefond Kort").performClick()
         // Det sålda bytet erbjuds inte att säljas igen (BYT-1).
@@ -376,7 +372,7 @@ class BeslutScreenTest {
         var watched: SwitchPlanResolver.Suggestion? = null
         composeRule.setContent { FonderTheme { BeslutContent(state = full, onStartSwitchWatch = { watched = it }) } }
 
-        composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG).performScrollToNode(hasText("Bevaka alternativ"))
+        composeRule.onNode(hasText("Bevaka alternativ")).performScrollTo()
         composeRule.onAllNodesWithText("Genomförd").assertCountEquals(0)
         composeRule.onAllNodesWithContentDescription("Registrera sälj: Energi Norden → Räntefond Bred").assertCountEquals(0)
         composeRule.onNodeWithText("Bevaka alternativ").performClick()
@@ -391,9 +387,7 @@ class BeslutScreenTest {
         composeRule.setContent {
             FonderTheme { BeslutContent(state = full, onFollow = { followed = it }, onDismissSuggestion = { dismissed = it }) }
         }
-
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasContentDescription("Hoppa över: Sverige Småbolag → Småbolag Index"))
+        composeRule.onNode(hasContentDescription("Hoppa över: Sverige Småbolag → Småbolag Index")).performScrollTo()
         composeRule.onNodeWithContentDescription("Hoppa över: Sverige Småbolag → Småbolag Index").performClick()
         composeRule.onNodeWithContentDescription("Registrera sälj: Sverige Småbolag → Småbolag Index").performClick()
 
@@ -405,13 +399,11 @@ class BeslutScreenTest {
     fun `utropstecknet oppnar infokortet for radet`() {
         var shown: SwitchRow.Suggested? = null
         composeRule.setContent { FonderTheme { BeslutContent(state = full, onShowInfo = { shown = it }) } }
-
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasContentDescription("Mer om fonderna: Sverige Småbolag → Räntefond Kort"))
+        composeRule.onNode(hasContentDescription("Mer om fonderna: Sverige Småbolag → Räntefond Kort")).performScrollTo()
         composeRule.onNodeWithContentDescription("Mer om fonderna: Sverige Småbolag → Räntefond Kort").performClick()
         assertEquals(12L, shown?.suggestion?.recordId)
 
-        list.performScrollToNode(hasContentDescription("Mer om fonderna: Sverige Småbolag → Småbolag Index"))
+        composeRule.onNode(hasContentDescription("Mer om fonderna: Sverige Småbolag → Småbolag Index")).performScrollTo()
         composeRule.onNodeWithContentDescription("Mer om fonderna: Sverige Småbolag → Småbolag Index").performClick()
         assertEquals(21L, shown?.suggestion?.recordId)
     }
@@ -472,10 +464,9 @@ class BeslutScreenTest {
         }
 
         composeRule.onNodeWithText("Inga byten att besluta om").assertExists()
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasText("Avslutade och överhoppade (2)"))
+        composeRule.onNode(hasText("Avslutade och överhoppade (2)")).performScrollTo()
         composeRule.onNodeWithText("Avslutade och överhoppade (2)").performClick()
-        list.performScrollToNode(hasText("Sverige Småbolag → Småbolag Index"))
+        composeRule.onNode(hasText("Sverige Småbolag → Småbolag Index")).performScrollTo()
         composeRule.onAllNodesWithText("Överhoppat").assertCountEquals(2)
         composeRule.onNodeWithContentDescription("Ångra: visa Sverige Småbolag → Räntefond Kort igen").performClick()
         assertEquals(12L, undone?.recordId)
@@ -488,11 +479,9 @@ class BeslutScreenTest {
     @Test
     fun `avslutade byten visar kopt med datum och utganget utan angra`() {
         composeRule.setContent { FonderTheme { BeslutContent(state = full) } }
-
-        val list = composeRule.onNodeWithTag(BESLUT_LIST_TEST_TAG)
-        list.performScrollToNode(hasText("Avslutade och överhoppade (3)"))
+        composeRule.onNode(hasText("Avslutade och överhoppade (3)")).performScrollTo()
         composeRule.onNodeWithText("Avslutade och överhoppade (3)").performClick()
-        list.performScrollToNode(hasText("Global Stars → inget köp registrerat"))
+        composeRule.onNode(hasText("Global Stars → inget köp registrerat")).performScrollTo()
         composeRule.onNodeWithText("Köpt 7 okt").assertExists()
         composeRule.onNodeWithText("Aktiefond Global → Global Indexnära").assertExists()
         composeRule.onNodeWithText("Utgånget").assertExists()

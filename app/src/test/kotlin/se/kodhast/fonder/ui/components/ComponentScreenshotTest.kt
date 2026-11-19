@@ -103,31 +103,6 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun `ExposureBar mål och utfall`() = composeRule.captureLightAndDark("ExposureBar_default") {
-        Column {
-            ExposureBar(label = "Aktiefonder", fraction = 0.75)
-            ExposureBar(label = "Räntefonder", fraction = 0.2, color = MaterialTheme.colorScheme.secondary)
-            ExposureBar(label = "Okänd fondtyp", fraction = 0.05, color = MaterialTheme.colorScheme.outline)
-        }
-    }
-
-    @Test
-    fun `ExposureBar med målstreck`() = composeRule.captureLightAndDark("ExposureBar_target") {
-        Column {
-            ExposureBar(label = "Nivå 2", fraction = 0.08, target = 0.20)
-            ExposureBar(
-                label = "Nivå 4",
-                fraction = 0.52,
-                target = 0.45,
-                color = MaterialTheme.colorScheme.secondary,
-                targetColor = MaterialTheme.colorScheme.primary
-            )
-            ExposureBar(label = "Nivå 5", fraction = 0.14, target = 0.0, color = MaterialTheme.colorScheme.secondary, targetColor = MaterialTheme.colorScheme.primary)
-            ExposureBar(label = "Nivå 3", fraction = 0.0, target = 1.0)
-        }
-    }
-
-    @Test
     fun `FundFactsCard med märke och alternativrad`() = composeRule.captureLightAndDark("FundFactsCard_default") {
         Column {
             FundFactsCard(

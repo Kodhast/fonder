@@ -197,8 +197,7 @@ private fun ColumnScope.CardsAndRows() {
         gainLoss = 52_380.5,
         gainLossFraction = 0.1455,
         total = PortfolioTotalCalc.Result(netDepositsKr = 365_000.0, totalGainKr = 47_380.5, totalGainFraction = 0.1298, moneyWeightedAnnualReturn = 0.071, partial = false, ageDays = 812),
-        navEpochDay = 20_742,
-        working = true
+        navEpochDay = 20_742
     )
     Label("CardSegment · ItemRow · AppDivider (android-ui)")
     val rows = listOf(
@@ -223,7 +222,7 @@ private fun ColumnScope.CardsAndRows() {
         AppDivider()
         ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr", style = AppTheme.typography.body) }, navigates = true, onClick = {})
     }
-    Label("InfoPill (android-ui, 8 dp) · RiskBadge · ProfitTakeBadge · CountBadge · StatusDot")
+    Label("InfoPill (android-ui, 8 dp) · RiskBadge · ProfitTakeBadge · StatusDot")
     galleryTones.chunked(CHIPS_PER_ROW).forEach { tones ->
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             tones.forEach { (name, tone) -> InfoPill(text = name, tone = tone, shape = AppTheme.shapes.smallTile) }
@@ -233,28 +232,10 @@ private fun ColumnScope.CardsAndRows() {
         RiskBadge(level = 3)
         RiskBadge(level = 5, toLevel = 4)
         ProfitTakeBadge(gainFraction = 0.35)
-        CountBadge(count = 2)
-        CountBadge(count = 5, size = CountBadgeSize.Large)
     }
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
         SignalLevel.entries.forEach { StatusDot(it) }
     }
-    Label("ReminderRow")
-    ReminderRow(
-        title = "Säkerhetskopiera",
-        body = "Senaste kopian är 12 dagar gammal.",
-        actionLabel = "Kopiera nu",
-        onAction = {}
-    )
-    ReminderRow(
-        title = "Att besluta",
-        body = "2 föreslagna · 1 sålt, väntar på köp",
-        actionLabel = "Öppna Beslut",
-        onAction = {},
-        count = 3,
-        tone = ReminderRowTone.Accent,
-        chevron = true
-    )
     Label("ExpandableSection · ExpandableInfoRow")
     ExpandableSection(title = "Ordlista") { Text("Innehållet visas när sektionen fälls ut.") }
     ExpandableInfoRow(explanation = "Årstakten är den genomsnittliga avkastningen per år sedan första köpet.") {
@@ -304,19 +285,6 @@ private fun ColumnScope.Values() {
     PeriodRow(label = "Sharpe", amount = null, fraction = null, valueText = "0,6")
     ApproxTaxRow(label = "Varav skatt", tax = 3_000.0, basis = "30 % på vinst efter kvittning")
     ValueAsOfRow(navEpochDay = LocalDate.of(2026, 10, 16).toEpochDay())
-    Label("ExposureBar")
-    ExposureBar(label = "Sverige", fraction = 0.46)
-    ExposureBar(label = "Nordamerika", fraction = 0.38, color = MaterialTheme.colorScheme.secondary)
-    ExposureBar(label = "Övrigt", fraction = 0.16, color = MaterialTheme.colorScheme.outline)
-    Label("ExposureBar med mål")
-    ExposureBar(label = "Nivå 2", fraction = 0.08, target = 0.20)
-    ExposureBar(
-        label = "Nivå 4",
-        fraction = 0.52,
-        target = 0.45,
-        color = MaterialTheme.colorScheme.secondary,
-        targetColor = MaterialTheme.colorScheme.primary
-    )
     Label("FundFactsCard och FundFactsRow (Besluts infokort)")
     FundFactsCard(facts = galleryFacts, badge = "Vårt förslag", reason = "Vald för att den är billigast bland de bästa.")
     FundFactsRow(facts = galleryFacts.copy(name = "Kort Ränta Index", oneYearFraction = -0.008, company = null))

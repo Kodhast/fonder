@@ -155,9 +155,9 @@ ui/
 ├── navigation/   AppNavigation (android-ui:s AppNavHost med AppTransitions, flikraden och plusmenyn; FonderPage
 │                 lägger toppraden runt skärmar utan ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
 │                 sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
-│                 Pages (TabPage med AppHeader, SubPage med AppTopBar) · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
+│                 Pages (SubPage med AppTopBar; flikarna ritar sitt sidhuvud i ramen) · DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
 ├── components/   Delade komponenter (CenteredState, SelectField, LoadingDialog, PeriodRow, AnalysisStatusBanner/StatusDot,
-│                 ExposureBar — proportionell radlista, POR-9/#66 · ChoiceChipRow — val-chiprad, #68 ·
+│                 ChoiceChipRow — val-chiprad, #68 ·
 │                 ExpandableSection/ExpandableInfoRow — utfällning, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
 │                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0;
 │                 topprad, flikrad med plusknapp, kryssrad, tomt läge och dra ned sedan 1.2.0)

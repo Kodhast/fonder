@@ -1,30 +1,24 @@
 package se.kodhast.fonder.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import se.kodhast.fonder.R
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.ReturnColors
+import se.kodhast.ui.components.ValueRow
 import se.kodhast.ui.theme.AppTheme
-import se.kodhast.ui.theme.Spacing
 
 /**
+ * Fonders tunna lager ovanpå android-ui:s [ValueRow] (#266 F3): raden, dess dämpning och stödrader är
+ * bibliotekets; kr/%-formateringen och vinst/förlust-färgen är Fonders.
+ *
  * Delad rad för att visa en periods värdeförändring (kr + %), t.ex. "Idag" eller "Senaste
  * veckan" (issue #14), eller ett rent procentuellt nyckeltal utan kr-belopp (t.ex. CAGR eller
  * portföljandel, issue #16 — sätt [amount] till null och [fraction] till ett värde). Återanvänds
@@ -86,104 +80,70 @@ fun PeriodRow(
     valueTone: Double? = null,
     valueMuted: Boolean = false
 ) {
-    val mutedColor = MaterialTheme.colorScheme.onSurfaceVariant
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Vikt + ellips på etiketten: en Row mäter oviktade barn i tur och ordning och drar av
-        // redan förbrukad bredd, så en etikett som fyller raden lämnade **noll** till värdet.
-        // Med fasta etiketter ("Idag") märktes inget, men HEM-5 och ANA-9 skickar in fondnamn —
-        // "Handelsbanken Amerika Småbolag Tema Criteria A1" radbröt över två rader och avgiften
-        // försvann helt ur vyn (issue #78). Samma lösning som PortfoljScreen redan använder för
-        // fondnamnet i sin egen rad.
-        val labelModifier = Modifier.weight(1f, fill = false).padding(end = Spacing.s)
-        val labelColor = if (muted) mutedColor else Color.Unspecified
-        if (supportingLabel == null) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = labelColor, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = labelModifier)
-        } else {
-            Column(modifier = labelModifier) {
-                Text(label, style = MaterialTheme.typography.bodyMedium, color = labelColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(supportingLabel, style = AppTheme.typography.itemSubtitle, color = mutedColor)
-            }
-        }
-        if (valueText != null) {
-            val valueColor = when {
-                muted || valueMuted -> mutedColor
-                valueTone == 0.0 -> mutedColor
+    val numberStyle = MonoAmountStyle.merge(AppTheme.typography.body)
+    when {
+        valueText != null -> ValueRow(
+            label = label,
+            value = valueText,
+            modifier = modifier,
+            supportingLabel = supportingLabel,
+            supportingValue = supportingValue,
+            valueColor = when {
+                valueTone == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
                 valueTone != null -> ReturnColors.forAmount(valueTone)
-                else -> Color.Unspecified
-            }
-            val valueStyle = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium)
-            if (supportingValue == null) {
-                Text(valueText, style = valueStyle, color = valueColor)
-            } else {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(valueText, style = valueStyle, color = valueColor)
-                    SupportingValue(supportingValue)
-                }
-            }
-        } else if (amount == null && fraction == null) {
-            val insufficient = insufficientText ?: stringResource(R.string.period_insufficient_data)
-            if (supportingValue == null) {
-                Text(insufficient, style = AppTheme.typography.itemSubtitle, color = mutedColor)
-            } else {
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(insufficient, style = AppTheme.typography.itemSubtitle, color = mutedColor)
-                    SupportingValue(supportingValue)
-                }
-            }
-        } else {
-            Column(horizontalAlignment = Alignment.End) {
-                val stacked = stackValue && amount != null && fraction != null
-                // Tecken och färg följs åt **per tal** (issue #78): procenten färgas efter procenten och
-                // kronorna efter kronorna. GAV-raden i Fonddetalj skickade en gång in ett *pris* som belopp
-                // — alltid positivt — och färgade ett innehav 30 % under GAV grönt. Sedan #193 kan de två
-                // talen dessutom få olika tecken på riktigt: procenten är fondens kursutveckling, kronorna
-                // värdeförändringen på de andelar som ägts (köpt efter en uppgång → + % men − kr).
-                val fractionColor = if (muted) mutedColor else ReturnColors.forAmount(fraction ?: amount!!)
-                val text = when {
-                    stacked -> AnnotatedString(MoneyFormat.percentSigned(fraction!!))
+                else -> null
+            },
+            muted = muted,
+            valueMuted = valueMuted,
+            valueStyle = numberStyle
+        )
 
-                    amount != null && fraction != null -> {
-                        val amountColor = if (muted) mutedColor else ReturnColors.forAmount(amount)
-                        buildAnnotatedString {
-                            // Separatorn hör till procenten — med samma tecken renderas raden exakt som förut.
-                            append("${MoneyFormat.percentSigned(fraction)} · ")
-                            withStyle(SpanStyle(color = amountColor)) { append(MoneyFormat.kr(amount)) }
-                        }
+        // Ett känt stödvärde visas också när huvudvärdet saknas, så att det aldrig tappas.
+        amount == null && fraction == null -> ValueRow(
+            label = label,
+            value = insufficientText ?: stringResource(R.string.period_insufficient_data),
+            modifier = modifier,
+            supportingLabel = supportingLabel,
+            supportingValue = supportingValue,
+            muted = muted,
+            valueMuted = true,
+            valueStyle = AppTheme.typography.itemSubtitle
+        )
+
+        else -> {
+            val stacked = stackValue && amount != null && fraction != null
+            // Tecken och färg följs åt **per tal** (issue #78, #193): procenten är fondens kursutveckling,
+            // kronorna värdeförändringen på de andelar som ägts, och de kan ha olika tecken.
+            val text = when {
+                stacked -> AnnotatedString(MoneyFormat.percentSigned(fraction!!))
+
+                amount != null && fraction != null -> {
+                    val amountColor = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else ReturnColors.forAmount(amount)
+                    buildAnnotatedString {
+                        append("${MoneyFormat.percentSigned(fraction)} · ")
+                        withStyle(SpanStyle(color = amountColor)) { append(MoneyFormat.kr(amount)) }
                     }
-
-                    amount != null -> AnnotatedString(MoneyFormat.kr(amount))
-
-                    else -> AnnotatedString(MoneyFormat.percentSigned(fraction!!))
                 }
-                Text(
-                    text,
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
-                    color = fractionColor
-                )
-                if (stacked) SupportingValue(MoneyFormat.kr(amount!!))
-                supportingValue?.let { SupportingValue(it) }
-                if (partial) {
-                    Text(
-                        stringResource(R.string.period_partial_data),
-                        style = AppTheme.typography.caption,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+
+                amount != null -> AnnotatedString(MoneyFormat.kr(amount))
+
+                else -> AnnotatedString(MoneyFormat.percentSigned(fraction!!))
             }
+            val below = listOfNotNull(
+                if (stacked) MoneyFormat.kr(amount!!) else null,
+                supportingValue,
+                if (partial) stringResource(R.string.period_partial_data) else null
+            )
+            ValueRow(
+                label = label,
+                value = text,
+                modifier = modifier,
+                supportingLabel = supportingLabel,
+                supportingValue = below.takeIf { it.isNotEmpty() }?.joinToString("\n"),
+                valueColor = ReturnColors.forAmount(fraction ?: amount!!),
+                muted = muted,
+                valueStyle = numberStyle
+            )
         }
     }
-}
-
-/** Den dämpade raden under värdet — samma stil som den staplade kronsumman (`stackValue`). */
-@Composable
-private fun SupportingValue(text: String) {
-    Text(
-        text,
-        style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
 }

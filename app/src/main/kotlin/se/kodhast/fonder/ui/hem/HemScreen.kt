@@ -1,22 +1,15 @@
 package se.kodhast.fonder.ui.hem
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import se.kodhast.fonder.R
@@ -28,11 +21,7 @@ import se.kodhast.fonder.domain.usecase.PortfolioFeeCalc
 import se.kodhast.fonder.domain.usecase.PortfolioPerformanceCalc
 import se.kodhast.fonder.domain.usecase.TaxCalc
 import se.kodhast.fonder.ui.components.ApproxTaxRow
-import se.kodhast.fonder.ui.components.CardTitleRow
-import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.PeriodRow
-import se.kodhast.fonder.ui.components.ReminderRow
-import se.kodhast.fonder.ui.components.ReminderRowTone
 import se.kodhast.fonder.ui.components.RiskCard
 import se.kodhast.fonder.ui.components.StatusDot
 import se.kodhast.fonder.ui.components.TotalCard
@@ -41,15 +30,23 @@ import se.kodhast.fonder.ui.components.statusTriggerMessages
 import se.kodhast.fonder.ui.diagram.ChartSeries
 import se.kodhast.fonder.ui.diagram.ChartValueAxis
 import se.kodhast.fonder.ui.diagram.FundLineChart
-import se.kodhast.fonder.ui.theme.Filled
-import se.kodhast.ui.components.AppCard
-import se.kodhast.ui.components.AppPullToRefresh
+import se.kodhast.fonder.ui.theme.Copper
+import se.kodhast.fonder.ui.theme.MonoAmountStyle
+import se.kodhast.fonder.ui.theme.NeutralPrimary
+import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.components.AppDivider
+import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
+import se.kodhast.ui.components.EntityDetailScreen
+import se.kodhast.ui.components.IconButtonVariant
+import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
-import se.kodhast.ui.components.LoadErrorState
+import se.kodhast.ui.components.LeadingSlot
+import se.kodhast.ui.components.NoticeBanner
 import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.components.SectionCard
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
@@ -59,6 +56,7 @@ fun HemScreen(
     onFundClick: (String) -> Unit,
     onOpenBeslut: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSettings: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onWatchFund: () -> Unit = {},
     onImportHoldings: () -> Unit = {},
@@ -71,6 +69,7 @@ fun HemScreen(
         onRefresh = { viewModel.onEvent(HemEvent.Refresh) },
         onFundClick = onFundClick,
         onOpenBeslut = onOpenBeslut,
+        onOpenSettings = onOpenSettings,
         onOpenBackup = onOpenBackup,
         onRetry = { viewModel.onEvent(HemEvent.Retry) },
         onWatchFund = onWatchFund,
@@ -80,20 +79,10 @@ fun HemScreen(
 }
 
 /**
- * Adresserar Hems lista för `performScrollToIndex` i tester (UI-5, issue #66) — samma skäl och
- * samma mönster som Portfölj, Facit och Pågående byte redan använder. Korten ligger som var sitt
- * `item {}` och komponeras alltså inte förrän listan skrollats dit; utan taggen kunde ett test
- * bara nå de kort som råkade rymmas i testviewporten, och en kortrubrik som gjorde korten några
- * dp högre slog ut testerna för det sista kortet (riskkortet).
- */
-const val HEM_LIST_TEST_TAG = "hem_list"
-
-/**
- * Tillståndsdriven, testbar del av [HemScreen] — inget ViewModel/Hilt-beroende (issue #14).
- * `LazyColumn` (samma mönster som [se.kodhast.fonder.ui.fond.FondDetaljScreen], regel 4) —
- * en vanlig `Column(fillMaxSize())` klippte tyst innehåll som växte förbi skärmhöjden
- * (analys-summeringskortets flaggade fonder, HEM-4, plus avgiftskortets rader, HEM-5) i
- * stället för att göra det nåbart (UI-5, issue #63).
+ * Tillståndsdriven, testbar del av [HemScreen] — inget ViewModel/Hilt-beroende (issue #14). Fliken står på
+ * android-ui:s detaljram i flikläge (#266 F3): Kodhäst-sidhuvudet med Inställningar som åtgärd, ramens
+ * laddning vid första läsningen och läsfelet med "Försök igen" (NFR-6), och korten som sektioner som rullar
+ * under sidhuvudet (UI-5). Bakgrundshämtningen syns bara som sidhuvudets prickar (NAV-6) – inga snurror i korten.
  */
 @Composable
 fun HemContent(
@@ -102,96 +91,74 @@ fun HemContent(
     onRefresh: () -> Unit = {},
     onFundClick: (String) -> Unit = {},
     onOpenBeslut: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onRetry: () -> Unit = {},
     onWatchFund: () -> Unit = {},
     onImportHoldings: () -> Unit = {}
 ) {
-    val error = state.error
-    val portfolio = state.content
-    when {
-        // Ett läsfel visas i stället för portföljen, aldrig nollor som ser ut som svar – med
-        // "Försök igen" (NFR-6).
-        error != null -> CenteredState(modifier) { LoadErrorState(stringResource(R.string.error_load_title), error, onRetry) }
-
-        // Påminnelsen (HEM-12) även här: en portfölj där allt sålts har inga innehav men
-        // fortfarande transaktioner att förlora. Det tomma läget har vägarna framåt (HEM-15):
-        // bevaka en fond, importera innehav eller återställa en säkerhetskopia (samma väg som påminnelsen).
-        state.isEmpty -> Column(modifier = modifier.fillMaxSize()) {
-            state.backupReminder?.let { BackupReminderRow(it, onOpenBackup, Modifier.padding(Spacing.l)) }
-            CenteredState(Modifier.weight(1f)) {
-                EmptyState(
-                    icon = R.drawable.ic_overview,
-                    title = stringResource(R.string.hem_empty_title),
-                    message = stringResource(R.string.hem_empty_body),
-                    actions = listOf(
-                        EmptyAction(stringResource(R.string.transaktionsform_watch_fund), onWatchFund, UiR.drawable.ic_add),
-                        EmptyAction(stringResource(R.string.fab_import_holdings), onImportHoldings, R.drawable.ic_upload, ButtonVariant.Secondary),
-                        EmptyAction(stringResource(R.string.hem_empty_restore), onOpenBackup, R.drawable.ic_restore, ButtonVariant.Text)
-                    )
+    EntityDetailScreen(
+        state = state.portfolio,
+        header = null,
+        onBack = null,
+        modifier = modifier,
+        title = stringResource(R.string.nav_oversikt),
+        onRetry = onRetry,
+        actions = { SettingsButton(onOpenSettings) },
+        // Dra ned uppdaterar (UI-11) — bara med innehav: utan dem finns ingen kurs att hämta, och en gest
+        // som inte gör något är värre än ingen gest.
+        refreshing = state.pricesWorking,
+        // Dra ned bara över innehåll: vid laddning och läsfel är vägen "Försök igen" (NFR-6), inte en kurshämtning.
+        onRefresh = onRefresh.takeIf { state.portfolio is DetailUiState.Content && !state.isEmpty }
+    ) { portfolio ->
+        if (!portfolio.hasHoldings) {
+            // Påminnelsen (HEM-12) även här: en portfölj där allt sålts har inga innehav men fortfarande
+            // transaktioner att förlora. Det tomma läget har vägarna framåt (HEM-15).
+            state.backupReminder?.let { BackupReminderBanner(it, onOpenBackup) }
+            EmptyState(
+                icon = R.drawable.ic_overview,
+                title = stringResource(R.string.hem_empty_title),
+                message = stringResource(R.string.hem_empty_body),
+                modifier = Modifier.padding(top = Spacing.xl),
+                actions = listOf(
+                    EmptyAction(stringResource(R.string.transaktionsform_watch_fund), onWatchFund, UiR.drawable.ic_add),
+                    EmptyAction(stringResource(R.string.fab_import_holdings), onImportHoldings, R.drawable.ic_upload, ButtonVariant.Secondary),
+                    EmptyAction(stringResource(R.string.hem_empty_restore), onOpenBackup, R.drawable.ic_restore, ButtonVariant.Text)
                 )
-            }
+            )
+            return@EntityDetailScreen
         }
-
-        // Dra ned uppdaterar (UI-11) — bara här, inte i tomt-tillståndet ovan: utan innehav
-        // finns ingen kurs att hämta, och en gest som inte gör något är värre än ingen gest.
-        else -> AppPullToRefresh(
-            refreshing = state.pricesWorking,
-            onRefresh = onRefresh,
-            modifier = modifier.fillMaxSize()
-        ) {
-            // Ordningen enligt Översiktens mockup: värdet, det som väntar på beslut, jämförelsen
-            // mot index och påminnelsen om säkerhetskopia; resten av Hems kort under dem.
-            LazyColumn(modifier = Modifier.fillMaxSize().testTag(HEM_LIST_TEST_TAG)) {
-                item(contentType = "total") {
-                    TotalCard(
-                        totalValue = portfolio.totalValue,
-                        totalInvested = portfolio.totalInvested,
-                        gainLoss = portfolio.totalGainLoss,
-                        gainLossFraction = portfolio.totalGainLossFraction,
-                        total = portfolio.total,
-                        navEpochDay = portfolio.navEpochDay,
-                        working = state.totalWorking,
-                        modifier = Modifier.padding(Spacing.l),
-                        afterTotalResult = portfolio.iskTax?.let { iskTax -> { IskTaxRow(iskTax) } },
-                        footer = portfolio.iskTax?.let { iskTax -> { IskTaxExplanation(iskTax) } }
-                    )
-                }
-                if (state.decisions.count > 0) {
-                    item(contentType = "decisions") { DecisionsRow(decisions = state.decisions, onOpen = onOpenBeslut) }
-                }
-                item(contentType = "return-chart") { ReturnChartCard(portfolio = portfolio, working = state.returnChartWorking) }
-                state.backupReminder?.let { reminder ->
-                    item(contentType = "backup-reminder") { BackupReminderRow(reminder, onOpenBackup, Modifier.padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.l)) }
-                }
-                item(contentType = "performance") { PerformanceCard(performance = portfolio.performance, working = state.performanceWorking) }
-                item(contentType = "analysis") {
-                    AnalysisSummaryCard(
-                        summary = portfolio.analysisSummary,
-                        working = state.analysisWorking,
-                        onFundClick = onFundClick
-                    )
-                }
-                item(contentType = "fee") {
-                    FeeCard(
-                        summary = portfolio.feeSummary,
-                        working = state.feeWorking,
-                        onFundClick = onFundClick
-                    )
-                }
-                portfolio.risk?.let { risk ->
-                    item(contentType = "risk") {
-                        RiskCard(
-                            risk = risk,
-                            portfolioRisk = portfolio.portfolioRisk,
-                            working = state.riskWorking
-                        )
-                    }
-                }
-            }
-        }
+        // Ordningen enligt mockupen: det som väntar på beslut först, värdet, jämförelsen mot index och
+        // påminnelsen om säkerhetskopia; resten av korten under dem.
+        if (state.decisions.count > 0) DecisionsBanner(decisions = state.decisions, onOpen = onOpenBeslut)
+        TotalCard(
+            totalValue = portfolio.totalValue,
+            totalInvested = portfolio.totalInvested,
+            gainLoss = portfolio.totalGainLoss,
+            gainLossFraction = portfolio.totalGainLossFraction,
+            total = portfolio.total,
+            navEpochDay = portfolio.navEpochDay,
+            afterTotalResult = portfolio.iskTax?.let { iskTax -> { IskTaxRow(iskTax) } },
+            footer = portfolio.iskTax?.let { iskTax -> { IskTaxExplanation(iskTax) } }
+        )
+        ReturnChartCard(portfolio = portfolio, fetchingBenchmark = state.benchmarkWorking)
+        state.backupReminder?.let { BackupReminderBanner(it, onOpenBackup) }
+        PerformanceCard(performance = portfolio.performance)
+        AnalysisSummaryCard(summary = portfolio.analysisSummary, onFundClick = onFundClick)
+        FeeCard(summary = portfolio.feeSummary, fetching = state.metadataWorking, onFundClick = onFundClick)
+        portfolio.risk?.let { risk -> RiskCard(risk = risk, portfolioRisk = portfolio.portfolioRisk) }
     }
 }
+
+/** Inställningar (SET) som sidhuvudets åtgärd på Översikt (NAV-7) – Fonder kräver ingen inloggning, så kontot står inte där. */
+@Composable
+private fun SettingsButton(onClick: () -> Unit) = AppIconButton(
+    icon = R.drawable.ic_settings,
+    contentDescription = stringResource(R.string.nav_settings),
+    onClick = onClick,
+    variant = IconButtonVariant.Tonal,
+    tone = Tone.NeutralPrimary
+)
 
 /**
  * Årets ungefärliga schablonskatt i ISK/KF (HEM-16, issue #199) direkt under totalresultatet, som i
@@ -227,23 +194,10 @@ private fun IskTaxExplanation(iskTax: TaxCalc.IskTax) {
     )
 }
 
-/**
- * Dag/vecka/månad. Kortet saknade rubrik så länge det var självförklarande, men en snurra
- * behöver en rad att sitta i — och den raden får inte vara en av periodraderna, där beloppet
- * ligger längst till höger (UI-6). Rubriken är alltså en följd av väntesnurran (NAV-6), inte
- * dekoration.
- */
+/** Dag/vecka/månad (HEM-2) i ett [SectionCard]. */
 @Composable
-private fun PerformanceCard(
-    performance: PortfolioPerformanceCalc.PortfolioPerformance,
-    working: Boolean
-) {
-    AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l)) {
-        CardTitleRow(
-            title = stringResource(R.string.hem_performance_title),
-            working = working,
-            modifier = Modifier.padding(bottom = Spacing.xs)
-        )
+private fun PerformanceCard(performance: PortfolioPerformanceCalc.PortfolioPerformance) {
+    SectionCard(title = stringResource(R.string.hem_performance_title), modifier = Modifier.fillMaxWidth()) {
         val (dayAmount, dayFraction, dayPartial) = performance.day.toRowArgs()
         PeriodRow(
             label = stringResource(R.string.period_day),
@@ -293,20 +247,15 @@ private const val UNCLASSIFIED_NOTICE_THRESHOLD = 0.10
  * och en kurva räknad utan något innehav en viss dag (HEM-2:s delvis osäker).
  */
 @Composable
-private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
-    AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l)) {
-        CardTitleRow(
-            title = stringResource(R.string.hem_return_chart_title),
-            working = working
-        )
+private fun ReturnChartCard(portfolio: HemPortfolio, fetchingBenchmark: Boolean) {
+    SectionCard(title = stringResource(R.string.hem_return_chart_title), modifier = Modifier.fillMaxWidth()) {
         if (portfolio.returnSeries.isEmpty) {
             Text(
                 stringResource(R.string.hem_return_chart_insufficient),
                 style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Spacing.s)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            return@AppCard
+            return@SectionCard
         }
         val benchmark = portfolio.benchmarkSeries
         FundLineChart(
@@ -314,8 +263,7 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
             purchaseEpochDays = portfolio.purchaseEpochDays,
             primaryLabel = stringResource(R.string.hem_return_chart_series_portfolio),
             comparisonSeries = benchmark?.let { listOf(ChartSeries(it.fundName, it.points)) }.orEmpty(),
-            valueAxis = ChartValueAxis.PROCENT,
-            modifier = Modifier.padding(top = Spacing.s)
+            valueAxis = ChartValueAxis.PROCENT
         )
         Text(
             stringResource(R.string.hem_return_chart_explain),
@@ -324,10 +272,13 @@ private fun ReturnChartCard(portfolio: HemPortfolio, working: Boolean) {
             modifier = Modifier.padding(top = Spacing.s)
         )
         Text(
-            if (benchmark != null) {
-                stringResource(R.string.format_hem_return_chart_benchmark_explain, benchmark.fundName)
-            } else {
-                stringResource(R.string.hem_return_chart_benchmark_missing)
+            when {
+                benchmark != null -> stringResource(R.string.format_hem_return_chart_benchmark_explain, benchmark.fundName)
+
+                // "Vet inte än" ser annars ut som "vet inte" (ANA-4-principen).
+                fetchingBenchmark -> stringResource(R.string.hem_return_chart_benchmark_fetching)
+
+                else -> stringResource(R.string.hem_return_chart_benchmark_missing)
             },
             style = AppTheme.typography.itemSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -369,21 +320,20 @@ private fun PortfolioPerformanceCalc.PortfolioPeriodResult.toRowArgs(): PeriodRo
         PeriodRowArgs(null, null, partial = false)
 }
 
-/** Summeringskort över gul-/rödflaggade fonder (issue #16, HEM-4). */
+/** Summeringskort över gul-/rödflaggade fonder (issue #16, HEM-4): en rad per fond som öppnar Fonddetalj. */
 @Composable
-private fun AnalysisSummaryCard(summary: AnalysisSummary, working: Boolean, onFundClick: (String) -> Unit) {
-    AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l)) {
-        CardTitleRow(title = stringResource(R.string.hem_analysis_title), working = working)
+private fun AnalysisSummaryCard(summary: AnalysisSummary, onFundClick: (String) -> Unit) {
+    SectionCard(title = stringResource(R.string.hem_analysis_title), modifier = Modifier.fillMaxWidth()) {
         if (summary.flagged.isEmpty()) {
             Text(
                 stringResource(R.string.hem_analysis_empty),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = Spacing.s)
+                style = AppTheme.typography.body,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
-            Column(modifier = Modifier.padding(top = Spacing.s)) {
-                summary.flagged.forEach { flagged ->
+            Column {
+                summary.flagged.forEachIndexed { index, flagged ->
+                    if (index > 0) AppDivider()
                     FlaggedFundRow(flagged = flagged, onClick = { onFundClick(flagged.fund.fundId) })
                 }
             }
@@ -402,12 +352,8 @@ private fun AnalysisSummaryCard(summary: AnalysisSummary, working: Boolean, onFu
  * "inget billigare hittades".
  */
 @Composable
-private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundClick: (String) -> Unit) {
-    AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l)) {
-        // Snurran sitter i en egen rubrikrad ovanför totalen, inte i `PeriodRow`n: där ligger
-        // beloppet längst till höger, och en snurra i den änden hade trängt undan just det
-        // talet kortet finns till för (UI-6).
-        CardTitleRow(title = stringResource(R.string.hem_fee_title), working = working)
+private fun FeeCard(summary: PortfolioFeeCalc.Result, fetching: Boolean, onFundClick: (String) -> Unit) {
+    SectionCard(title = stringResource(R.string.hem_fee_title), modifier = Modifier.fillMaxWidth()) {
         PeriodRow(
             label = stringResource(R.string.hem_fee_total_label),
             amount = null,
@@ -422,7 +368,8 @@ private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundCl
         )
         if (summary.unknownFeeCount > 0) {
             Text(
-                stringResource(R.string.format_hem_fee_unknown, summary.unknownFeeCount),
+                // Medan avgifterna slås upp är de okända på väg, inte okända (ANA-4-principen).
+                if (fetching) stringResource(R.string.hem_fee_fetching) else stringResource(R.string.format_hem_fee_unknown, summary.unknownFeeCount),
                 style = AppTheme.typography.itemSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = Spacing.xs)
@@ -443,7 +390,8 @@ private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundCl
         }
         if (summary.byHolding.isNotEmpty()) {
             Column(modifier = Modifier.padding(top = Spacing.s)) {
-                summary.byHolding.forEach { holdingFee ->
+                summary.byHolding.forEachIndexed { index, holdingFee ->
+                    if (index > 0) AppDivider()
                     FeeHoldingRow(holdingFee = holdingFee, onClick = { onFundClick(holdingFee.fund.fundId) })
                 }
             }
@@ -451,74 +399,47 @@ private fun FeeCard(summary: PortfolioFeeCalc.Result, working: Boolean, onFundCl
     }
 }
 
+/**
+ * Ett innehavs avgift som en listrad som öppnar fonden. Aldrig jämfört (ingen undertext) och
+ * jämfört-utan-träff ("Redan bland de billigaste", samma text som ANA-9:s kort i Fonddetalj) är skilda
+ * tillstånd – annars ser ett outforskat innehav ut som redan optimalt.
+ */
 @Composable
 private fun FeeHoldingRow(holdingFee: PortfolioFeeCalc.HoldingFee, onClick: () -> Unit) {
-    AppCard(
-        onClick = onClick,
-        tone = Tone.Filled,
-        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
-    ) {
-        PeriodRow(
-            label = holdingFee.fund.name,
-            amount = null,
-            fraction = null,
-            valueText = MoneyFormat.kr(holdingFee.annualFeeKr),
-            modifier = Modifier.copyableFundName(holdingFee.fund.name)
-        )
-        // Aldrig jämfört (ingen text) och jämfört-utan-träff ("Redan bland de billigaste",
-        // samma text som ANA-9:s eget kort i Fonddetalj — regel 4) är skilda tillstånd,
-        // både i data (PortfolioFeeCalc.HoldingFee.wasCompared) och här i UI:t. Annars ser
-        // ett outforskat innehav ut som redan optimalt.
-        val savings = holdingFee.annualSavingsKr
-        when {
-            savings != null && savings > 0 -> Text(
-                stringResource(R.string.format_hem_fee_holding_savings, MoneyFormat.kr(savings)),
-                style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-
-            holdingFee.wasCompared -> Text(
-                stringResource(R.string.fee_comparison_none_cheaper),
-                style = AppTheme.typography.itemSubtitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-        }
-    }
+    val savings = holdingFee.annualSavingsKr
+    ItemRow(
+        title = holdingFee.fund.name,
+        modifier = Modifier.copyableFundName(holdingFee.fund.name),
+        subtitle = when {
+            savings != null && savings > 0 -> stringResource(R.string.format_hem_fee_holding_savings, MoneyFormat.kr(savings))
+            holdingFee.wasCompared -> stringResource(R.string.fee_comparison_none_cheaper)
+            else -> null
+        },
+        trailing = { Text(MoneyFormat.kr(holdingFee.annualFeeKr), style = MonoAmountStyle.merge(AppTheme.typography.body)) },
+        navigates = true,
+        onClick = onClick
+    )
 }
 
 @Composable
 private fun FlaggedFundRow(flagged: FlaggedHolding, onClick: () -> Unit) {
-    AppCard(
-        onClick = onClick,
-        tone = Tone.Filled,
-        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StatusDot(level = flagged.analysis.status!!, modifier = Modifier.padding(end = Spacing.m))
-            Column {
-                Text(flagged.fund.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.copyableFundName(flagged.fund.name))
-                Text(
-                    statusTriggerMessages(flagged.analysis).joinToString(" · "),
-                    style = AppTheme.typography.itemSubtitle,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
+    ItemRow(
+        title = flagged.fund.name,
+        modifier = Modifier.copyableFundName(flagged.fund.name),
+        subtitle = statusTriggerMessages(flagged.analysis).joinToString(" · "),
+        leading = { LeadingSlot { StatusDot(level = flagged.analysis.status!!) } },
+        navigates = true,
+        onClick = onClick
+    )
 }
 
 /**
  * Påminnelsen om att säkerhetskopiera (HEM-12) — undertexten säger hur många transaktioner som
  * tillkommit och när senaste kopian togs, eller att ingen finns. Knappen leder till
- * Inställningars säkerhetskopiering; själva kopian tas där (SET-6, SET-7).
+ * Inställningars säkerhetskopiering; själva kopian tas där (SET-6, SET-7). android-ui:s [NoticeBanner] i kopparton.
  */
 @Composable
-private fun BackupReminderRow(reminder: BackupReminder, onOpenBackup: () -> Unit, modifier: Modifier = Modifier) {
+private fun BackupReminderBanner(reminder: BackupReminder, onOpenBackup: () -> Unit) {
     // Lokal kopia: BackupReminder ligger i :core, och Kotlin smart-castar inte en publik egenskap från en annan modul.
     val lastBackupEpochMillis = reminder.lastBackupEpochMillis
     val body = when {
@@ -536,24 +457,25 @@ private fun BackupReminderRow(reminder: BackupReminder, onOpenBackup: () -> Unit
             BackupReminderCalc.formatDate(lastBackupEpochMillis)
         )
     }
-    ReminderRow(
-        title = stringResource(R.string.hem_backup_reminder_title),
-        body = body,
-        actionLabel = stringResource(R.string.hem_backup_reminder_action),
-        onAction = onOpenBackup,
-        // Samma ytterkant som korten; marginalen väljs av platsen (överst i tomt läge, under diagrammet annars).
-        modifier = modifier
+    NoticeBanner(
+        text = stringResource(R.string.hem_backup_reminder_title),
+        icon = R.drawable.ic_restore,
+        onClick = onOpenBackup,
+        tone = Tone.Copper,
+        onClickLabel = stringResource(R.string.hem_backup_reminder_action),
+        detail = body
     )
 }
 
 /**
- * "Att besluta" (HEM-13): "N föreslagna · M sålda, väntar på köp · K billigare alternativ" ur listan
- * Byten ([se.kodhast.fonder.domain.usecase.SwitchRows], BYT-4) i kopparens ton, och vägen till fliken Beslut. Visas bara när något väntar — samma antal som flikradens märke, ur samma
+ * "Att besluta" (HEM-13): "N beslut väntar" med "N föreslagna · M sålda, väntar på köp · K billigare alternativ"
+ * ur listan Byten ([se.kodhast.fonder.domain.usecase.SwitchRows], BYT-4) under, i kopparens ton, och hela
+ * bannern öppnar fliken Beslut. Visas bara när något väntar — samma antal som flikradens märke, ur samma
  * källa. Undertexten nämner bara de slag som finns.
  */
 @Composable
-private fun DecisionsRow(decisions: PendingDecisions, onOpen: () -> Unit) {
-    val body = listOf(
+private fun DecisionsBanner(decisions: PendingDecisions, onOpen: () -> Unit) {
+    val detail = listOf(
         R.plurals.format_hem_decisions_suggestions to decisions.switches.proposedCount,
         R.plurals.format_hem_decisions_sold to decisions.switches.soldCount,
         R.plurals.format_hem_decisions_cheaper to decisions.switches.feeCount
@@ -561,14 +483,12 @@ private fun DecisionsRow(decisions: PendingDecisions, onOpen: () -> Unit) {
         .filter { (_, count) -> count > 0 }
         .map { (plural, count) -> pluralStringResource(plural, count, count) }
         .joinToString(" · ")
-    ReminderRow(
-        title = stringResource(R.string.hem_decisions_title),
-        body = body,
-        actionLabel = stringResource(R.string.hem_decisions_action),
-        onAction = onOpen,
-        count = decisions.count,
-        tone = ReminderRowTone.Accent,
-        chevron = true,
-        modifier = Modifier.padding(horizontal = Spacing.l)
+    NoticeBanner(
+        text = pluralStringResource(R.plurals.format_hem_decisions_waiting, decisions.count, decisions.count),
+        icon = R.drawable.ic_decisions,
+        onClick = onOpen,
+        tone = Tone.Copper,
+        onClickLabel = stringResource(R.string.hem_decisions_action),
+        detail = detail.ifEmpty { null }
     )
 }

@@ -104,8 +104,7 @@ enum class ChartValueAxis { KRONOR, PROCENT }
 /**
  * Periodväljarens rad. Den skrollar (sex perioder får inte plats på en telefon), så en chip
  * utanför vyn är inte komponerad och `performScrollTo` kan inte hitta den — instrumenttester
- * måste gå via `performScrollToIndex` på den här taggen i stället (UI-5, samma sak som
- * `PORTFOLJ_LIST_TEST_TAG` löser för innehavslistan, issue #66).
+ * måste gå via `performScrollToIndex` på den här taggen i stället (UI-5, issue #66).
  */
 const val CHART_PERIOD_ROW_TEST_TAG = "chart_period_row"
 
