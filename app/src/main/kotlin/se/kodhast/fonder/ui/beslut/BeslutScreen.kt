@@ -47,7 +47,6 @@ import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.fonder.ui.theme.Neutral
 import se.kodhast.fonder.ui.theme.ReturnColors
 import se.kodhast.fonder.ui.theme.Tertiary
-import se.kodhast.fonder.ui.theme.flushCardStyle
 import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppBottomSheet
 import se.kodhast.ui.components.AppButton
@@ -253,7 +252,7 @@ private fun RiskHeader(state: BeslutUiState, onOpenRiskProfile: () -> Unit) {
         )
 
         // Profil utan kort (underlaget läses ännu, eller målet saknar fördelning): Ändra mål ska ändå nås.
-        state.riskProfile != null -> AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+        state.riskProfile != null -> AppCard(modifier = Modifier.fillMaxWidth()) {
             ItemRow(
                 title = stringResource(R.string.hem_risk_title),
                 subtitle = state.riskProfile.answers?.goal?.let { stringResource(R.string.format_risk_card_goal, stringResource(it.labelRes())) },
@@ -261,7 +260,7 @@ private fun RiskHeader(state: BeslutUiState, onOpenRiskProfile: () -> Unit) {
             )
         }
 
-        else -> AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+        else -> AppCard(modifier = Modifier.fillMaxWidth()) {
             ItemRow(
                 title = stringResource(R.string.beslut_no_goal_title),
                 subtitle = stringResource(R.string.beslut_gate_body),
@@ -412,7 +411,7 @@ private fun SwitchRowCard(
     onDismiss: (SwitchPlanResolver.Suggestion) -> Unit,
     onShowInfo: (SwitchRow.Suggested) -> Unit
 ) {
-    AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         when (row) {
             is SwitchRow.Suggested -> SuggestedRow(row, effect, firstOpenStep, onFollow, onStartSwitchWatch, onDismiss, onShowInfo)
 
@@ -583,7 +582,7 @@ private fun SuggestionInfoSheet(
                 modifier = Modifier.padding(top = Spacing.s)
             )
         } else {
-            AppCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.s), style = flushCardStyle) {
+            AppCard(modifier = Modifier.fillMaxWidth().padding(top = Spacing.s)) {
                 info.alternatives.forEachIndexed { index, facts ->
                     if (index > 0) AppDivider()
                     FundFactsRow(facts)
@@ -695,7 +694,7 @@ private fun ClosedRow(row: SwitchRow, onUndo: (SwitchPlanResolver.Suggestion) ->
  */
 @Composable
 private fun FacitRow(followedCount: Int, followedExcessKr: Double?, onOpen: () -> Unit) {
-    AppCard(modifier = Modifier.fillMaxWidth(), style = flushCardStyle) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         ItemRow(
             title = pluralStringResource(R.plurals.format_beslut_facit_row, followedCount, followedCount),
             trailing = if (followedCount > 0 && followedExcessKr != null) {

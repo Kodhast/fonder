@@ -25,7 +25,7 @@ import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.ItemRow
 
 /**
- * android-ui:s [ItemRow] som Fonder använder den (Fondsök, Händelser, Beslut) och Fonders [ProgressBar] i
+ * android-ui:s [ItemRow] som Fonder använder den (Fondsök, Händelser, Beslut) och listrader i
  * JVM: raden är minst 56 dp, en knapp till höger behåller sin egen åtgärd, `overline` står ovanför titeln
  * och en klickbar rad med `navigates` anropar `onClick` (Besluts Facit-rad).
  */
@@ -69,7 +69,7 @@ class ItemRowTest {
     }
 
     @Test
-    fun `skärmdump av listrad och förloppsstapel`() = composeRule.captureLightAndDark("ItemRow_ProgressBar", animated = true) {
+    fun `skärmdump av listrader`() = composeRule.captureLightAndDark("ItemRow_rows") {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ItemRow(
                 title = "Global Indexfond A",
@@ -82,8 +82,6 @@ class ItemRowTest {
                 overline = { Text("Plats 1 i planen", style = MaterialTheme.typography.labelSmall) }
             )
             ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr") }, navigates = true, onClick = {})
-            ProgressBar()
-            ProgressBar(progress = { 0.6f })
         }
     }
 }

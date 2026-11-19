@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -46,7 +48,7 @@ import se.kodhast.ui.components.SettingsPage
 
 /**
  * Fonders navigationsram (NAV-7, NAV-8, UI-8) i JVM med Robolectric – android-ui:s `AppNavHost` med Fonders
- * flikrad, plusknapp och meny och toppraden runt skärmarna ([FonderPage]), men enkla ersättare för skärmarna
+ * flikrad, plusknapp och meny, men enkla ersättare för skärmarna
  * så att testet inte behöver Hilt: fyra flikar med Översikt som start och Kodhäst-sidhuvudet, plusknappens
  * meny med de fyra valen i ordning, som öppnar sina skärmar, bakåt som stänger menyn, Inställningar bakom
  * ikonen på Översikt, flikraden och plusmenyn borta på en djupare skärm, underskärmarnas topprad med
@@ -94,13 +96,29 @@ class FonderNavHostTest {
                 }
             }
         }
+        Frame(key, body)
+    }
+
+    /** Ersättarens ram: samma topprad eller sidhuvud som den riktiga skärmen ritar. */
+    @Composable
+    private fun Frame(key: AppKey, body: @Composable () -> Unit) {
+        val content = remember(body) { movableContentOf(body) }
         when {
-            tabTitle(key) != null -> TabFrame(tabTitle(key)!!, body)
+            tabTitle(key) != null -> TabFrame(tabTitle(key)!!, content)
 
             // Inställningar står på bibliotekets SettingsPage och ritar sin egen topprad (#266 F4).
-            key == SettingsKey -> SettingsPage("Inställningar", onBack = { backStack.popIfTop(key) }) { body() }
+            key == SettingsKey -> SettingsPage("Inställningar", onBack = { backStack.popIfTop(key) }) { content() }
 
-            else -> body()
+            // Facit, importerna och Pågående byte står på bibliotekets list- och detaljramar och ritar sin
+            // egen lilla topprad med tillbakapil (#266 F6) – ersättarna gör likadant.
+            subTitle(key) != null -> EntityDetailScreen(
+                state = DetailUiState.Content(Unit),
+                header = null,
+                onBack = { backStack.popIfTop(key) },
+                title = subTitle(key)
+            ) { content() }
+
+            else -> content()
         }
     }
 
@@ -112,6 +130,14 @@ class FonderNavHostTest {
     @Composable
     private fun TabFrame(title: String, content: @Composable () -> Unit) {
         EntityDetailScreen(state = DetailUiState.Content(Unit), header = null, onBack = null, title = title) { content() }
+    }
+
+    private fun subTitle(key: AppKey): String? = when (key) {
+        FacitKey -> "Facit"
+        ImportHoldingsKey -> "Importera innehav"
+        ImportOrdersKey -> "Importera avräkningsnotor"
+        is SwitchWatchKey -> "Pågående byte"
+        else -> null
     }
 
     private fun tabTitle(key: AppKey): String? = when (key) {
@@ -391,7 +417,7 @@ class FonderNavHostTest {
     }
 
     @Test
-    fun `underskärmarna utan ram får topprad med rubrik och tillbakapil, ramskärmarna ingen`() {
+    fun `navigationen ritar ingen topprad – underskärmarna har sin ram med rubrik och tillbakapil`() {
         setShell()
         listOf(
             ImportHoldingsKey to "Importera innehav",
@@ -440,14 +466,7 @@ class FonderNavHostTest {
     /** Skärmdumpens ersättare – bara skärmens namn, som före Navigation 3. */
     private fun stubEntryWithoutTaps(key: AppKey): NavEntry<AppKey> = NavEntry(key) {
         val body: @Composable () -> Unit = { Text("skärm:${name(key)}") }
-        when {
-            tabTitle(key) != null -> TabFrame(tabTitle(key)!!, body)
-
-            // Inställningar står på bibliotekets SettingsPage och ritar sin egen topprad (#266 F4).
-            key == SettingsKey -> SettingsPage("Inställningar", onBack = { backStack.popIfTop(key) }) { body() }
-
-            else -> body()
-        }
+        Frame(key, body)
     }
 
     class StubViewModel : ViewModel() {

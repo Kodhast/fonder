@@ -38,9 +38,9 @@ import se.kodhast.fonder.ui.components.ExpandableInfoRow
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.StatusDot
-import se.kodhast.fonder.ui.components.WorkingIndicator
 import se.kodhast.fonder.ui.components.copyableFundName
 import se.kodhast.fonder.ui.diagram.ChartSeries
+import se.kodhast.fonder.ui.diagram.ComparisonChart
 import se.kodhast.fonder.ui.diagram.FundLineChart
 import se.kodhast.fonder.ui.navigation.TransactionFormKey
 import se.kodhast.ui.components.AppButton
@@ -130,7 +130,7 @@ fun FondDetaljContent(
     EntityDetailScreen(
         state = state.fund,
         // Inget centrerat huvud: namnet står i den lilla toppraden, och märkningarna (status,
-        // risknivå, väntesnurra) vänsterställda överst i innehållet.
+        // risknivå) vänsterställda överst i innehållet.
         header = null,
         onBack = onBack,
         title = state.content.fundName ?: stringResource(R.string.fond_title),
@@ -203,8 +203,7 @@ private fun ColumnScope.FondDetaljSections(
     FundLineChart(
         points = chartPoints,
         purchaseEpochDays = fund.purchaseEpochDays,
-        movingAverage = fund.movingAverage,
-        working = state.chartWorking
+        movingAverage = fund.movingAverage
     )
     // Allt förklarande material ligger hopfällt (ANA-10): analysen och ordlistan är referens man
     // slår upp, inte det man öppnar kortet för.
@@ -236,8 +235,8 @@ private fun ColumnScope.FondDetaljSections(
 }
 
 /**
- * Märkningarna överst i innehållet: säljsignal-status (ANA-3), risknivå (UI-10), väntesnurran
- * (NAV-6) och innehavets utgångsläge (POR-6). Fondens namn står i ramens topprad.
+ * Märkningarna överst i innehållet: säljsignal-status (ANA-3), risknivå (UI-10) och innehavets
+ * utgångsläge (POR-6). Fondens namn står i ramens topprad.
  */
 @Composable
 private fun FundHeader(state: FondDetaljUiState, modifier: Modifier = Modifier) {
@@ -246,12 +245,6 @@ private fun FundHeader(state: FondDetaljUiState, modifier: Modifier = Modifier) 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
             content.analysis?.status?.let { status -> StatusDot(status) }
             RiskBadge(level = state.riskLevel)
-            // Väntesnurran (NAV-6): fondens kurs och historik hämtas när skärmen öppnas, och
-            // nyckeltalen under räknas på det som hunnit landa.
-            WorkingIndicator(
-                working = state.chartWorking,
-                contentDescription = stringResource(R.string.format_card_working, content.fundName ?: "")
-            )
         }
         val firstPurchaseEpochDay = content.firstPurchaseEpochDay
         val netInvested = content.netInvested
@@ -331,7 +324,7 @@ private fun SwitchDecisionSection(
         when (val feeComparison = state.feeComparison) {
             null -> Unit
 
-            FeeComparisonUiState.Loading -> SwitchWorkingMessage(stringResource(R.string.fee_comparison_loading))
+            FeeComparisonUiState.Loading -> SwitchMessage(stringResource(R.string.fee_comparison_loading))
 
             FeeComparisonUiState.Unavailable -> SwitchMessage(stringResource(R.string.fee_comparison_unavailable))
 
@@ -408,26 +401,6 @@ private fun SwitchGroupLabel(text: String) {
     GroupLabel(text, modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xs))
 }
 
-/**
- * Som [SwitchMessage], men för ett svar som är **på väg** i stället för ett som är givet:
- * texten sa redan "letar …", medan det som saknades var kvittot att något faktiskt kör (NAV-6).
- * En hämtning mot en odokumenterad källa (TP-14) kan ta flera sekunder, och en stillastående
- * text går inte att skilja från en som fastnat.
- */
-@Composable
-private fun SwitchWorkingMessage(text: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        // Samma toppmarginal som texten, så snurran ligger i linje med raden i stället för att
-        // dras ned av `SwitchMessage`s egen padding.
-        WorkingIndicator(
-            working = true,
-            contentDescription = text,
-            modifier = Modifier.padding(top = Spacing.s, end = Spacing.s)
-        )
-        SwitchMessage(text)
-    }
-}
-
 @Composable
 private fun SwitchMessage(text: String) {
     ItemRowText(title = null, subtitle = text, modifier = Modifier.padding(top = Spacing.s))
@@ -464,7 +437,7 @@ private fun SwitchPlanRow(
             explanation = explanation,
             onExpand = { onSuggestionExpand(counterpartIsin) },
             extraContent = {
-                ComparisonChart(
+                SuggestionComparison(
                     holdingPoints = chartPoints,
                     candidateName = counterpartName,
                     comparison = comparison
@@ -545,7 +518,7 @@ private fun FeeAlternativeRow(
             explanation = explanation,
             onExpand = { onSuggestionExpand(alternative.candidate.isin) },
             extraContent = {
-                ComparisonChart(
+                SuggestionComparison(
                     holdingPoints = chartPoints,
                     candidateName = alternative.candidate.name,
                     comparison = comparison
@@ -576,30 +549,20 @@ private fun FeeAlternativeRow(
 }
 
 /**
- * Jämförelsediagrammet för ett utfällt förslag (ANA-11) — innehavets och kandidatens kurvor i
- * samma [FundLineChart], indexerade till 100 vid periodens start (regel 4: den delade
- * komponenten utökades, ingen ny diagramvariant). Går kandidatens historik inte att hämta sägs
- * det ut i stället för att ett tomt diagram ritas.
+ * Jämförelsediagrammet för ett utfällt förslag (ANA-11): innehavets och kandidatens kurvor i den delade
+ * [ComparisonChart] (regel 4, samma som Pågående byte). Inget innan raden fällts ut och hämtningen startat.
  */
 @Composable
-private fun ComparisonChart(
-    holdingPoints: List<Pair<Long, Double>>,
-    candidateName: String,
-    comparison: ComparisonUiState?
-) {
-    when (comparison) {
-        null -> Unit
-
-        ComparisonUiState.Loading -> SwitchWorkingMessage(stringResource(R.string.switch_comparison_loading))
-
-        ComparisonUiState.Unavailable -> ItemRowText(title = null, subtitle = stringResource(R.string.switch_comparison_unavailable))
-
-        is ComparisonUiState.Ready -> FundLineChart(
-            points = holdingPoints,
-            comparisonSeries = listOf(ChartSeries(label = candidateName, points = comparison.points)),
-            modifier = Modifier.padding(bottom = Spacing.s)
-        )
-    }
+private fun SuggestionComparison(holdingPoints: List<Pair<Long, Double>>, candidateName: String, comparison: ComparisonUiState?) {
+    if (comparison == null) return
+    ComparisonChart(
+        points = holdingPoints,
+        comparisonSeries = (comparison as? ComparisonUiState.Ready)?.let { listOf(ChartSeries(label = candidateName, points = it.points)) }.orEmpty(),
+        available = comparison is ComparisonUiState.Ready,
+        loading = comparison == ComparisonUiState.Loading,
+        unavailableText = stringResource(R.string.switch_comparison_unavailable),
+        modifier = Modifier.padding(bottom = Spacing.s)
+    )
 }
 
 /**

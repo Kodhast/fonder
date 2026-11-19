@@ -203,7 +203,7 @@ class ImportOrdersViewModel @Inject constructor(
     internal fun onFilesRead(files: List<Pair<String, ByteArray>>) {
         viewModelScope.launch {
             _uiState.update {
-                it.copy(loading = true, filesSelected = true, rows = persistentListOf(), unparsedFileNames = persistentListOf())
+                it.copy(loading = true, filesSelected = true, error = null, rows = persistentListOf(), unparsedFileNames = persistentListOf())
             }
 
             val parsedByFile = files.associate { (name, bytes) ->

@@ -7,6 +7,3 @@
 # färre – kör den igen när en skärm rättats. Lägg aldrig till en baslinjerad för hand.
 
 # Baslinje
-app/src/main/kotlin/se/kodhast/fonder/ui/facit/FacitScreen.kt:padding(horizontal = Spacing.l, vertical = 6.dp – baslinje 2026-10 – rättas i skärm-PR:erna
-app/src/main/kotlin/se/kodhast/fonder/ui/imports/ImportHoldingsScreen.kt:padding(horizontal = Spacing.l, vertical = 6.dp – baslinje 2026-10 – rättas i skärm-PR:erna
-app/src/main/kotlin/se/kodhast/fonder/ui/imports/ImportOrdersScreen.kt:padding(horizontal = Spacing.l, vertical = 6.dp – baslinje 2026-10 – rättas i skärm-PR:erna

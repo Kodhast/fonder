@@ -200,17 +200,17 @@ class FacitViewModelTest {
     }
 
     @Test
-    fun `summeringskortet snurrar medan bytesplanen skannas`() = runTest(dispatcher) {
+    fun `dra ned-indikatorn visas medan bytesplanen skannas`() = runTest(dispatcher) {
         // Det är skanningen som spelar in nya rader och fyller på utfallens NAV — alltså precis
-        // den data kortet redovisar. En molnbackup gör det inte, och ska inte snurra kortet.
+        // den data Facit redovisar, och den körning dra ned startar (UI-11).
         setUpPrices()
         records.value = listOf(record(id = 1))
         fakeScheduler.runningWork.value = setOf(BackgroundWork.SWITCH_PLAN_SCAN)
 
         viewModel().uiState.test {
             var state = awaitItem()
-            while (state.loading || !state.switchPlanWorking) state = awaitItem()
-            assertTrue(state.summaryWorking)
+            while (state.loading) state = awaitItem()
+            assertTrue(state.switchPlanWorking)
             cancelAndIgnoreRemainingEvents()
         }
     }

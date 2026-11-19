@@ -60,7 +60,7 @@ flytta motivet till PR-beskrivningen – men tappa inget beteende på vägen.
 
 ## Gemensamma beteenden beskrivs en gång
 
-Beteenden som delade komponenter ger alla skärmar – väntesnurran i kortets rubrik (NAV-6),
+Beteenden som delade komponenter ger alla skärmar – sidhuvudets prickar och "Hämtar …" i stället för snurror (NAV-6, UI-19),
 dra för att uppdatera (UI-11), tryckytor och skärmläsartext (UI-3), utfällt läge som överlever
 rotation (UI-9), risknivåns märkning (UI-10), tom data som "kunde inte beräknas" (ANA-4), listskärmarnas
 laddning, tomma tillstånd och läsfel (NFR-6) – står

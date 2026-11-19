@@ -9,7 +9,7 @@ import se.kodhast.fonder.domain.usecase.SwitchPlanResolver
 /**
  * Alla skärmar i appen (NAV-7). Sparas med kotlinx.serialization i [AppBackStack], så att
  * flikarnas stackar överlever rotation och processdöd. Varje skärm ritar sin egen topprad eller sitt
- * sidhuvud (en ram eller `SubPage`); navigationsramen ritar bara flikraden. En skärm med argument bär dem i nyckeln
+ * sidhuvud på en av android-ui:s ramar; navigationsramen ritar bara flikraden. En skärm med argument bär dem i nyckeln
  * (t.ex. [FondDetaljKey.fundId]) och skickar dem till sin ViewModel med assisted injection.
  */
 @Serializable

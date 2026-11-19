@@ -3,7 +3,6 @@ package se.kodhast.fonder.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -35,22 +34,8 @@ class ComponentScreenshotTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun `CardTitleRow med och utan indikator`() = composeRule.captureLightAndDark("CardTitleRow_working", animated = true) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            CardTitleRow(title = "Kurser", working = true, style = MaterialTheme.typography.titleMedium)
-            CardTitleRow(title = "Fondavgifter per år")
-            ValueAsOfRow(navEpochDay = LocalDate.of(2026, 10, 10).toEpochDay())
-        }
-    }
-
-    @Test
     fun `ValueAsOfRow`() = composeRule.captureLightAndDark("ValueAsOfRow_default") {
         ValueAsOfRow(navEpochDay = LocalDate.of(2026, 10, 10).toEpochDay())
-    }
-
-    @Test
-    fun `WorkingIndicator`() = composeRule.captureLightAndDark("WorkingIndicator_running", animated = true) {
-        WorkingIndicator(working = true, contentDescription = "Uppdaterar Kurser")
     }
 
     @Test

@@ -165,9 +165,6 @@ data class FondDetaljUiState(
 
     /** Avstådda förslag av båda sorterna för fonden. */
     val dismissedCount: Int get() = dismissedPlanCount + dismissedFeeCount
-
-    /** Rubriken och kurshistoriken vilar båda på samma hämtning — härlett här, inte i skärmen. */
-    val chartWorking: Boolean get() = loading || priceRefreshing
 }
 
 /** Ett inspelat avgiftsbyte (issue #91) — nyckeln facit skrivs mot när kvitteringen används. */

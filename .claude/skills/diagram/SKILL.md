@@ -22,7 +22,6 @@ gäller kravlistan. Vilken komponent som är vilken elementtyp står i skill `sh
 | `primaryLabel`, `comparisonSeries: List<ChartSeries>` | fler serier → teckenförklaring (`ChartLegend`) och, i kronläge, indexering till 100 |
 | `valueAxis: ChartValueAxis` | `KRONOR` (NAV) eller `PROCENT` (avkastning som andel, indexeras aldrig – nollställs i stället) |
 | `movingAverage` | 200-dagarssnittet (ANA-14) ur `MovingAverageCalc.series` över **hela** historiken; beskärs till periodens fönster, ritas prickat utan yta med förklaringsraderna Kurs/200-dagarssnitt och senaste värden, och nämns i beskrivningen. Bara ensam kurva i kronor – ignoreras med `comparisonSeries` eller i `PROCENT`. `null`/tom i perioden = ingen linje, ingen förklaring |
-| `working` | väntesnurran för diagram som inte ligger i ett kort med rubrik (NAV-6) |
 
 Teckenförklaringen `ChartLegend` är en: färgprick + namn per serie i en jämförelse, eller linjesymbol
 (`LegendSymbol.LINE`/`DOTTED_LINE`) + namn + högerställt värde (`LegendEntry.value`, tabulära siffror)
@@ -53,7 +52,7 @@ här med test – aldrig i composablen, och aldrig i en ViewModel om två skärm
 ## Regler
 
 - **Ett diagram per typ.** Behövs en variant → ny parameter på `FundLineChart` med default som
-  bevarar dagens beteende (så kom `comparisonSeries`, `valueAxis` och `working` till). En ny
+  bevarar dagens beteende (så kom `comparisonSeries`, `valueAxis` till; `working` togs bort i 1.9.0 när snurrorna försvann, UI-19). En ny
   diagramtyp (staplar, sparkline) blir en ny komponent i `ui/diagram/` med test.
 - **Vico bara i `ui/diagram/`.** Ingen `com.patrykandpatrick.vico`-import utanför. Kontrolleras
   automatiskt: scope `vico` i `ui-forbidden.txt` (pluginens hook `regel4-check` och `UiConsistencyTest`).
@@ -78,10 +77,8 @@ här med test – aldrig i composablen, och aldrig i en ViewModel om två skärm
 
 ## Kända avvikelser (att städa)
 
-- **Dubblett `ComparisonChart`:** privata composables med samma namn och samma mönster ("ingen
-  data → förklarande text, annars `FundLineChart` med en jämförelseserie") finns i både
-  `ui/fond/FondDetaljScreen.kt` och `ui/bytesfonster/SwitchWatchScreen.kt`. Ska brytas ut till
-  en delad komponent i `ui/diagram/` (regel 4).
+- ~~**Dubblett `ComparisonChart`**~~ *(ihopslagen i 1.9.0, #266 F6)*: Fonddetaljs utfällda förslag och
+  Pågående byte använder den delade `ui/diagram/ComparisonChart.kt` (hämtas i text / ej tillgänglig / diagram).
 - **Axelmatematik i UI-lagret:** `PriceRangeProvider` och värdeformatterarna ligger `internal` i
   `FundLineChart.kt` och testas där (`app/src/test/.../ui/diagram/FundLineChartTest.kt`), inte i
   `domain/usecase/`. Paddningsberäkningen bör flyttas till ett rent objekt i `domain/usecase/`.

@@ -75,7 +75,7 @@ fun AppNavigation(
  * Navigationsramen med Fonders flikrad (NAV-1, NAV-7): fyra flikar, kopparmärket med antalet beslut på
  * Beslut ([beslutBadgeCount], 0 ritar inget, NAV-9) och plusknappens FAB-meny (NAV-8). [isWorkerRunning]
  * får sidhuvudets prickar att hoppa (NAV-6). [entryProvider] ger skärmarna – i appen [fonderEntries], i
- * testerna enkla ersättare – och ramen lägger toppraden runt dem som inte har en egen ([FonderPage]).
+ * testerna enkla ersättare. Varje skärm står på en av android-ui:s ramar och ritar sin egen topprad (#266 F6).
  */
 @Composable
 fun FonderNavHost(
@@ -98,37 +98,12 @@ fun FonderNavHost(
         // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
         entryProvider = { key ->
             val entry = entryProvider(key)
-            NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { FonderPage(key, backStack) { entry.Content() } }
+            NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
         },
         modifier = modifier,
         sync = SyncUiState(pending = isWorkerRunning),
         action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack))
     )
-}
-
-/**
- * Toppraden runt [key]s skärm (UI-8): på en underskärm utan ram den lilla toppraden med rubrik och
- * tillbakapil ([SubPage], [subPageTitle]). Flikarna och skärmarna på android-ui:s ramar (Översikt, Innehav,
- * Beslut, Händelser, Fonddetalj, Fondsök, formulären, galleriet) ritar sin egen och får ingen.
- */
-@Composable
-fun FonderPage(key: AppKey, backStack: AppBackStack, content: @Composable () -> Unit) {
-    val subTitle = subPageTitle(key)
-    if (subTitle != null) SubPage(stringResource(subTitle), onBack = { backStack.popIfTop(key) }, content = content) else content()
-}
-
-/** Rubriken för en underskärm utan ram ([SubPage]); `null` för flikarna och skärmarna på en ram. */
-fun subPageTitle(key: AppKey): Int? = when (key) {
-    ImportHoldingsKey -> R.string.import_title
-
-    ImportOrdersKey -> R.string.import_orders_title
-
-    FacitKey -> R.string.facit_title
-
-    is SwitchWatchKey -> R.string.switch_watch_title
-
-    is TabKey, SettingsKey, is FondDetaljKey, FundSearchKey, is TransactionFormKey, RiskProfileKey, BenchmarkPickerKey,
-    is SwitchWatchPickerKey, ComponentGalleryKey -> null
 }
 
 /** Plusknappens val (NAV-8) i samma ordning som förut, med ikoner som i FAB-menyn. */
@@ -142,8 +117,7 @@ private fun addMenu(backStack: AppBackStack): List<AppMenuItem> = listOf(
 
 /**
  * Fonders skärmar: de fyra flikarna och alla skärmar djupare i stacken, en per nyckel – varje nyckel har en
- * (AppKey är förseglad; en saknad är ett programfel). Toppraden runt skärmarna utan ram lägger
- * [FonderNavHost] till ([FonderPage]). En skärm som stänger sig själv gör det med `popIfTop(key)`, så att ett
+ * (AppKey är förseglad; en saknad är ett programfel). En skärm som stänger sig själv gör det med `popIfTop(key)`, så att ett
  * andra anrop inte stänger skärmen under. Flikarnas ViewModels hämtas från [tabOwner] (aktiviteten), så att
  * en flik behåller sitt innehåll när man byter flik; undersidornas hör till sin post. [scrollSettingsToBackup]
  * läses när Inställningar ritas, inte när posten skapas, så kvitteringen slår igenom direkt.
@@ -187,8 +161,8 @@ fun fonderEntries(
         )
     }
     // Facit (SET-5) — en skärm i stacken med bakåtpil, från Beslut och från Inställningar (NAV-9).
-    entry<FacitKey> {
-        FacitScreen()
+    entry<FacitKey> { key ->
+        FacitScreen(onBack = { backStack.popIfTop(key) })
     }
     entry<HandelserKey> {
         TransaktionerScreen(
@@ -230,10 +204,10 @@ fun fonderEntries(
         TransactionFormScreen(formKey = key, onClose = { backStack.popIfTop(key) }, onWatchFund = { backStack.push(FundSearchKey) })
     }
     entry<ImportHoldingsKey> { key ->
-        ImportHoldingsScreen(onDone = { backStack.popIfTop(key) })
+        ImportHoldingsScreen(onBack = { backStack.popIfTop(key) })
     }
     entry<ImportOrdersKey> { key ->
-        ImportOrdersScreen(onDone = { backStack.popIfTop(key) })
+        ImportOrdersScreen(onBack = { backStack.popIfTop(key) })
     }
     entry<RiskProfileKey> { key ->
         RiskProfilScreen(onClose = { backStack.popIfTop(key) })

@@ -8,10 +8,10 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -26,7 +26,9 @@ import se.kodhast.fonder.domain.usecase.FacitRad
 import se.kodhast.fonder.domain.usecase.FacitSummary
 import se.kodhast.fonder.domain.usecase.SwitchOutcomeCalc
 import se.kodhast.fonder.testing.captureLightAndDark
+import se.kodhast.fonder.testing.contracts
 import se.kodhast.fonder.ui.theme.FonderTheme
+import se.kodhast.ui.testing.runListScreenContract
 
 /**
  * Skärmdump ljust + mörkt av Facit (SET-5): summeringskortet med träffandel, horisontband och plats i planen
@@ -76,6 +78,21 @@ class FacitScreenshotTest {
     )
 
     @Test
+    fun `Facit följer listramens kontrakt (NFR-6)`() {
+        val row = state.rows.first()
+        composeRule.runListScreenContract(
+            environment = contracts,
+            item = row,
+            itemText = "${row.sellFundName} → ${row.buyFundName}",
+            emptyTitle = "Inget facit än",
+            addLabel = null,
+            errorTitle = "Kunde inte visa innehållet"
+        ) { list, _, onRetry ->
+            FacitContent(state = FacitUiState(list = list), onRetry = onRetry)
+        }
+    }
+
+    @Test
     fun `skärmdump av summeringen och raderna`() = composeRule.captureLightAndDark("FacitScreen_rader") {
         FacitContent(state = state)
     }
@@ -84,7 +101,7 @@ class FacitScreenshotTest {
     fun `en rad fälls ut från rubriken, som läses som knapp med läget`() {
         composeRule.setContent { FonderTheme { FacitContent(state = state) } }
         val header = hasText("Europa Aktiv → Europa Index", substring = true) and hasClickAction()
-        composeRule.onNodeWithTag(FACIT_LIST_TEST_TAG).performScrollToNode(header)
+        composeRule.onNode(hasScrollToNodeAction()).performScrollToNode(header)
         // Ihopfällt syns meravkastningen (radens mätdag, 4 dagar) men inte detaljerna (beloppet).
         composeRule.onNodeWithText("· 4 dagar", substring = true).assertIsDisplayed()
         composeRule.onAllNodesWithText("Belopp:", substring = true).assertCountEquals(0)

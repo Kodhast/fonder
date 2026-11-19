@@ -8,12 +8,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.time.LocalDate
 import kotlinx.collections.immutable.toImmutableList
@@ -115,7 +114,7 @@ class SwitchWatchScreenTest {
         // Risknivån alltid som siffra i text, aldrig som enbart en färg (UI-10). Nivåväljaren
         // ovanför har en knapp med samma beskrivning — det här är radens märke, inte knappen.
         val badge = hasContentDescription("Risknivå 4 av 7", substring = true) and !hasRole(Role.RadioButton)
-        composeRule.onNodeWithTag(SWITCH_WATCH_LIST_TEST_TAG).performScrollToNode(badge)
+        composeRule.onNode(badge).performScrollTo()
         composeRule.onNode(badge).assertIsDisplayed()
     }
 
@@ -189,7 +188,7 @@ class SwitchWatchScreenTest {
 
         // Exakt en "Ta bort" — appens egna förslag hör till planen och ska inte gå att plocka bort.
         // Nivåväljaren ovanför kan trycka ner raderna under skärmkanten, så rulla fram först.
-        composeRule.onNodeWithTag(SWITCH_WATCH_LIST_TEST_TAG).performScrollToNode(hasText("Ta bort"))
+        composeRule.onNodeWithText("Ta bort").performScrollTo()
         composeRule.onNodeWithText("Ta bort").assertIsDisplayed()
     }
 
@@ -274,7 +273,7 @@ class SwitchWatchScreenTest {
             FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound()))) }
         }
 
-        composeRule.onNodeWithText("Bevakningen finns inte").assertIsDisplayed()
+        composeRule.onNodeWithText("Det pågående bytet har tagits bort", substring = true).assertIsDisplayed()
     }
 
     @Test
@@ -287,7 +286,7 @@ class SwitchWatchScreenTest {
 
         composeRule.onNodeWithText(
             "Du kan bevaka högst ${SwitchWatchCalc.MAX_CANDIDATES} alternativ åt gången."
-        ).assertIsDisplayed()
+        ).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -325,12 +324,12 @@ class SwitchWatchScreenTest {
         composeRule.onNodeWithText(
             "Nivå 4: din riskprofil har 9 procentenheter för lite där. Ramen på 6 är säljfondens egen nivå."
         ).assertIsDisplayed()
-        composeRule.onNodeWithText("Sedan säljdagen · nivå 4").assertExists()
+        composeRule.onNodeWithText("Sedan säljdagen · nivå 4", ignoreCase = true).assertExists()
 
         // Användaren har valt en annan nivå, med filtret på.
         profile.value = profile.value.withDetail { copy(targetLevel = 2, indexOnly = true) }
         composeRule.onNodeWithText("Vald nivå 2. Riskprofilen saknar mest på nivå 4.").assertIsDisplayed()
-        composeRule.onNodeWithText("Sedan säljdagen · nivå 2 · indexfonder").assertExists()
+        composeRule.onNodeWithText("Sedan säljdagen · nivå 2 · indexfonder", ignoreCase = true).assertExists()
     }
 
     @Test

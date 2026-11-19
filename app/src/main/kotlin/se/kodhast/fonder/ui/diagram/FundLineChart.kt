@@ -2,7 +2,6 @@ package se.kodhast.fonder.ui.diagram
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -74,7 +73,6 @@ import se.kodhast.fonder.domain.usecase.ChartPeriodFilter
 import se.kodhast.fonder.domain.usecase.ChartSeriesNormalizer
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.PurchaseMarkerFilter
-import se.kodhast.fonder.ui.components.WorkingIndicator
 import se.kodhast.fonder.ui.theme.ChartSeriesColors
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
 import se.kodhast.ui.components.ChoiceChips
@@ -153,8 +151,7 @@ fun FundLineChart(
     primaryLabel: String? = null,
     comparisonSeries: List<ChartSeries> = emptyList(),
     valueAxis: ChartValueAxis = ChartValueAxis.KRONOR,
-    movingAverage: List<Pair<Long, Double>>? = null,
-    working: Boolean = false
+    movingAverage: List<Pair<Long, Double>>? = null
 ) {
     // rememberSaveable: vald period ska överleva rotation, annars hoppar diagrammet
     // tillbaka till 1 månad mitt i en jämförelse (issue #78).
@@ -265,19 +262,6 @@ fun FundLineChart(
 
     val seriesColors = seriesColors()
     Column(modifier = modifier) {
-        // Diagrammets egen väntesnurra (NAV-6), här i den delade komponenten i stället för en
-        // per anropsplats (regel 4): ett diagram ligger inte alltid i ett kort med rubrikrad —
-        // Fonddetaljs kurshistorik och bytesskärmens jämförelse ligger fritt i sina skärmar.
-        // Ligger diagrammet däremot i ett kort som redan snurrar (Hems avkastningskurva) lämnas
-        // [working] falskt, så samma besked inte ges två gånger i samma kort.
-        if (working) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.xs),
-                horizontalArrangement = Arrangement.End
-            ) {
-                WorkingIndicator(working = true, contentDescription = stringResource(R.string.chart_working))
-            }
-        }
         val purchaseMarker = rememberPurchaseMarker()
         val lineProvider = rememberSeriesLineProvider(
             seriesColors,

@@ -55,9 +55,6 @@ data class FacitUiState(
 
     val isEmpty: Boolean get() = list is ListUiState.Empty
 
-    /** Summeringskortets väntesnurra (NAV-6) — härlett här, så kopplingen är enhetstestbar. */
-    val summaryWorking: Boolean get() = loading || switchPlanWorking
-
     /** Tillståndet med [snapshot] — listan och summeringarna ur samma rader, så de aldrig kan skilja sig. */
     fun withFacit(snapshot: FacitSnapshot): FacitUiState = copy(list = snapshot.rows.toListUiState(), facit = snapshot)
 }

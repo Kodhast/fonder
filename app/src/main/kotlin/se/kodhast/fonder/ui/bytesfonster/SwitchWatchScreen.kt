@@ -2,21 +2,19 @@ package se.kodhast.fonder.ui.bytesfonster
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -27,31 +25,25 @@ import se.kodhast.fonder.R
 import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
-import se.kodhast.fonder.ui.components.CardTitleRow
-import se.kodhast.fonder.ui.components.CenteredState
 import se.kodhast.fonder.ui.components.PeriodRow
 import se.kodhast.fonder.ui.components.RiskBadge
 import se.kodhast.fonder.ui.components.RiskLevelPicker
-import se.kodhast.fonder.ui.components.WorkingIndicator
 import se.kodhast.fonder.ui.components.copyableFundName
 import se.kodhast.fonder.ui.diagram.ChartSeries
-import se.kodhast.fonder.ui.diagram.FundLineChart
-import se.kodhast.ui.common.UiError
+import se.kodhast.fonder.ui.diagram.ComparisonChart
+import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
-import se.kodhast.ui.components.AppPullToRefresh
 import se.kodhast.ui.components.ButtonVariant
-import se.kodhast.ui.components.EmptyState
-import se.kodhast.ui.components.LoadErrorState
-import se.kodhast.ui.components.R as UiR
+import se.kodhast.ui.components.EntityDetailScreen
+import se.kodhast.ui.components.GroupLabel
+import se.kodhast.ui.components.ItemRowText
+import se.kodhast.ui.components.SectionCard
 import se.kodhast.ui.components.SwitchRow
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 
 private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-/** Gör listan adresserbar för `performScrollToIndex` i tester (UI-5, samma skäl som Facit). */
-const val SWITCH_WATCH_LIST_TEST_TAG = "switch_watch_list"
 
 /**
  * Skärmen **Pågående byte** (ANA-12, issue #114) — den yta som saknades mellan "sålt" och
@@ -91,17 +83,24 @@ fun SwitchWatchScreen(
         onMessageShow = { viewModel.onEvent(SwitchWatchEvent.MessageShown) },
         onRetryAutoFill = { viewModel.onEvent(SwitchWatchEvent.RetryAutoFill) },
         onRetry = { viewModel.onEvent(SwitchWatchEvent.Retry) },
+        onBack = onClose,
         onSelectTargetLevel = { viewModel.onEvent(SwitchWatchEvent.SelectTargetLevel(it)) },
         onIndexOnlyChange = { viewModel.onEvent(SwitchWatchEvent.IndexOnlyChanged(it)) },
         modifier = modifier
     )
 }
 
-/** Tillståndsdriven, testbar del av [SwitchWatchScreen] — inget ViewModel/Hilt-beroende. */
+/**
+ * Tillståndsdriven, testbar del av [SwitchWatchScreen] — inget ViewModel/Hilt-beroende. Står på android-ui:s
+ * detaljram (#266 F6): liten topprad med tillbakapil ([onBack]), laddning, läsfel med "Försök igen" (NFR-6) och
+ * dra ned för att uppdatera. En bevakning som inte finns (raderad, eller en gammal länk) säger det med sin egen text
+ * och utan "Försök igen" – den blir inte bättre av ett nytt försök.
+ */
 @Composable
 fun SwitchWatchContent(
     state: SwitchWatchUiState,
     modifier: Modifier = Modifier,
+    onBack: () -> Unit = {},
     onRefresh: () -> Unit = {},
     onBuy: (String) -> Unit = {},
     onRemoveCandidate: (Long) -> Unit = {},
@@ -113,13 +112,29 @@ fun SwitchWatchContent(
     onSelectTargetLevel: (Int) -> Unit = {},
     onIndexOnlyChange: (Boolean) -> Unit = {}
 ) {
-    val error = state.error
-    if (error != null) {
-        SwitchWatchError(error = error, onRetry = onRetry, modifier = modifier)
-    } else {
-        SwitchWatchList(
+    val watch = state.watch.let { watch ->
+        if (watch is DetailUiState.Error && watch.error.cause == DataError.NotFound) {
+            DetailUiState.Error(watch.error.withMessage(R.string.switch_watch_missing_body))
+        } else {
+            watch
+        }
+    }
+    EntityDetailScreen(
+        state = watch,
+        header = null,
+        onBack = onBack,
+        title = stringResource(R.string.switch_watch_title),
+        onRetry = onRetry,
+        // Dra ned hämtar om kandidaternas kurvor och säljfondens historik (UI-11). Kandidaterna
+        // ligger inte i kurscachen (ANA-11), så det är den enda vägen till färskare tal än de som
+        // hämtades när skärmen öppnades. Bara på en läst bevakning: ett läsfel eller en borttagen
+        // bevakning har inget att hämta om, och första läsningen visar ramens egen laddning.
+        refreshing = state.chartWorking && !state.loading,
+        onRefresh = onRefresh.takeIf { watch is DetailUiState.Content },
+        modifier = modifier
+    ) {
+        SwitchWatchSections(
             state = state,
-            onRefresh = onRefresh,
             onBuy = onBuy,
             onRemoveCandidate = onRemoveCandidate,
             onAddCandidate = onAddCandidate,
@@ -127,35 +142,15 @@ fun SwitchWatchContent(
             onMessageShow = onMessageShow,
             onRetryAutoFill = onRetryAutoFill,
             onSelectTargetLevel = onSelectTargetLevel,
-            onIndexOnlyChange = onIndexOnlyChange,
-            modifier = modifier
+            onIndexOnlyChange = onIndexOnlyChange
         )
     }
 }
 
-/** Bevakningen gick inte att läsa eller finns inte. */
+/** Bevakningens sektioner: huvud, väljare, diagram och alternativ. */
 @Composable
-private fun SwitchWatchError(error: UiError, onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    // Bevakningen finns inte (raderad, eller en gammal länk) — skärmen säger det i stället för
-    // att visa tomt; ett läsfel visas som fel med "Försök igen" (NFR-6).
-    CenteredState(modifier) {
-        if (error.cause == DataError.NotFound) {
-            EmptyState(
-                icon = UiR.drawable.ic_box,
-                title = stringResource(R.string.switch_watch_missing_title),
-                message = stringResource(R.string.switch_watch_missing_body)
-            )
-        } else {
-            LoadErrorState(stringResource(R.string.error_load_title), error, onRetry)
-        }
-    }
-}
-
-/** Bevakningens lista: huvud, väljare, diagram och alternativ. */
-@Composable
-private fun SwitchWatchList(
+private fun ColumnScope.SwitchWatchSections(
     state: SwitchWatchUiState,
-    onRefresh: () -> Unit,
     onBuy: (String) -> Unit,
     onRemoveCandidate: (Long) -> Unit,
     onAddCandidate: () -> Unit,
@@ -163,191 +158,168 @@ private fun SwitchWatchList(
     onMessageShow: () -> Unit,
     onRetryAutoFill: () -> Unit,
     onSelectTargetLevel: (Int) -> Unit,
-    onIndexOnlyChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    onIndexOnlyChange: (Boolean) -> Unit
 ) {
     val content = state.content
+    HeaderCard(state)
+    // Nivå och filter går bara att ändra medan bytet pågår (ANA-13) — en stängd
+    // bevakning bär vad som hände och visar ingen väljare.
+    if (state.canChangeSelection) {
+        TargetLevelCard(
+            state = state,
+            onSelectTargetLevel = onSelectTargetLevel,
+            onIndexOnlyChange = onIndexOnlyChange
+        )
+    }
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        ComparisonChart(
+            points = content.sellSeries,
+            primaryLabel = content.sellFundName,
+            comparisonSeries = content.candidateSeries.map { (label, points) -> ChartSeries(label = label, points = points) },
+            available = content.hasChart,
+            loading = state.chartWorking,
+            unavailableText = stringResource(R.string.switch_watch_chart_unavailable)
+        )
+    }
 
-    // Dra ned hämtar om kandidaternas kurvor och säljfondens historik (UI-11). Kandidaterna
-    // ligger inte i kurscachen (ANA-11), så det är den enda vägen till färskare tal än de som
-    // hämtades när skärmen öppnades.
-    AppPullToRefresh(
-        refreshing = state.chartWorking,
-        onRefresh = onRefresh,
-        modifier = modifier.fillMaxSize()
-    ) {
-        LazyColumn(modifier = Modifier.fillMaxSize().testTag(SWITCH_WATCH_LIST_TEST_TAG)) {
-            item(contentType = "header") { HeaderCard(state) }
-            // Nivå och filter går bara att ändra medan bytet pågår (ANA-13) — en stängd
-            // bevakning bär vad som hände och visar ingen väljare.
-            if (state.canChangeSelection) {
-                item(contentType = "target-level") {
-                    TargetLevelCard(
-                        state = state,
-                        onSelectTargetLevel = onSelectTargetLevel,
-                        onIndexOnlyChange = onIndexOnlyChange
-                    )
-                }
-            }
-            item(contentType = "chart") { ComparisonChart(state) }
-
-            if (content.rows.isEmpty()) {
-                item(contentType = "empty") {
-                    // Ingen `EmptyState` här: den fyller skärmen och hade tryckt bort kortet med
-                    // säljfond, belopp och dag — den informationen gäller även utan alternativ.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                        modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)
-                    ) {
-                        val text = when {
-                            state.fillingCandidates -> stringResource(R.string.switch_watch_filling)
-
-                            // Med filtret är "inga köpbara indexfonder" ett annat besked än inga
-                            // köpbara fonder alls — och det säger vad som går att ändra (issue #150).
-                            content.emptyBecauseOfIndexFilter && content.targetLevel != null ->
-                                stringResource(R.string.format_switch_watch_empty_index_body, content.targetLevel)
-
-                            // Tre orsaker som förr delade samma text (issue #149) — var och en
-                            // säger vad användaren kan göra åt den.
-                            else -> when (content.emptyReason) {
-                                SwitchWatchEmptyReason.NO_TARGET_LEVEL ->
-                                    stringResource(R.string.format_switch_watch_empty_no_level, content.sellFundName)
-
-                                SwitchWatchEmptyReason.NONE_AVAILABLE ->
-                                    content.targetLevel
-                                        ?.let { stringResource(R.string.format_switch_watch_empty_none_available, it) }
-                                        ?: stringResource(R.string.switch_watch_empty_body)
-
-                                SwitchWatchEmptyReason.LOOKUP_FAILED -> stringResource(R.string.switch_watch_empty_lookup_failed)
-
-                                null -> stringResource(R.string.switch_watch_empty_body)
-                            }
-                        }
-                        // Snurran bara medan förslagen faktiskt hämtas (ANA-13) — "inga alternativ
-                        // ännu" är ett färdigt svar, inte ett som är på väg.
-                        WorkingIndicator(working = state.fillingCandidates, contentDescription = text)
-                        Column {
-                            if (!state.fillingCandidates && content.emptyBecauseOfIndexFilter && content.targetLevel != null) {
-                                Text(
-                                    stringResource(R.string.format_switch_watch_empty_index_title, content.targetLevel),
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                            }
-                            Text(
-                                text,
-                                style = AppTheme.typography.itemSubtitle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-                // Bara när kontrollen misslyckades: "inga köpbara" och "okänd nivå" blir inte
-                // annorlunda av ett nytt försök, ett misslyckat uppslag kan bli det.
-                if (content.emptyReason == SwitchWatchEmptyReason.LOOKUP_FAILED) {
-                    item(contentType = "retry") {
-                        AppButton(
-                            text = stringResource(R.string.switch_watch_retry),
-                            onClick = onRetryAutoFill,
-                            modifier = Modifier.padding(horizontal = Spacing.l),
-                            variant = ButtonVariant.Text
-                        )
-                    }
-                }
-            }
-
-            // Rubriken över alternativen: vad talen mäter och vilken nivå (och filter) förslagen gäller.
-            if (content.rows.isNotEmpty() && content.targetLevel != null) {
-                item(contentType = "heading") {
-                    Text(
-                        stringResource(
-                            if (content.indexOnly) {
-                                R.string.format_switch_watch_alternatives_heading_index
-                            } else {
-                                R.string.format_switch_watch_alternatives_heading
-                            },
-                            content.targetLevel
-                        ),
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(start = Spacing.l, end = Spacing.l, top = Spacing.s, bottom = Spacing.xs)
-                    )
-                }
-            }
-
-            items(content.rows, key = { it.candidateId }, contentType = { "candidate" }) { row ->
-                CandidateCard(
-                    row = row,
-                    closed = content.closed,
-                    onBuy = onBuy,
-                    onRemoveCandidate = onRemoveCandidate
-                )
-            }
-
-            item(contentType = "add-candidate") {
-                Column(modifier = Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)) {
-                    if (state.canAddCandidate) {
-                        AppButton(
-                            text = stringResource(R.string.switch_watch_add_candidate),
-                            onClick = onAddCandidate,
-                            modifier = Modifier.padding(top = Spacing.xs),
-                            variant = ButtonVariant.Text
-                        )
-                    }
-                    state.message?.let { message ->
-                        Text(
-                            text = when (message) {
-                                SwitchWatchMessage.IsinUnavailable -> stringResource(R.string.switch_watch_isin_unavailable)
-
-                                SwitchWatchMessage.CandidateLimitReached ->
-                                    stringResource(R.string.format_switch_watch_limit, SwitchWatchCalc.MAX_CANDIDATES)
-                            },
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        // Meddelandet är en kvittens på en åtgärd, inte ett tillstånd — det kvitteras
-                        // när det visats så nästa tillägg inte möts av föregående försöks felmeddelande.
-                        val messageShown by rememberUpdatedState(onMessageShow)
-                        LaunchedEffect(message) { messageShown() }
-                    }
-                    if (!content.closed) {
-                        AppButton(
-                            text = stringResource(R.string.switch_watch_cancel),
-                            onClick = onCancel,
-                            variant = ButtonVariant.Text
-                        )
-                    }
-                    if (state.canChangeSelection) {
-                        Text(
-                            stringResource(R.string.switch_watch_level_footer),
-                            style = AppTheme.typography.itemSubtitle,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = Spacing.s)
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.switch_watch_disclaimer),
-                        style = AppTheme.typography.itemSubtitle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = Spacing.s)
-                    )
-                }
-            }
+    if (content.rows.isEmpty()) {
+        // Ingen `EmptyState` här: den fyller skärmen och hade tryckt bort kortet med
+        // säljfond, belopp och dag — den informationen gäller även utan alternativ.
+        EmptyCandidates(state)
+        // Bara när kontrollen misslyckades: "inga köpbara" och "okänd nivå" blir inte
+        // annorlunda av ett nytt försök, ett misslyckat uppslag kan bli det.
+        if (content.emptyReason == SwitchWatchEmptyReason.LOOKUP_FAILED) {
+            AppButton(
+                text = stringResource(R.string.switch_watch_retry),
+                onClick = onRetryAutoFill,
+                variant = ButtonVariant.Text
+            )
         }
     }
+
+    // Rubriken över alternativen: vad talen mäter och vilken nivå (och filter) förslagen gäller.
+    if (content.rows.isNotEmpty() && content.targetLevel != null) {
+        GroupLabel(
+            stringResource(
+                if (content.indexOnly) {
+                    R.string.format_switch_watch_alternatives_heading_index
+                } else {
+                    R.string.format_switch_watch_alternatives_heading
+                },
+                content.targetLevel
+            )
+        )
+    }
+
+    content.rows.forEach { row ->
+        key(row.candidateId) {
+            CandidateCard(
+                row = row,
+                closed = content.closed,
+                onBuy = onBuy,
+                onRemoveCandidate = onRemoveCandidate
+            )
+        }
+    }
+
+    Column {
+        if (state.canAddCandidate) {
+            AppButton(
+                text = stringResource(R.string.switch_watch_add_candidate),
+                onClick = onAddCandidate,
+                variant = ButtonVariant.Text
+            )
+        }
+        state.message?.let { message ->
+            Text(
+                text = when (message) {
+                    SwitchWatchMessage.IsinUnavailable -> stringResource(R.string.switch_watch_isin_unavailable)
+
+                    SwitchWatchMessage.CandidateLimitReached ->
+                        stringResource(R.string.format_switch_watch_limit, SwitchWatchCalc.MAX_CANDIDATES)
+                },
+                style = AppTheme.typography.itemSubtitle,
+                color = MaterialTheme.colorScheme.error
+            )
+            // Meddelandet är en kvittens på en åtgärd, inte ett tillstånd — det kvitteras
+            // när det visats så nästa tillägg inte möts av föregående försöks felmeddelande.
+            val messageShown by rememberUpdatedState(onMessageShow)
+            LaunchedEffect(message) { messageShown() }
+        }
+        if (!content.closed) {
+            AppButton(
+                text = stringResource(R.string.switch_watch_cancel),
+                onClick = onCancel,
+                variant = ButtonVariant.Text
+            )
+        }
+        if (state.canChangeSelection) {
+            Text(
+                stringResource(R.string.switch_watch_level_footer),
+                style = AppTheme.typography.itemSubtitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = Spacing.s)
+            )
+        }
+        Text(
+            stringResource(R.string.switch_watch_disclaimer),
+            style = AppTheme.typography.itemSubtitle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = Spacing.s)
+        )
+    }
+}
+
+/**
+ * Varför det inte finns några alternativ. Medan appens förslag hämtas säger texten det ("Hämtar förslag på
+ * alternativ…") – ingen snurra (#266: en gemensam laddningsindikator); "inga alternativ ännu" är ett färdigt svar.
+ */
+@Composable
+private fun EmptyCandidates(state: SwitchWatchUiState) {
+    val content = state.content
+    val text = when {
+        state.fillingCandidates -> stringResource(R.string.switch_watch_filling)
+
+        // Med filtret är "inga köpbara indexfonder" ett annat besked än inga
+        // köpbara fonder alls — och det säger vad som går att ändra (issue #150).
+        content.emptyBecauseOfIndexFilter && content.targetLevel != null ->
+            stringResource(R.string.format_switch_watch_empty_index_body, content.targetLevel)
+
+        // Tre orsaker som förr delade samma text (issue #149) — var och en
+        // säger vad användaren kan göra åt den.
+        else -> when (content.emptyReason) {
+            SwitchWatchEmptyReason.NO_TARGET_LEVEL ->
+                stringResource(R.string.format_switch_watch_empty_no_level, content.sellFundName)
+
+            SwitchWatchEmptyReason.NONE_AVAILABLE ->
+                content.targetLevel
+                    ?.let { stringResource(R.string.format_switch_watch_empty_none_available, it) }
+                    ?: stringResource(R.string.switch_watch_empty_body)
+
+            SwitchWatchEmptyReason.LOOKUP_FAILED -> stringResource(R.string.switch_watch_empty_lookup_failed)
+
+            null -> stringResource(R.string.switch_watch_empty_body)
+        }
+    }
+    val title = if (!state.fillingCandidates && content.emptyBecauseOfIndexFilter && content.targetLevel != null) {
+        stringResource(R.string.format_switch_watch_empty_index_title, content.targetLevel)
+    } else {
+        null
+    }
+    ItemRowText(title = title, subtitle = text)
 }
 
 /** Vad som såldes, för hur mycket och hur länge sedan — sammanhanget varje rad under läses i. */
 @Composable
 private fun HeaderCard(state: SwitchWatchUiState) {
     val content = state.content
-    AppCard(modifier = Modifier.fillMaxWidth().padding(Spacing.l)) {
-        CardTitleRow(
-            title = stringResource(
+    AppCard(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(
                 R.string.format_switch_watch_sold,
                 content.sellFundName,
                 LocalDate.ofEpochDay(content.soldAtEpochDay).format(dateFormatter)
             ),
-            working = state.headerWorking,
             style = MaterialTheme.typography.titleSmall
         )
         content.proceedsKr?.let { amount ->
@@ -393,14 +365,12 @@ private fun TargetLevelCard(
     onIndexOnlyChange: (Boolean) -> Unit
 ) {
     val content = state.content
-    AppCard(modifier = Modifier.fillMaxWidth().padding(start = Spacing.l, end = Spacing.l, bottom = Spacing.l)) {
-        Text(stringResource(R.string.switch_watch_level_title), style = MaterialTheme.typography.titleSmall)
+    SectionCard(title = stringResource(R.string.switch_watch_level_title), modifier = Modifier.fillMaxWidth()) {
         RiskLevelPicker(
             selected = content.targetLevel,
             onSelect = onSelectTargetLevel,
             marked = content.sellLevel,
-            markedDescription = stringResource(R.string.switch_watch_level_marked),
-            modifier = Modifier.padding(top = Spacing.m)
+            markedDescription = stringResource(R.string.switch_watch_level_marked)
         )
         Text(
             levelHint(state),
@@ -452,32 +422,6 @@ private fun levelHint(state: SwitchWatchUiState): String {
 }
 
 /**
- * Säljfonden och alla bevakade alternativ i **ett** diagram (regel 4 — samma delade
- * [FundLineChart] som Fonddetaljs jämförelse, som redan kan flera serier). Serierna indexeras
- * till 100 vid periodens första gemensamma dag; rå NAV går inte att jämföra mellan fonder.
- */
-@Composable
-private fun ComparisonChart(state: SwitchWatchUiState) {
-    val content = state.content
-    if (!content.hasChart) {
-        Text(
-            stringResource(R.string.switch_watch_chart_unavailable),
-            style = AppTheme.typography.itemSubtitle,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = Spacing.l)
-        )
-        return
-    }
-    FundLineChart(
-        points = content.sellSeries,
-        primaryLabel = content.sellFundName,
-        comparisonSeries = content.candidateSeries.map { (label, points) -> ChartSeries(label = label, points = points) },
-        working = state.chartWorking,
-        modifier = Modifier.padding(horizontal = Spacing.l)
-    )
-}
-
-/**
  * Ett bevakat alternativ: namn, risknivå (UI-10), avgift och — talet beslutet hänger på —
  * utvecklingen sedan säljdagen via den delade [PeriodRow] (regel 4), som färgar efter procenten
  * och markerar en ej utvärderad rad som otillräcklig data i stället för som 0.
@@ -489,7 +433,7 @@ private fun CandidateCard(
     onBuy: (String) -> Unit,
     onRemoveCandidate: (Long) -> Unit
 ) {
-    AppCard(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.l, vertical = Spacing.xs)) {
+    AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 row.name,
@@ -499,20 +443,16 @@ private fun CandidateCard(
                 modifier = Modifier.weight(1f).padding(end = Spacing.s).copyableFundName(row.name)
             )
             RiskBadge(level = row.riskLevel)
-            // Radens egen väntesnurra (NAV-6): utvecklingen sedan säljdagen är talet
-            // beslutet hänger på, och den kan inte visas förrän kandidatens historik landat.
-            WorkingIndicator(
-                working = row.historyLoading,
-                contentDescription = stringResource(R.string.format_card_working, row.name),
-                modifier = Modifier.padding(start = Spacing.s)
-            )
         }
+        // Utvecklingen sedan säljdagen är talet beslutet hänger på; medan kandidatens historik
+        // hämtas säger raden det i text, aldrig som 0 och aldrig med en snurra (#266).
         PeriodRow(
             label = stringResource(R.string.switch_watch_change_label),
             amount = row.changeKr,
             fraction = row.changeFraction,
             partial = row.partial,
             stackValue = true,
+            insufficientText = if (row.historyLoading) stringResource(R.string.holdings_fetching) else null,
             modifier = Modifier.padding(top = Spacing.s)
         )
         row.feePercent?.let { fee ->
