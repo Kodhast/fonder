@@ -331,7 +331,7 @@ private fun SwitchRowChip(row: SwitchRow) {
         SwitchRowState.BOUGHT -> Tone.Gain
         SwitchRowState.CANCELLED, SwitchRowState.EXPIRED, SwitchRowState.DISMISSED -> Tone.Neutral
     }
-    InfoPill(text = switchChipText(row), tone = tone, shape = AppTheme.shapes.smallTile)
+    InfoPill(text = switchChipText(row), tone = tone)
 }
 
 /** "7 okt" — dag och kort månad på svenska, utan punkt. */

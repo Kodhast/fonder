@@ -99,7 +99,7 @@ fun FundFactsCard(
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f).copyableFundName(facts.name)
             )
-            badge?.let { InfoPill(text = it, tone = Tone.Primary, shape = AppTheme.shapes.smallTile) }
+            badge?.let { InfoPill(text = it, tone = Tone.Primary) }
         }
         Column(modifier = Modifier.padding(top = Spacing.xs)) {
             FactRow(stringResource(R.string.fund_facts_risk), facts.risk?.let { stringResource(R.string.format_fund_facts_risk, it) }, unknown)

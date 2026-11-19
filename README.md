@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.9.3 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.9.4 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.9.4 | **Samma utseende som ReseApoteket och Dagboken** (UI-12, UI-13, UI-17): laddningen är Kodhäst-prickarna, tillståndsmärkena är runda och statusbannern i Fonddetalj är ett vanligt kort med 22 dp hörn. Bara färger och typsnitt skiljer nu. |
 | 1.9.3 | **Säljsignalens gula går att skilja från den röda** (UI-1, ANA-3): den gula nivån är en egen bärnstensfärg i stället för kopparaccenten, och pricken läses av skärmläsaren ("Säljsignal: Bör ses över") på Innehav, Översikt och Fonddetalj. |
 | 1.9.2 | **Valet i Fondsök tappas inte längre** (HEM-10, ANA-13): referensfonden som väljs från Inställningar och alternativet som läggs till i Pågående byte sparas av skärmen man kommer tillbaka till. Förut sparade valskärmen själv och stängdes direkt, så en sparning som väntade på fondens ISIN kunde avbrytas, och felen "ISIN saknas" och "taket nått" syntes aldrig. |
 | 1.9.1 | **Komponentgalleriet är bibliotekets** (UI-13, bara debug-bygget): Inställningar → Komponenter visar android-ui:s `ComponentGallery` med alla delade komponenter först och Fonders egna (belopp och andelar, kort, märken och val, analys, diagram) som `appSections` efter – ingen kopia av bibliotekets delar längre. Ingen ändring i release-bygget. |
