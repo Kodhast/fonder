@@ -2,21 +2,11 @@ package se.kodhast.fonder.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,129 +14,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import kotlin.math.cos
-import kotlinx.coroutines.delay
-import kotlinx.datetime.LocalDate as KotlinLocalDate
-import se.kodhast.fonder.R
-import se.kodhast.fonder.data.common.AppErrors
-import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.domain.usecase.FundAnalysisCalc
 import se.kodhast.fonder.domain.usecase.FundAnalysisCalc.SignalLevel
 import se.kodhast.fonder.domain.usecase.PortfolioTotalCalc
 import se.kodhast.fonder.ui.diagram.ChartSeries
+import se.kodhast.fonder.ui.diagram.ComparisonChart
 import se.kodhast.fonder.ui.diagram.FundLineChart
-import se.kodhast.fonder.ui.theme.Copper
-import se.kodhast.fonder.ui.theme.Error
-import se.kodhast.fonder.ui.theme.Filled
-import se.kodhast.fonder.ui.theme.Gain
-import se.kodhast.fonder.ui.theme.Neutral
-import se.kodhast.fonder.ui.theme.NeutralPrimary
-import se.kodhast.fonder.ui.theme.Tertiary
 import se.kodhast.ui.components.AppButton
-import se.kodhast.ui.components.AppCard
-import se.kodhast.ui.components.AppDivider
-import se.kodhast.ui.components.AppFloatingToolbar
-import se.kodhast.ui.components.AppIconButton
-import se.kodhast.ui.components.AppMenuItem
-import se.kodhast.ui.components.AppPullToRefresh
-import se.kodhast.ui.components.AppSegmentedChoice
-import se.kodhast.ui.components.AppTextField
-import se.kodhast.ui.components.AppTopBar as LibraryTopBar
 import se.kodhast.ui.components.ButtonVariant
-import se.kodhast.ui.components.CardSegment
-import se.kodhast.ui.components.CheckRow
-import se.kodhast.ui.components.ChoiceChips
-import se.kodhast.ui.components.ConfirmDialog
-import se.kodhast.ui.components.DateField
-import se.kodhast.ui.components.EmptyAction
-import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.Foldout
-import se.kodhast.ui.components.IconButtonVariant
-import se.kodhast.ui.components.InfoPill
-import se.kodhast.ui.components.ItemRow
-import se.kodhast.ui.components.LoadErrorState
-import se.kodhast.ui.components.LoadingDialog
-import se.kodhast.ui.components.MakerMark
-import se.kodhast.ui.components.R as UiR
-import se.kodhast.ui.components.SectionCard
-import se.kodhast.ui.components.SectionHeader
-import se.kodhast.ui.components.SelectField
-import se.kodhast.ui.components.SwitchRow
-import se.kodhast.ui.components.ToolbarAction
-import se.kodhast.ui.components.ToolbarItem
-import se.kodhast.ui.components.TopBarSize
+import se.kodhast.ui.navigation.gallery.ComponentGallery as LibraryGallery
+import se.kodhast.ui.navigation.gallery.GallerySection
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
-import se.kodhast.ui.theme.Tone
 
 /**
- * Alla Fonders delade komponenter (`ui/components`, `ui/diagram`) och de android-ui-delar appen
- * använder, i sina lägen och med påhittad data – aldrig användarens innehav (skill
- * shared-ui-components). Nås från Inställningar → "Komponenter", bara i debug-bygget.
- *
- * Skärmen har egen `Scaffold` med bibliotekets topprad. Diagrammet ligger i en hopfälld sektion, så att det
- * bara ritas när man fäller ut det (Vico bygger modellen på en annan tråd).
+ * Komponentgalleriet (debug, Inställningar → "Komponenter"): android-ui:s `ComponentGallery` med bibliotekets
+ * alla delar först och Fonders egna sist ([fonderSections]) – det som hör till Fonders domän och inte finns i
+ * biblioteket, med påhittad data, aldrig användarens innehav (skill shared-ui-components). Diagrammen ligger i
+ * en hopfälld sektion, så att de bara ritas när man fäller ut den (Vico bygger modellen på en annan tråd).
  */
 @Composable
 fun ComponentGallery(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    var chartExpanded by remember { mutableStateOf(false) }
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            LibraryTopBar(
-                stringResource(R.string.component_gallery_title),
-                modifier = Modifier.testTag(COMPONENT_GALLERY_TOP_BAR_TAG),
-                size = TopBarSize.Small,
-                onBack = onBack
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .consumeWindowInsets(padding)
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.l, vertical = Spacing.s),
-            verticalArrangement = Arrangement.spacedBy(Spacing.xl)
-        ) {
-            GallerySection(R.string.gallery_section_buttons) { Buttons() }
-            GallerySection(R.string.gallery_section_cards) { CardsAndRows() }
-            GallerySection(R.string.gallery_section_fields) { Fields() }
-            GallerySection(R.string.gallery_section_values) { Values() }
-            GallerySection(R.string.gallery_section_status) { Status() }
-            GallerySection(R.string.gallery_section_navigation) { Navigation() }
-            GallerySection(R.string.gallery_section_dialogs) { Dialogs() }
-            GallerySection(R.string.gallery_section_library) { Library() }
-            Foldout(
-                title = stringResource(R.string.gallery_section_chart),
-                expanded = chartExpanded,
-                onToggle = { chartExpanded = !chartExpanded }
-            ) {
-                Chart()
-            }
-        }
-    }
+    LibraryGallery(onBack = onBack, modifier = modifier, appSections = fonderSections())
 }
 
-@Composable
-private fun GallerySection(title: Int, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text(
-            stringResource(title),
-            style = AppTheme.typography.headline,
-            modifier = Modifier.semantics { heading() }
-        )
-        content()
-    }
-}
+private fun fonderSections() = listOf(
+    GallerySection("Fonder: belopp och andelar") { Values() },
+    GallerySection("Fonder: kort, märken och val") { CardsAndBadges() },
+    GallerySection("Fonder: analys och dialog") { Analysis() },
+    GallerySection("Fonder: diagram") { Charts() }
+)
 
 /** Komponentens namn över exemplet – ett identifierarnamn, ingen användartext. */
 @Composable
@@ -160,136 +60,7 @@ private fun Label(name: String) {
 }
 
 @Composable
-private fun ColumnScope.Buttons() {
-    Label("AppButton (android-ui, bibliotekets standard: 56 dp, ingen formmorf)")
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        AppButton("Spara", {})
-        AppButton("Välj fond", {}, variant = ButtonVariant.Secondary)
-        AppButton("Följ", {}, variant = ButtonVariant.Outlined)
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        AppButton("Avstå", {}, variant = ButtonVariant.Text)
-        AppButton("Töm databasen", {}, variant = ButtonVariant.Destructive)
-        AppButton("Spara", {}, enabled = false)
-    }
-    Label("AppIconButton (android-ui)")
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        AppIconButton(R.drawable.ic_settings, "Inställningar", {}, variant = IconButtonVariant.Tonal, tone = Tone.NeutralPrimary)
-        AppIconButton(UiR.drawable.ic_close, "Stäng", {})
-        AppIconButton(UiR.drawable.ic_arrow_back, "Tillbaka", {}, enabled = false)
-    }
-}
-
-@Composable
-private fun ColumnScope.CardsAndRows() {
-    Label("SectionHeader (android-ui)")
-    SectionHeader(title = "Byten", count = "2 väntar på dig")
-    SectionHeader(title = "Tema")
-    Label("MakerMark (android-ui) – Kodhästs signatur sist i Inställningar")
-    MakerMark()
-    Label("AppCard · SectionCard (android-ui)")
-    SectionCard(title = "Fondavgifter per år", modifier = Modifier.fillMaxWidth()) {
-        Text("Hämtar …", style = AppTheme.typography.itemSubtitle)
-    }
-    AppCard(modifier = Modifier.fillMaxWidth(), tone = Tone.Filled, onClick = {}) {
-        Text("Klickbart och tonat (Tone.Filled).", style = MaterialTheme.typography.bodyMedium)
-    }
-    AppCard(modifier = Modifier.fillMaxWidth(), tone = Tone.Error, contentColor = MaterialTheme.colorScheme.onErrorContainer) {
-        Text("Farozonen (Tone.Error).")
-    }
-    Label("TotalCard")
-    TotalCard(
-        totalValue = 412_380.5,
-        totalInvested = 360_000.0,
-        gainLoss = 52_380.5,
-        gainLossFraction = 0.1455,
-        total = PortfolioTotalCalc.Result(netDepositsKr = 365_000.0, totalGainKr = 47_380.5, totalGainFraction = 0.1298, moneyWeightedAnnualReturn = 0.071, partial = false, ageDays = 812),
-        navEpochDay = 20_742
-    )
-    Label("CardSegment · ItemRow · AppDivider (android-ui)")
-    val rows = listOf(
-        Triple("Köp", "Global Indexfond A", "+12 000 kr"),
-        Triple("Sälj", "Tillväxt Norden", "−4 300 kr"),
-        Triple("Köp", "Ränta Kort", "+2 500 kr")
-    )
-    Column {
-        rows.forEachIndexed { index, (type, fund, amount) ->
-            CardSegment(top = index == 0, bottom = index == rows.lastIndex) {
-                ItemRow(
-                    title = fund,
-                    subtitle = "14 okt 2026",
-                    overline = { Text(type, style = AppTheme.typography.caption) },
-                    trailing = { Text(amount, style = MaterialTheme.typography.bodyMedium) }
-                )
-            }
-        }
-    }
-    AppCard(modifier = Modifier.fillMaxWidth()) {
-        ItemRow(title = "Mot riskprofil 4,00", subtitle = "Balanserad tillväxt · ISK/KF")
-        AppDivider()
-        ItemRow(title = "1 genomfört förslag", trailing = { Text("+1 240 kr", style = AppTheme.typography.body) }, navigates = true, onClick = {})
-    }
-    Label("InfoPill (android-ui, 8 dp) · RiskBadge · ProfitTakeBadge · StatusDot")
-    galleryTones.chunked(CHIPS_PER_ROW).forEach { tones ->
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            tones.forEach { (name, tone) -> InfoPill(text = name, tone = tone, shape = AppTheme.shapes.smallTile) }
-        }
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
-        RiskBadge(level = 3)
-        RiskBadge(level = 5, toLevel = 4)
-        ProfitTakeBadge(gainFraction = 0.35)
-    }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        SignalLevel.entries.forEach { StatusDot(it) }
-    }
-    Label("Foldout (android-ui) · ExpandableInfoRow")
-    var glossaryExpanded by remember { mutableStateOf(false) }
-    Foldout(title = "Ordlista", expanded = glossaryExpanded, onToggle = { glossaryExpanded = !glossaryExpanded }) {
-        Text("Innehållet visas när sektionen fälls ut.")
-    }
-    ExpandableInfoRow(explanation = "Årstakten är den genomsnittliga avkastningen per år sedan första köpet.") {
-        Text("Årstakt 6,1 %")
-    }
-}
-
-@Composable
-private fun ColumnScope.Fields() {
-    var amount by remember { mutableStateOf("12 000") }
-    var date by remember { mutableStateOf<KotlinLocalDate?>(KotlinLocalDate(2026, 9, 3)) }
-    var type by remember { mutableStateOf<String?>("Sälj") }
-    var mode by remember { mutableStateOf("Mörkt") }
-    var level by remember { mutableIntStateOf(4) }
-    var checked by remember { mutableStateOf(true) }
-    var indexOnly by remember { mutableStateOf(false) }
-    var followed by remember { mutableStateOf(false) }
-    Label("AppTextField (android-ui)")
-    AppTextField(amount, { amount = it }, label = "Belopp", suffix = "kr", helper = "Courtage ingår")
-    AppTextField("SE00", {}, label = "ISIN", error = "ISIN har 12 tecken")
-    Label("DateField · SelectField (android-ui)")
-    DateField(label = "Affärsdag", date = date, onDateChange = { date = it })
-    SelectField(
-        label = "Typ",
-        options = listOf("Köp", "Sälj"),
-        selected = type,
-        optionLabel = { it },
-        onSelect = { type = it },
-        clearOptionLabel = "Alla"
-    )
-    Label("AppSegmentedChoice · ChoiceChips (android-ui) · RiskLevelPicker")
-    val modes = listOf("Ljust", "Mörkt", "Auto")
-    AppSegmentedChoice(options = modes, selectedIndex = modes.indexOf(mode), onSelect = { mode = modes[it] })
-    ChoiceChips(options = modes, selected = mode, onSelect = { mode = it }, label = { it })
-    RiskLevelPicker(selected = level, onSelect = { level = it }, marked = 5, markedDescription = "Säljfondens nivå")
-    Label("CheckRow · SwitchRow (android-ui) · FollowedToggleRow")
-    CheckRow("Global Indexfond A", checked, { checked = it }, subtitle = "120,5 andelar", done = false, tinted = false)
-    SwitchRow("Bara indexfonder", indexOnly, { indexOnly = it }, subtitle = "Föreslå bara indexfonder")
-    SwitchRow("Låst reglage", true, {}, enabled = false)
-    FollowedToggleRow(followed = followed, onFollowedChange = { followed = it })
-}
-
-@Composable
-private fun ColumnScope.Values() {
+private fun Values() = Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
     Label("PeriodRow · ApproxTaxRow · ValueAsOfRow")
     PeriodRow(label = "Idag", amount = 845.0, fraction = 0.0021)
     PeriodRow(label = "I år", amount = -1_960.0, fraction = -0.008)
@@ -302,6 +73,71 @@ private fun ColumnScope.Values() {
     FundFactsRow(facts = galleryFacts.copy(name = "Kort Ränta Index", oneYearFraction = -0.008, company = null))
 }
 
+@Composable
+private fun CardsAndBadges() = Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    var level by remember { mutableIntStateOf(4) }
+    var followed by remember { mutableStateOf(false) }
+    Label("TotalCard")
+    TotalCard(
+        totalValue = 412_380.5,
+        totalInvested = 360_000.0,
+        gainLoss = 52_380.5,
+        gainLossFraction = 0.1455,
+        total = PortfolioTotalCalc.Result(netDepositsKr = 365_000.0, totalGainKr = 47_380.5, totalGainFraction = 0.1298, moneyWeightedAnnualReturn = 0.071, partial = false, ageDays = 812),
+        navEpochDay = 20_742
+    )
+    Label("RiskBadge · ProfitTakeBadge · StatusDot")
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s), verticalAlignment = Alignment.CenterVertically) {
+        RiskBadge(level = 3)
+        RiskBadge(level = 5, toLevel = 4)
+        ProfitTakeBadge(gainFraction = 0.35)
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        SignalLevel.entries.forEach { StatusDot(it) }
+    }
+    Label("ExpandableInfoRow")
+    ExpandableInfoRow(explanation = "Årstakten är den genomsnittliga avkastningen per år sedan första köpet.") {
+        Text("Årstakt 6,1 %")
+    }
+    Label("RiskLevelPicker · FollowedToggleRow")
+    RiskLevelPicker(selected = level, onSelect = { level = it }, marked = 5, markedDescription = "Säljfondens nivå")
+    FollowedToggleRow(followed = followed, onFollowedChange = { followed = it })
+}
+
+@Composable
+private fun Analysis() = Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    var showImport by remember { mutableStateOf(false) }
+    Label("AnalysisStatusBanner · AnalysisGuidanceCard")
+    AnalysisStatusBanner(analysis = galleryAnalysis)
+    AnalysisGuidanceCard(analysis = galleryAnalysis)
+    Label("ImportCompleteDialog")
+    AppButton("Import", { showImport = true }, variant = ButtonVariant.Secondary)
+    if (showImport) ImportCompleteDialog(importedCount = 7, onDismiss = { showImport = false })
+}
+
+@Composable
+private fun Charts() {
+    var expanded by remember { mutableStateOf(false) }
+    val end = LocalDate.of(2026, 10, 16).toEpochDay()
+    val primary = (0L until 60L).map { day -> (end - 59 + day) to 210.0 + 0.5 * day + 5 * cos(day / 4.0) }
+    val comparison = (0L until 60L).map { day -> (end - 59 + day) to 95.0 + 0.1 * day + 2 * cos(day / 6.0) }
+    Foldout(title = "Diagram", expanded = expanded, onToggle = { expanded = !expanded }) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+            Label("FundLineChart")
+            FundLineChart(points = primary, purchaseEpochDays = listOf(end - 40, end - 10))
+            Label("ComparisonChart (Pågående byte)")
+            ComparisonChart(
+                points = primary,
+                comparisonSeries = listOf(ChartSeries("Ränta Kort", comparison)),
+                available = true,
+                unavailableText = "Ingen jämförelse visas.",
+                primaryLabel = "Global Indexfond A"
+            )
+            ComparisonChart(points = primary, comparisonSeries = emptyList(), available = false, unavailableText = "Ingen jämförelse visas: kurshistoriken saknas.")
+        }
+    }
+}
+
 private val galleryFacts = FundFacts(
     name = "Räntefond Kort",
     risk = 2,
@@ -309,145 +145,6 @@ private val galleryFacts = FundFacts(
     oneYearFraction = 0.039,
     type = "Räntefond, Korta räntor",
     company = "Nordiska Fonder AB"
-)
-
-@Composable
-private fun ColumnScope.Status() {
-    Label("AnalysisStatusBanner · AnalysisGuidanceCard")
-    AnalysisStatusBanner(analysis = galleryAnalysis)
-    AnalysisGuidanceCard(analysis = galleryAnalysis)
-    Label("AppPullToRefresh (android-ui)")
-    AppPullToRefresh(refreshing = true, onRefresh = {}, modifier = Modifier.height(GALLERY_REFRESH_HEIGHT)) {
-        PeriodRow(label = "Sedan köp", amount = 18_420.0, fraction = 0.091)
-    }
-    Label("EmptyState med knappar · LoadErrorState (android-ui)")
-    EmptyState(
-        icon = R.drawable.ic_holdings,
-        title = "Inga innehav ännu",
-        message = "Lägg till din första fondtransaktion för att se värde och utveckling.",
-        actions = listOf(
-            EmptyAction("Ny transaktion", {}, UiR.drawable.ic_add),
-            EmptyAction("Importera avräkningsnota", {}, R.drawable.ic_upload, ButtonVariant.Secondary)
-        )
-    )
-    LoadErrorState(title = "Kunde inte visa innehållet", error = AppErrors.map(DataError.Database), onRetry = {})
-}
-
-@Composable
-private fun ColumnScope.Navigation() {
-    var tab by remember { mutableIntStateOf(2) }
-    Label("AppFloatingToolbar med plusknapp och meny (android-ui)")
-    AppFloatingToolbar(
-        items = listOf(
-            ToolbarItem("Översikt", R.drawable.ic_overview),
-            ToolbarItem("Innehav", R.drawable.ic_holdings),
-            ToolbarItem("Beslut", R.drawable.ic_decisions, badgeCount = 2),
-            ToolbarItem("Händelser", R.drawable.ic_receipt)
-        ),
-        selectedIndex = tab,
-        onSelect = { tab = it },
-        modifier = Modifier.align(Alignment.CenterHorizontally),
-        action = ToolbarAction(
-            "Lägg till",
-            UiR.drawable.ic_add,
-            listOf(AppMenuItem("Ny transaktion", {}), AppMenuItem("Bevaka ny fond", {}))
-        )
-    )
-}
-
-@Composable
-private fun ColumnScope.Dialogs() {
-    var shown by remember { mutableStateOf<GalleryDialog?>(null) }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        GalleryDialog.entries.forEach { dialog ->
-            AppButton(dialog.label, { shown = dialog }, variant = ButtonVariant.Secondary)
-        }
-    }
-    val close = { shown = null }
-    when (shown) {
-        GalleryDialog.Confirm -> ConfirmDialog(
-            title = "Ta bort transaktionen?",
-            message = "Köpet av Global Indexfond A den 14 okt tas bort. Det går inte att ångra.",
-            confirmLabel = stringResource(R.string.delete),
-            onConfirm = close,
-            onDismiss = close,
-            destructive = true
-        )
-
-        GalleryDialog.Single -> ConfirmDialog(
-            title = "Kopian är sparad",
-            message = "Säkerhetskopian ligger i Drive.",
-            confirmLabel = stringResource(R.string.ok),
-            onConfirm = close,
-            onDismiss = close,
-            dismissLabel = null
-        )
-
-        GalleryDialog.Loading -> {
-            // Väntedialogen går inte att stänga – den försvinner av sig själv, som när importen är klar.
-            LaunchedEffect(Unit) {
-                delay(LOADING_DIALOG_MS)
-                close()
-            }
-            LoadingDialog(title = "Importerar", message = "Läser avräkningsnotorna …")
-        }
-
-        GalleryDialog.Import -> ImportCompleteDialog(importedCount = 7, onDismiss = close)
-
-        null -> Unit
-    }
-}
-
-/** Dialogerna galleriet kan öppna; [label] är komponentens namn. */
-private enum class GalleryDialog(val label: String) {
-    Confirm("Confirm"),
-    Single("En knapp"),
-    Loading("Loading"),
-    Import("Import")
-}
-
-@Composable
-private fun ColumnScope.Library() {
-    Label("AppTopBar (liten, tonad pil – underskärmarnas topprad)")
-    LibraryTopBar("Riskprofil", size = TopBarSize.Small, onBack = {})
-}
-
-@Composable
-private fun Chart() {
-    val end = LocalDate.of(2026, 10, 16).toEpochDay()
-    val primary = (0L until 60L).map { day -> (end - 59 + day) to 210.0 + 0.5 * day + 5 * cos(day / 4.0) }
-    val comparison = (0L until 60L).map { day -> (end - 59 + day) to 95.0 + 0.1 * day + 2 * cos(day / 6.0) }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Label("FundLineChart")
-        FundLineChart(points = primary, purchaseEpochDays = listOf(end - 40, end - 10))
-        FundLineChart(
-            points = primary,
-            primaryLabel = "Global Indexfond A",
-            comparisonSeries = listOf(ChartSeries("Ränta Kort", comparison))
-        )
-    }
-}
-
-/** Galleriets egen topprad – skiljer dess bakåtpil från exemplens i tester. */
-const val COMPONENT_GALLERY_TOP_BAR_TAG = "component_gallery_top_bar"
-
-/** Tillståndsmärken per rad, så att inget bryts mitt i ordet. */
-private const val CHIPS_PER_ROW = 3
-
-/** Så länge väntedialogen visas innan den stänger sig själv. */
-private const val LOADING_DIALOG_MS = 2_000L
-
-/** Höjden på exemplet med dra för att uppdatera. */
-private val GALLERY_REFRESH_HEIGHT = 120.dp
-
-/** Fonders toner för märkena, med namnen galleriet visar. */
-private val galleryTones = listOf(
-    "Primary" to Tone.Primary,
-    "Copper" to Tone.Copper,
-    "Gain" to Tone.Gain,
-    "Tertiary" to Tone.Tertiary,
-    "Neutral" to Tone.Neutral,
-    "Filled" to Tone.Filled
 )
 
 /** Påhittad analys för statusbannern och vägledningen (aldrig riktiga innehav). */
