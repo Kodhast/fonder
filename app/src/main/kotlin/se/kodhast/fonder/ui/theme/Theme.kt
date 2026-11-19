@@ -63,11 +63,12 @@ fun FonderTheme(
 /**
  * Kodhäst-igenkänningen (UI-17): hästen i tomma lägens ikonruta, prickarna före sektionsrubriker
  * utan ikonruta och prickarna i sidhuvudet som hoppar medan appen hämtar i bakgrunden (NAV-6); flikraden
- * i appens ljusa ton med plusknappens val som FAB-meny i kopparen (NAV-8). Prickarna som laddning står av –
- * Fonder behåller sin formskiftande laddning (UI-12).
+ * i appens ljusa ton med plusknappens val som FAB-meny i kopparen (NAV-8). Laddningen är Kodhäst-prickarna,
+ * samma som i ReseApoteket och Dagboken (UI-12).
  */
 private val FonderBrandStyle = AppBrandStyle(
     sectionDots = true,
+    dotLoading = true,
     emptyStateMark = true,
     headerDots = true,
     toolbarStyle = ToolbarStyle.Tonal,

@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -105,7 +103,7 @@ fun StatusDot(
     )
 }
 
-/** Statusbanner (färg + rubrik + triggertexter) ovanför kurshistoriken i Fonddetalj (ANA-3). */
+/** Statusbanner (prick + rubrik + triggertexter) ovanför kurshistoriken i Fonddetalj (ANA-3), på android-ui:s [AppCard]. */
 @Composable
 fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifier = Modifier) {
     val level = analysis?.status
@@ -119,11 +117,9 @@ fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifie
         }
         return
     }
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = statusColor(level).copy(alpha = 0.14f))
-    ) {
-        Row(modifier = Modifier.padding(Spacing.l), verticalAlignment = Alignment.Top) {
+    // Bibliotekets kort (22 dp, djupet), som alla andra kort; nivåns färg bärs av pricken och rubriken av texten.
+    AppCard(modifier = modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.Top) {
             StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = Spacing.m), contentDescription = null)
             Column {
                 Text(statusTitle(level), style = MaterialTheme.typography.titleMedium)
