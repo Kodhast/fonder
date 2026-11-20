@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
 
-            FonderTheme(darkTheme = darkTheme) {
+            FonderTheme(darkTheme = darkTheme, appVersion = BuildConfig.VERSION_NAME) {
                 AppNavigation()
             }
         }

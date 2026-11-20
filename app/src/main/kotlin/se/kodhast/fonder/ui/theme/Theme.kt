@@ -36,12 +36,14 @@ private val LocalFonderColors = staticCompositionLocalOf { FonderLightColors }
  * Former, kort, knappar och tillbakapil har bibliotekets standard (samma som ReseApoteket och Dagboken, UI-13,
  * UI-14): 22 dp kort, 56 dp knappar utan formmorf och den tonade pilplattan – Fonder sätter ingen egen stil.
  * Kortens kant och skugga kommer från djupet ([FonderLightDepth]/[FonderDarkDepth], UI-18). Appens identitet
- * (`LocalAppIdentity`: ikonen och namnet) ger flikarna Kodhäst-sidhuvudet (NAV-7).
+ * (`LocalAppIdentity`: ikonen, namnet och [appVersion]) ger flikarna Kodhäst-sidhuvudet (NAV-7). [appVersion] sätter
+ * bara `MainActivity`, så att skärmdumparna inte bär något riktigt versionsnummer.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FonderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    appVersion: String? = null,
     content: @Composable () -> Unit
 ) {
     AppTheme(
@@ -54,7 +56,7 @@ fun FonderTheme(
         CompositionLocalProvider(
             LocalFonderColors provides if (darkTheme) FonderDarkColors else FonderLightColors,
             LocalAppBrandStyle provides FonderBrandStyle,
-            LocalAppIdentity provides AppIdentity(R.drawable.ic_app_header, stringResource(R.string.app_name)),
+            LocalAppIdentity provides AppIdentity(R.drawable.ic_app_header, stringResource(R.string.app_name), appVersion),
             content = content
         )
     }
