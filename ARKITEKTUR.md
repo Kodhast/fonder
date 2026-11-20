@@ -280,19 +280,19 @@ medvetet inte gör det, med skäl, står i skill `data-safety-backup` (enda käl
 
 ## Verifierade API:er
 
-Med Compose BOM `2026.09.00` är Material 3 Expressive-API:erna `internal`. Därför pinnas `material3`
-till `1.5.0-beta01` i `libs.versions.toml` (övriga Compose-artefakter följer BOM:en); byts till
-stabil 1.5.0 när den släpps. Opt-in för experimentella Expressive-API:er står bara i `ui/theme` och
+Material 3 Expressive kräver `material3` 1.5.0 (första stabila med Expressive; i äldre stabila 1.4.x är
+API:erna `internal`). Därför pinnas `material3` till `1.5.0` i `libs.versions.toml` (övriga Compose-artefakter följer
+BOM:en 2026.11.01). Opt-in för experimentella Expressive-API:er står bara i `ui/theme` och
 `ui/components`. Tabellen listar API:er som appen använder och som har ändrats nyligen eller lätt
 förväxlas med äldre varianter. "Kompilerad" betyder att `:app:compileDebugKotlin` gick igenom med
 versionen i tabellen.
 
 | Behov | API | Artefakt:version | Används i | Verifierad |
 |---|---|---|---|---|
-| Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`) (inga egna former sedan android-ui 3.0.0) | `material3:1.5.0-beta01`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
+| Expressive-tema | `se.kodhast.ui.theme.AppTheme` (android-ui, `MaterialExpressiveTheme` + `MotionScheme.expressive()`) (inga egna former sedan android-ui 3.0.0) | `material3:1.5.0`, `ui-theme:0.5.0` | `ui/theme/Theme.kt` | 2026-10-20 (kompilerad, skärmdumparna oförändrade utom ljust temas vinst- och förlustfärg) |
 | Flytande verktygsrad | android-ui:s `AppFloatingToolbar(items, selectedIndex, onSelect, action)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
 | Plusknapp med meny | android-ui:s `ToolbarAction(label, icon, menu: List<AppMenuItem>)` | `ui-components:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-11-16 (kompilerad) |
-| Växlingsknapp | `ToggleButton` | `material3:1.5.0-beta01` | `ui/components` | 2026-10-20 (kompilerad) |
+| Växlingsknapp | `ToggleButton` | `material3:1.5.0` | `ui/components` | 2026-10-20 (kompilerad) |
 | Dra för att uppdatera | android-ui:s `AppPullToRefresh(refreshing, onRefresh, modifier, content)` | `ui-components:1.2.0` | Hem, Innehav, Beslut, Facit, Pågående byte | 2026-11-16 (kompilerad) |
 | Navigering | `NavDisplay`, `rememberSaveableStateHolderNavEntryDecorator()` | `navigation3-ui`/`-runtime:1.2.0` | `ui/navigation/AppNavigation.kt` | 2026-10-20 (kompilerad) |
 | ViewModel per nav-post | `rememberViewModelStoreNavEntryDecorator()` | `lifecycle-viewmodel-navigation3:2.11.0` | `ui/navigation/AppNavigation.kt` | 2026-10-20 (kompilerad) |
@@ -313,7 +313,7 @@ versionen i tabellen.
 | Kotlin | 2.4.21 | `libs.versions.toml` |
 | KSP / Hilt | 2.3.12 / 2.60.1 | KAPT används inte |
 | Java | källa och mål 17 för alla moduler (rotens `build.gradle.kts`, `subprojects {}`), JDK 21 kör bygget | Robolectric kräver 21 för SDK 36 (`.github/actions/setup-android`) |
-| Compose | BOM 2026.09.00, `material3` 1.5.0-beta01 | se Verifierade API:er |
+| Compose | BOM 2026.11.01, `material3` 1.5.0 | se Verifierade API:er |
 | Kontroller | Konsist (`UiConsistencyTest`), PMD CPD (`cpdCheck`), Spotless/ktlint lokalt | skill `shared-ui-components`, `ci-budget` |
 | Moduler | `:core` (Kotlin/JVM, plugins `kotlin.jvm` + `kotlin.serialization`), `:app` | `settings.gradle.kts`: `include(":core", ":app")`; #171 |
 | android-ui | `se.kodhast.ui` 1.0.0 (`ui-components`, med `ui-theme` och `ui-common` transitivt; i test `ui-testing`) | Mats komponentbibliotek ([Kodhast/android-ui](https://github.com/Kodhast/android-ui)), delat med ReseApoteket och Dagboken. GitHub Packages kräver inloggning även för läsning: `GPR_USER`/`GPR_TOKEN` (classic token, `read:packages`) i sessionen; i CI sätter `setup-android` dem från `secrets.GPR_TOKEN`, annars `github.token` med `packages: read`. Temat (`AppTheme`, `Spacing`) sedan #172, listtillstånd och fel (`ListUiState`, `UiError`, `ErrorMapper`) sedan #173 |

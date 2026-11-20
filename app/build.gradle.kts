@@ -32,7 +32,9 @@ private val localProps = Properties().apply {
 
 android {
     namespace = "se.kodhast.fonder"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         // Appens id står kvar efter bytet till se.kodhast.fonder: telefonerna uppdaterar samma app,
