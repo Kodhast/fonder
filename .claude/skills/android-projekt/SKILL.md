@@ -52,8 +52,8 @@ security rules – `android:firebase-security-rules-auditor` gäller inte här.
   `onFilesRead`), som tar filens innehåll i stället för en `Uri`. Alla compose-rules-regler är
   påslagna i ktlint; ViewModels till `AppNavigation` är parametrar med `hiltViewModel()` som förval.
 - **Nuvarande läge, avviker från pluginen:** ingen Renovate eller Dependabot;
-  ingen Baseline Profile. `material3` står på `1.5.0-beta01` utanför Compose BOM, vilket följer
-  pluginen (beta); skälet står i katalogen och i ARKITEKTUR.md → Verifierade API:er. Tas i egna PR:er senare; ny kod
+  ingen Baseline Profile. `material3` står på `1.5.0` utanför Compose BOM, vilket följer
+  pluginen; skälet står i katalogen och i ARKITEKTUR.md → Verifierade API:er. Tas i egna PR:er senare; ny kod
   följer pluginen där det går utan att bryta mot grannkodens mönster.
 
 ## Coroutines (android:kotlin-coroutines)
