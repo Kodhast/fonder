@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.9.5 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.9.6 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.9.6 | **Versionen i sidhuvudet** (NAV-7, android-ui #95): versionen står litet efter appnamnet i flikarnas sidhuvud, som i de andra Kodhäst-apparna. android-ui 3.2.0 → 3.3.0 |
 | 1.9.5 | **Dra ned och spara med prickar** (UI-11, UI-19, NAV-6): dra-ned-indikatorn och sparaknappen är Kodhäst-prickarna i stället för snurror, och dra-ned-indikatorn syns bara när du själv drar (android-ui 3.2.0). |
 | 1.9.4 | **Samma utseende som ReseApoteket och Dagboken** (UI-12, UI-13, UI-17): laddningen är Kodhäst-prickarna, tillståndsmärkena är runda och statusbannern i Fonddetalj är ett vanligt kort med 22 dp hörn. Bara färger och typsnitt skiljer nu. |
 | 1.9.3 | **Säljsignalens gula går att skilja från den röda** (UI-1, ANA-3): den gula nivån är en egen bärnstensfärg i stället för kopparaccenten, och pricken läses av skärmläsaren ("Säljsignal: Bör ses över") på Innehav, Översikt och Fonddetalj. |
