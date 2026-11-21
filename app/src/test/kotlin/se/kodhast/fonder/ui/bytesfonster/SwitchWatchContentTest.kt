@@ -1,5 +1,9 @@
 package se.kodhast.fonder.ui.bytesfonster
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -61,6 +65,18 @@ class SwitchWatchContentTest {
             FonderTheme { SwitchWatchContent(state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound()))) }
         }
         composeRule.onNodeWithText("Försök igen").assertDoesNotExist()
+    }
+
+    @Test
+    fun `en bevakning som inte finns har sin egen rubrik, ett läsfel ramens`() {
+        var state by mutableStateOf(SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.notFound())))
+        composeRule.setContent { FonderTheme { SwitchWatchContent(state = state) } }
+        composeRule.onNodeWithText("Bevakningen finns inte").assertIsDisplayed()
+        composeRule.onNodeWithText("Kunde inte hämta uppgifterna").assertDoesNotExist()
+
+        state = SwitchWatchUiState(watch = DetailUiState.Error(AppErrors.map(DataError.Database)))
+        composeRule.onNodeWithText("Kunde inte hämta uppgifterna").assertIsDisplayed()
+        composeRule.onNodeWithText("Bevakningen finns inte").assertDoesNotExist()
     }
 
     private companion object {
