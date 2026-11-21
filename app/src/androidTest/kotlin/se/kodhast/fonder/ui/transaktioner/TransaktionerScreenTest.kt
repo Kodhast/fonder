@@ -1,10 +1,9 @@
 package se.kodhast.fonder.ui.transaktioner
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -174,15 +173,16 @@ class TransaktionerScreenTest {
     }
 
     @Test
-    fun langtryck_fragar_innan_transaktionen_tas_bort() {
+    fun radera_i_det_utfallda_fragar_innan_transaktionen_raderas() {
         var deleted: Long? = null
         composeRule.setContent {
             FonderTheme { TransaktionerContent(state = state(sellRow()), onDeleteTransaction = { deleted = it }) }
         }
 
-        composeRule.onNodeWithText("Fond A", substring = true).performTouchInput { longClick() }
-        composeRule.onNodeWithText("Ta bort transaktion?").assertExists()
-        composeRule.onNodeWithText("Ta bort").performClick()
+        composeRule.onNodeWithText("Fond A", substring = true).performClick()
+        composeRule.onNodeWithText("Radera").performClick()
+        composeRule.onNodeWithText("Radera transaktion?").assertExists()
+        composeRule.onAllNodesWithText("Radera")[1].performClick()
 
         assertEquals(1L, deleted)
     }

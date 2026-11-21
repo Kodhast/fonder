@@ -12,7 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -38,10 +41,14 @@ import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.ChoiceChips
+import se.kodhast.ui.components.DeleteAction
+import se.kodhast.ui.components.DeleteConfirmDialog
 import se.kodhast.ui.components.EntityDetailScreen
 import se.kodhast.ui.components.GroupLabel
 import se.kodhast.ui.components.ItemRowText
+import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SectionCard
+import se.kodhast.ui.components.SwipeToDelete
 import se.kodhast.ui.components.SwitchRow
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
@@ -448,6 +455,32 @@ private fun CandidateCard(
     onBuy: (String) -> Unit,
     onRemoveCandidate: (Long) -> Unit
 ) {
+    // Bara handplockade alternativ går att radera: de automatiska är appens förslag för nivån, och att
+    // plocka bort ett av dem hade sett ut som ett val men bara dolt vad planen faktiskt föreslår.
+    // Raderingen frågar först, och svep åt vänster begär samma sak (android-ui #118).
+    val deletable = !closed && row.manual
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    if (deletable) {
+        SwipeToDelete({ confirmDelete = true }) {
+            CandidateCardBody(row, closed, onBuy, onDelete = { confirmDelete = true })
+        }
+    } else {
+        CandidateCardBody(row, closed, onBuy, onDelete = null)
+    }
+    if (confirmDelete) {
+        DeleteConfirmDialog(
+            DeleteAction(
+                title = stringResource(R.string.format_switch_watch_remove_title, row.name),
+                message = stringResource(R.string.switch_watch_remove_message),
+                onConfirm = { onRemoveCandidate(row.candidateId) }
+            ),
+            onDismiss = { confirmDelete = false }
+        )
+    }
+}
+
+@Composable
+private fun CandidateCardBody(row: CandidateRow, closed: Boolean, onBuy: (String) -> Unit, onDelete: (() -> Unit)?) {
     AppCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -491,14 +524,11 @@ private fun CandidateCard(
                     onClick = { onBuy(row.isin) },
                     variant = ButtonVariant.Text
                 )
-                // Bara handplockade alternativ går att ta bort: de automatiska är appens
-                // förslag för nivån, och att plocka bort ett av dem hade sett ut som ett val
-                // men bara dolt vad planen faktiskt föreslår.
-                if (row.manual) {
+                onDelete?.let {
                     AppButton(
-                        text = stringResource(R.string.switch_watch_remove_candidate),
-                        onClick = { onRemoveCandidate(row.candidateId) },
-                        variant = ButtonVariant.Text
+                        text = stringResource(UiR.string.delete),
+                        onClick = it,
+                        variant = ButtonVariant.DestructiveText
                     )
                 }
             }

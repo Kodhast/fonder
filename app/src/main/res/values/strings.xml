@@ -4,7 +4,6 @@
 
     <!-- Gemensamma åtgärder -->
     <string name="save">Spara</string>
-    <string name="delete">Ta bort</string>
     <string name="cancel">Avbryt</string>
     <string name="close">Stäng</string>
     <string name="edit">Redigera</string>
@@ -32,8 +31,6 @@
     <string name="nav_beslut">Beslut</string>
     <string name="nav_handelser">Händelser</string>
     <string name="fab_menu_open">Lägg till</string>
-    <string name="state_expanded">Utfälld</string>
-    <string name="state_collapsed">Hopfälld</string>
     <string name="fab_import_orders">Importera avräkningsnota</string>
     <string name="fab_import_holdings">Importera innehav</string>
     <string name="fab_watch_fund">Bevaka ny fond</string>
@@ -158,7 +155,7 @@
     <string name="format_handelse_estimated_date">%1$s · uppskattat datum</string>
     <string name="handelse_estimated_date_explain">Importen uppskattade datumet ur fondens kurshistorik (en dag då kursen låg nära snittkursen). Det styr avkastningen, köpmarkörerna, ”sedan köp” och facit – rätta det om du vet det riktiga.</string>
     <string name="handelse_correct_date">Rätta datum</string>
-    <string name="transaktion_delete_title">Ta bort transaktion?</string>
+    <string name="transaktion_delete_title">Radera transaktion?</string>
     <string name="format_transaktion_delete_confirm">Transaktionen för \"%s\" raderas permanent.</string>
     <string name="transaktionsform_title">Ny transaktion</string>
     <string name="transaktionsform_fund_label">Fond</string>
@@ -221,8 +218,6 @@
     <string name="sold_funds_total_title">Totalt realiserat resultat</string>
     <string name="format_sold_fund_detail">Belopp %1$s · Avgift %2$s · Anskaffningsvärde %3$s</string>
     <string name="sold_fund_uncovered_warning">Osäkert resultat — sålda andelar saknar matchande köp i historiken.</string>
-    <string name="sold_fund_expand">Visa detaljer</string>
-    <string name="sold_fund_collapse">Dölj detaljer</string>
 
     <!-- Fonddetalj / diagram -->
     <string name="fond_title">Fond</string>
@@ -604,7 +599,8 @@
     <string name="format_switch_watch_fee">Avgift %1$s</string>
     <string name="switch_watch_history_unavailable">Ingen källa kunde ge kursen — utvecklingen går inte att visa för den här fonden.</string>
     <string name="switch_watch_bought_action">Köpte den här</string>
-    <string name="switch_watch_remove_candidate">Ta bort</string>
+    <string name="format_switch_watch_remove_title">Radera %1$s?</string>
+    <string name="switch_watch_remove_message">Fonden slutar bevakas i det här bytet. Du kan lägga till den igen.</string>
     <string name="switch_watch_add_candidate">Lägg till alternativ</string>
     <string name="switch_watch_filling">Hämtar förslag på alternativ…</string>
     <string name="switch_watch_empty_body">Inga alternativ bevakas än. Lägg till de fonder du överväger att byta till.</string>

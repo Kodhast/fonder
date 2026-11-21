@@ -7,15 +7,21 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.test.hasStateDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -63,6 +69,12 @@ class TransaktionerScreenTest {
     )
 
     private val names = mapOf("SB" to "Sverige Småbolag", "GI" to "Global Indexfond A", "TM" to "Tillväxtmarknad Bred", "RF" to "Räntefond Kort")
+
+    /** Radens titelrad (bibliotekets `Foldout`), som bär klicket och läget; texten är radens `ItemRow` under den. */
+    private fun rowHeader(text: String, state: String? = null): SemanticsMatcher {
+        val header = hasClickAction() and hasAnyDescendant(hasText(text, substring = true))
+        return if (state == null) header else header and hasStateDescription(state)
+    }
 
     private fun state(filter: HandelseFilter = HandelseFilter.ALLA): TransaktionerUiState {
         val sales = RealizedGainCalculator.compute(transactions)
@@ -160,9 +172,8 @@ class TransaktionerScreenTest {
     fun `en saljrad laser upp om den ar ihopfalld eller utfalld`() {
         composeRule.setContent { FonderTheme { TransaktionerContent(state = state(HandelseFilter.SALJ)) } }
 
-        val row = composeRule.onNode(hasText("Sälj · förlust −520,00 kr", substring = true).and(hasStateDescription("Hopfälld")), useUnmergedTree = false)
-        row.assertExists().performClick()
-        composeRule.onNode(hasText("Sälj · förlust −520,00 kr", substring = true).and(hasStateDescription("Utfälld"))).assertExists()
+        composeRule.onNode(rowHeader("Sälj · förlust −520,00 kr", "Hopfälld")).assertExists().performClick()
+        composeRule.onNode(rowHeader("Sälj · förlust −520,00 kr", "Utfälld")).assertExists()
     }
 
     @Test
@@ -271,10 +282,59 @@ class TransaktionerScreenTest {
     fun `utfällt köp med känt datum har ingen rättning`() {
         composeRule.setContent { FonderTheme { TransaktionerContent(state = estimatedState()) } }
         // Det vanliga köpet i Sverige Småbolag (det andra köpet är det uppskattade).
-        composeRule.onNode(hasText("Sverige Småbolag") and hasText("Köp", substring = true) and hasStateDescription("Hopfälld")).performClick()
-        composeRule.onNode(hasText("Sverige Småbolag") and hasText("Köp", substring = true) and hasStateDescription("Utfälld")).assertExists()
+        composeRule.onNode(hasClickAction() and hasStateDescription("Hopfälld") and hasAnyDescendant(hasText("Sverige Småbolag")) and hasAnyDescendant(hasText("Köp")), useUnmergedTree = true).performClick()
+        composeRule.onNode(hasClickAction() and hasStateDescription("Utfälld") and hasAnyDescendant(hasText("Sverige Småbolag")) and hasAnyDescendant(hasText("Köp")), useUnmergedTree = true).assertExists()
         composeRule.onNodeWithText("Importen uppskattade datumet", substring = true).assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Rätta datum", substring = true).assertDoesNotExist()
+    }
+
+    // --- Radera en rad (TRX-2, android-ui #118) ---
+
+    @Test
+    fun `Radera står sist i det utfällda och frågar innan transaktionen raderas`() {
+        var deleted: Long? = null
+        composeRule.setContent { FonderTheme { TransaktionerContent(state = estimatedState(), onDeleteTransaction = { deleted = it }) } }
+        composeRule.onNodeWithText("Radera").assertDoesNotExist()
+
+        composeRule.onNodeWithText("Köp · uppskattat datum", substring = true).performClick()
+        composeRule.onNodeWithText("Radera").performClick()
+        composeRule.onNodeWithText("Radera transaktion?").assertIsDisplayed()
+        assertEquals(null, deleted)
+        composeRule.onAllNodesWithText("Radera")[1].performClick()
+
+        assertEquals(12L, deleted)
+    }
+
+    @Test
+    fun `svep åt vänster frågar i samma dialog och Avbryt raderar inget`() {
+        var deleted: Long? = null
+        composeRule.setContent { FonderTheme { TransaktionerContent(state = estimatedState(), onDeleteTransaction = { deleted = it }) } }
+
+        composeRule.onNodeWithText("Köp · uppskattat datum", substring = true).performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Radera transaktion?").assertIsDisplayed()
+        composeRule.onNodeWithText("Avbryt").performClick()
+
+        assertEquals(null, deleted)
+        composeRule.onNodeWithText("Radera transaktion?").assertDoesNotExist()
+    }
+
+    @Test
+    fun `långtryck raderar inte och frågar inte`() {
+        composeRule.setContent { FonderTheme { TransaktionerContent(state = estimatedState()) } }
+
+        composeRule.onNodeWithText("Köp · uppskattat datum", substring = true).performTouchInput { longClick() }
+        composeRule.waitForIdle()
+
+        composeRule.onNodeWithText("Radera transaktion?").assertDoesNotExist()
+    }
+
+    @Test
+    fun `skärmdump av Händelser utfälld med Radera`() = composeRule.captureLightAndDark(
+        "HandelserScreen_radera",
+        prepare = { onNode(rowHeader("Sälj · förlust")).performSemanticsAction(SemanticsActions.OnClick) }
+    ) {
+        TransaktionerContent(state = state(HandelseFilter.SALJ))
     }
 
     @Test
@@ -288,7 +348,7 @@ class TransaktionerScreenTest {
         prepare = {
             // Semantikens klick, inte ett tryck: ett tryck lämnar plattformens ripple (med slumpat
             // brusmönster) kvar i bilden, olika mellan körningar.
-            onNodeWithText("Köp · uppskattat datum", substring = true).performSemanticsAction(SemanticsActions.OnClick)
+            onNode(rowHeader("Köp · uppskattat datum")).performSemanticsAction(SemanticsActions.OnClick)
         }
     ) {
         TransaktionerContent(state = estimatedState())
