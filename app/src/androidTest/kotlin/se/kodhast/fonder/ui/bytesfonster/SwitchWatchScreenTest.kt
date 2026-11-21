@@ -110,7 +110,8 @@ class SwitchWatchScreenTest {
         composeRule.onNodeWithText("Kandidat A").assertIsDisplayed()
         composeRule.onNodeWithText("Sedan säljdagen").assertIsDisplayed()
         composeRule.onNodeWithText("+3,2 %", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Avgift", substring = true).assertIsDisplayed()
+        // Köpnivåns chips kan bryta på två rader på en smal skärm – rulla fram raden i stället för att anta att den syns.
+        composeRule.onNodeWithText("Avgift", substring = true).performScrollTo().assertIsDisplayed()
         // Risknivån alltid som siffra i text, aldrig som enbart en färg (UI-10).
         val badge = hasContentDescription("Risknivå 4 av 7", substring = true)
         composeRule.onNode(badge).performScrollTo()
@@ -155,7 +156,7 @@ class SwitchWatchScreenTest {
         composeRule.setContent { FonderTheme { SwitchWatchContent(state = state) } }
 
         composeRule.onNodeWithText("Kandidat A").assertIsDisplayed()
-        composeRule.onNodeWithText("Ingen källa kunde ge kursen", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Ingen källa kunde ge kursen", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -165,7 +166,7 @@ class SwitchWatchScreenTest {
         composeRule.setContent {
             FonderTheme { SwitchWatchContent(state = state(), onBuy = { bought = it }) }
         }
-        composeRule.onNodeWithText("Köpte den här").performClick()
+        composeRule.onNodeWithText("Köpte den här").performScrollTo().performClick()
 
         assertEquals("SE_A", bought)
     }
