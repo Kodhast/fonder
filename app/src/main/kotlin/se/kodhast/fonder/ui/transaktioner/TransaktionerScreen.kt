@@ -1,9 +1,7 @@
 package se.kodhast.fonder.ui.transaktioner
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,8 +16,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.LocalDate
@@ -42,11 +38,12 @@ import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppCardStyle
 import se.kodhast.ui.components.AppSegmentedChoice
 import se.kodhast.ui.components.ButtonVariant
-import se.kodhast.ui.components.ConfirmDialog
 import se.kodhast.ui.components.DateField
+import se.kodhast.ui.components.DeleteAction
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyContent
 import se.kodhast.ui.components.EntityListScreen
+import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.R as UiR
@@ -108,11 +105,6 @@ fun TransaktionerContent(
     onNewTransaction: () -> Unit = {},
     onImportOrders: () -> Unit = {}
 ) {
-    // Id:t, inte hela raden: rememberSaveable kräver ett sparbart värde, och raden slås ändå
-    // upp ur tillståndet. Utan det försvann bekräftelsedialogen tyst vid rotation (issue #78).
-    var pendingDeleteId by rememberSaveable { mutableStateOf<Long?>(null) }
-    val pendingDelete = pendingDeleteId?.let { id -> state.allRows.firstOrNull { it.transaction.id == id } }
-
     EntityListScreen(
         title = stringResource(R.string.nav_handelser),
         state = state.shownList(),
@@ -137,23 +129,9 @@ fun TransaktionerContent(
     ) { row ->
         HandelseRow(
             row = row,
-            onLongPress = { pendingDeleteId = row.transaction.id },
+            onDelete = { onDeleteTransaction(row.transaction.id) },
             onStartSwitchWatch = onStartSwitchWatch,
             onCorrectDate = onCorrectDate
-        )
-    }
-
-    pendingDelete?.let { row ->
-        ConfirmDialog(
-            title = stringResource(R.string.transaktion_delete_title),
-            message = stringResource(R.string.format_transaktion_delete_confirm, row.fundName),
-            confirmLabel = stringResource(R.string.delete),
-            onConfirm = {
-                onDeleteTransaction(row.transaction.id)
-                pendingDeleteId = null
-            },
-            onDismiss = { pendingDeleteId = null },
-            destructive = true
         )
     }
 }
@@ -278,55 +256,77 @@ private fun RealizedCard(state: TransaktionerUiState, modifier: Modifier = Modif
 }
 
 /**
- * En transaktion (TRX-1): datum, fondnamn, typ och belopp med tecken — in (sälj) eller ut (köp) — i
- * listramens rad. Ett sälj visar sitt realiserade resultat i undertexten, osäkert markerat i text
- * (SLD-2), ett uppskattat datum likaså (TRX-9). Tryck fäller ut detaljerna (SLD-4), långtryck frågar
- * om radering (TRX-2).
+ * En transaktion (TRX-1): datum, fondnamn, typ och belopp med tecken — in (sälj) eller ut (köp) — på
+ * bibliotekets `Foldout`. Ett sälj visar sitt realiserade resultat i undertexten, osäkert markerat i text
+ * (SLD-2), ett uppskattat datum likaså (TRX-9). Tryck fäller ut detaljerna (SLD-4); Radera står sist i det
+ * utfällda, och svep åt vänster begär samma radering – båda frågar först (TRX-2, android-ui #118).
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HandelseRow(
     row: TransaktionRad,
-    onLongPress: () -> Unit,
+    onDelete: () -> Unit,
     onStartSwitchWatch: (TransaktionRad) -> Unit,
     onCorrectDate: (Long, LocalDate) -> Unit
 ) {
-    val tx = row.transaction
     var expanded by rememberSaveable { mutableStateOf(false) }
-    val stateText = stringResource(if (expanded) R.string.state_expanded else R.string.state_collapsed)
-    Column {
-        ItemRow(
-            title = row.fundName,
-            subtitle = subtitle(tx.type, row.sale, tx.dateEstimated),
-            modifier = Modifier
-                .combinedClickable(
-                    onClickLabel = stringResource(if (expanded) R.string.sold_fund_collapse else R.string.sold_fund_expand),
-                    onClick = { expanded = !expanded },
-                    onLongClickLabel = stringResource(R.string.delete),
-                    onLongClick = onLongPress
-                )
-                // Raden saknar pil (mockupen); läget läses i stället upp av TalkBack.
-                .semantics { stateDescription = stateText },
-            leading = {
-                Text(
-                    LocalDate.ofEpochDay(tx.epochDay).format(dateFormatter),
-                    style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            trailing = {
-                val isSell = tx.type == TransactionType.SALJ
-                Text(
-                    MoneyFormat.krSigned(if (isSell) tx.amount else -tx.amount),
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
-                    color = if (isSell) ReturnColors.gain else MaterialTheme.colorScheme.onSurface
+    Foldout(
+        title = row.fundName,
+        expanded = expanded,
+        onToggle = { expanded = !expanded },
+        // Raden dras in lite från kortets kant, så att chevronen inte står mot kanten; svepets
+        // bakgrund följer samma rundade rad.
+        modifier = Modifier.padding(horizontal = Spacing.s),
+        contentSpacing = Spacing.xs,
+        header = {
+            // I en Box: ItemRow fyller bredden, och vikten måste sitta på radens direkta barn för
+            // att chevronen ska få plats.
+            Box(Modifier.weight(1f)) { HandelseRowText(row) }
+        },
+        actions = if (row.canStartSwitchWatch) {
+            {
+                AppButton(
+                    text = stringResource(R.string.switch_watch_start),
+                    onClick = { onStartSwitchWatch(row) },
+                    variant = ButtonVariant.Text,
+                    compact = true
                 )
             }
+        } else {
+            null
+        },
+        delete = DeleteAction(
+            title = stringResource(R.string.transaktion_delete_title),
+            message = stringResource(R.string.format_transaktion_delete_confirm, row.fundName),
+            onConfirm = onDelete
         )
-        AnimatedVisibility(visible = expanded) {
-            HandelseDetails(row = row, onStartSwitchWatch = onStartSwitchWatch, onCorrectDate = onCorrectDate)
-        }
+    ) {
+        HandelseDetails(row = row, onCorrectDate = onCorrectDate)
     }
+}
+
+/** Radens text: datum, fondnamn, typ och belopp med tecken — in (sälj) eller ut (köp). */
+@Composable
+private fun HandelseRowText(row: TransaktionRad) {
+    val tx = row.transaction
+    ItemRow(
+        title = row.fundName,
+        subtitle = subtitle(tx.type, row.sale, tx.dateEstimated),
+        leading = {
+            Text(
+                LocalDate.ofEpochDay(tx.epochDay).format(dateFormatter),
+                style = MonoAmountStyle.merge(AppTheme.typography.itemSubtitle),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        trailing = {
+            val isSell = tx.type == TransactionType.SALJ
+            Text(
+                MoneyFormat.krSigned(if (isSell) tx.amount else -tx.amount),
+                style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
+                color = if (isSell) ReturnColors.gain else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    )
 }
 
 /**
@@ -354,16 +354,15 @@ private fun saleSubtitle(type: TransactionType, sale: RealizedSale?): String {
 
 /**
  * Utfällda detaljer (SLD-4): andelar och kurs, för ett sälj även belopp, avgift,
- * anskaffningsvärde, resultatet i kr + %, en ev. osäkerhetsvarning (SLD-2) och "Bevaka
- * alternativ" (SLD-5) — knappen ligger här så att den hopfällda raden förblir namn och resultat. Ett
- * uppskattat datum förklaras och kan rättas här (TRX-9).
+ * anskaffningsvärde, resultatet i kr + % och en ev. osäkerhetsvarning (SLD-2). Ett uppskattat datum
+ * förklaras och kan rättas här (TRX-9). "Bevaka alternativ" (SLD-5) och Radera står under, i radens knappar.
  */
 @Composable
-private fun HandelseDetails(row: TransaktionRad, onStartSwitchWatch: (TransaktionRad) -> Unit, onCorrectDate: (Long, LocalDate) -> Unit) {
+private fun HandelseDetails(row: TransaktionRad, onCorrectDate: (Long, LocalDate) -> Unit) {
     val tx = row.transaction
     val sale = row.sale
     Column(
-        modifier = Modifier.fillMaxWidth().padding(start = Spacing.m, end = Spacing.m, bottom = Spacing.m),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs)
     ) {
         Text(
@@ -392,13 +391,6 @@ private fun HandelseDetails(row: TransaktionRad, onStartSwitchWatch: (Transaktio
                 label = stringResource(R.string.handelse_correct_date),
                 date = LocalDate.ofEpochDay(tx.epochDay).toKotlinLocalDate(),
                 onDateChange = { onCorrectDate(tx.id, it.toJavaLocalDate()) }
-            )
-        }
-        if (row.canStartSwitchWatch) {
-            AppButton(
-                text = stringResource(R.string.switch_watch_start),
-                onClick = { onStartSwitchWatch(row) },
-                variant = ButtonVariant.Text
             )
         }
     }

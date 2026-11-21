@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -172,10 +173,12 @@ class SwitchWatchScreenTest {
     }
 
     @Test
-    fun bara_handplockade_alternativ_gar_att_ta_bort() {
+    fun bara_handplockade_alternativ_gar_att_radera_och_raderingen_fragar_forst() {
+        var removed: Long? = null
         composeRule.setContent {
             FonderTheme {
                 SwitchWatchContent(
+                    onRemoveCandidate = { removed = it },
                     state = state(
                         rows = listOf(
                             row(candidateId = 1, isin = "SE_A", name = "Appens förslag", manual = false),
@@ -186,10 +189,14 @@ class SwitchWatchScreenTest {
             }
         }
 
-        // Exakt en "Ta bort" — appens egna förslag hör till planen och ska inte gå att plocka bort.
+        // Exakt en "Radera" — appens egna förslag hör till planen och ska inte gå att plocka bort.
         // Nivåväljaren ovanför kan trycka ner raderna under skärmkanten, så rulla fram först.
-        composeRule.onNodeWithText("Ta bort").performScrollTo()
-        composeRule.onNodeWithText("Ta bort").assertIsDisplayed()
+        composeRule.onNodeWithText("Radera").performScrollTo()
+        composeRule.onNodeWithText("Radera").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Radera Eget val?").assertExists()
+        assertEquals(null, removed)
+        composeRule.onAllNodesWithText("Radera")[1].performClick()
+        assertEquals(2L, removed)
     }
 
     @Test
