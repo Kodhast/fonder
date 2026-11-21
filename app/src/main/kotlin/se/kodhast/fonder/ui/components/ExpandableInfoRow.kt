@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import se.kodhast.ui.components.Foldout
 import se.kodhast.ui.theme.AppTheme
@@ -19,10 +15,11 @@ import se.kodhast.ui.theme.Spacing
  * Radens synliga innehåll ([content]) — t.ex. en [PeriodRow] eller en signalrad — ligger kvar,
  * och en pil till höger fäller ut/ihop en pedagogisk [explanation] under.
  *
- * Ett tunt skal ovanpå android-ui:s [Foldout] (UI-3): hela raden växlar med minst 48 dp träffyta, läses som
- * knapp med läget "Hopfälld"/"Utfälld" och chevronen fjädrar. Det enda som läggs till är läget, som sparas
- * med `rememberSaveable` så det överlever en rotation (UI-9), och [onExpand]. Hela sektioner (rubrik +
- * innehåll) är [Foldout] direkt.
+ * Ett tunt skal ovanpå android-ui:s [Foldout] med eget läge (UI-3): hela raden växlar med minst 48 dp träffyta,
+ * läses som knapp med läget "Hopfälld"/"Utfälld", chevronen fjädrar, läget sparas så det överlever en rotation
+ * (UI-9) och [onExpand] körs vid utfällning – allt bibliotekets (#280 E). Det enda Fonder lägger till är
+ * förklaringstextens stil och att radens innehåll tar bredden före chevronen; skalet stannar för att de ~15
+ * anropen inte ska upprepa det. Hela sektioner (rubrik + innehåll) är [Foldout] direkt.
  *
  * @param extraContent valfritt innehåll som visas under [explanation] när raden är utfälld, t.ex.
  *   ett jämförelsediagram för ett bytesförslag (ANA-11).
@@ -38,15 +35,11 @@ fun ExpandableInfoRow(
     extraContent: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
-    var expanded by rememberSaveable { mutableStateOf(initiallyExpanded) }
     Foldout(
         title = "",
-        expanded = expanded,
-        onToggle = {
-            expanded = !expanded
-            if (expanded) onExpand()
-        },
         modifier = modifier,
+        initiallyExpanded = initiallyExpanded,
+        onExpand = onExpand,
         header = infoRowHeader(content),
         contentSpacing = Spacing.s
     ) {
