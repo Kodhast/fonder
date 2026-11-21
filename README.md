@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.9.7 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.10.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.10.0 | **Avatarmenyn och riskvalet från biblioteket** (fonder #280 C, NAV-7, TP-6, SET-9, SET-10, ANA-13): kugghjulet på Översikt är ersatt av avataren i sidhuvudet på alla flikar, med Inställningar, Om Fonder (egen vy), Logga in/Logga ut och – i debugbygget – Komponentgalleri, som i ReseApoteket och Dagboken. Google-kontot och Om-kortet har flyttat ur Inställningar. Köpnivån i Pågående byte väljs med bibliotekets chips 1–7; säljfondens nivå står i texten under i stället för som en ram (Fonders egen `RiskLevelPicker` är borta) |
 | 1.9.7 | **android-ui 3.6.0 → 3.8.0** (fonder #280 B): en borttagen bytesbevakning har åter rubriken "Bevakningen finns inte" (NFR-6, ANA-12, bibliotekets `errorTitle`); dialoger och ark suddar innehållet bakom (när enheten har oskärpa mellan fönster påslagen), listor och detaljer suddar överkanten under sidhuvudet när de rullats, och tidsväljaren är rullhjul i stället för urtavla. Omtagna skärmdumpar: bara komponentgalleriet (bibliotekets nya delar) |
 | 1.9.6 | **Versionen i sidhuvudet** (NAV-7, android-ui #95): versionen står litet efter appnamnet i flikarnas sidhuvud, som i de andra Kodhäst-apparna. android-ui 3.2.0 → 3.3.0 |
 | 1.9.5 | **Dra ned och spara med prickar** (UI-11, UI-19, NAV-6): dra-ned-indikatorn och sparaknappen är Kodhäst-prickarna i stället för snurror, och dra-ned-indikatorn syns bara när du själv drar (android-ui 3.2.0). |

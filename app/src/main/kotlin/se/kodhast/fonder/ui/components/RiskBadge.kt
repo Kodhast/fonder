@@ -44,3 +44,6 @@ fun RiskBadge(level: Int?, modifier: Modifier = Modifier, toLevel: Int? = null) 
     // Samma märke som bytesradernas tillstånd (BYT-4), i den neutrala tonen: siffran ska inte betyda något utöver sig själv.
     InfoPill(text = label, modifier = modifier, tone = Tone.Neutral, contentDescription = description)
 }
+
+/** Fondernas riskskala (SRI 1–7). */
+val RISK_LEVELS: IntRange = 1..7

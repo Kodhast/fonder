@@ -1,7 +1,6 @@
 package se.kodhast.fonder.ui.settings
 
 import android.app.PendingIntent
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
@@ -32,9 +31,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import se.kodhast.fonder.data.auth.AuthRepository
-import se.kodhast.fonder.data.auth.AuthUser
-import se.kodhast.fonder.data.auth.SignInException
 import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.data.datastore.PreferencesRepository
 import se.kodhast.fonder.data.repository.BackupFingerprint
@@ -115,25 +111,6 @@ class SettingsViewModelTest {
 
     private val fakeFundMetadataRepo = FakeFundMetadataRepository()
 
-    /**
-     * Inloggat läge som testet styr. Fake i stället för mock av samma skäl som resten av
-     * datalagret här: `currentUser` är ett hett flöde som ska kunna emittera mitt i ett test —
-     * det är just den vägen den riktiga [se.kodhast.fonder.data.auth.FirebaseAuthRepository]
-     * rapporterar en session som gått ut.
-     */
-    private val authUser = MutableStateFlow<AuthUser?>(null)
-    private var signInResult: Result<AuthUser> = Result.success(AuthUser("uid-1", "Test Testsson", "test@example.com"))
-    private var signOutCalled = false
-
-    private val fakeAuthRepo = object : AuthRepository {
-        override val currentUser: Flow<AuthUser?> = authUser
-        override suspend fun signInWithGoogle(activityContext: Context): Result<AuthUser> = signInResult.onSuccess { authUser.value = it }
-        override suspend fun signOut() {
-            signOutCalled = true
-            authUser.value = null
-        }
-    }
-
     /** Drive-transporten som testet styr (SET-7). Fake, inte mock — samma princip som övriga datalager. */
     private var driveUploadResult: DriveResult<String> = DriveResult.Success("file-id")
     private var driveDownloadResult: DriveResult<String> = DriveResult.Success("{}")
@@ -151,7 +128,7 @@ class SettingsViewModelTest {
     /** Uppsamlade auktoriseringsintent — UI:t startar dem, testet räknar dem. */
     private val authorizationRequests = mutableListOf<PendingIntent>()
 
-    private fun viewModel(preferences: PreferencesRepository = PreferencesRepository(dataStore)) = SettingsViewModel(preferences, fakeTransactionRepo, fakeScheduler, fakeBackupRepo, fakeFundPriceRepo, fakeFundMetadataRepo, fakeAuthRepo, fakeDriveRepo, BackupStatusRepository(fakeBackupRepo, preferences))
+    private fun viewModel(preferences: PreferencesRepository = PreferencesRepository(dataStore)) = SettingsViewModel(preferences, fakeTransactionRepo, fakeScheduler, fakeBackupRepo, fakeFundPriceRepo, fakeFundMetadataRepo, fakeDriveRepo, BackupStatusRepository(fakeBackupRepo, preferences))
 
     @Test
     fun `clearDatabase anropar repository och satter databaseCleared i uiState`() = runTest(dispatcher) {
@@ -542,160 +519,6 @@ class SettingsViewModelTest {
         }
     }
 
-    // --- Google-inloggning (TP-6) ---
-
-    /**
-     * Credential Manager kräver ett aktivitets-context, men fakear det aldrig — en relaxad mock
-     * räcker, eftersom fakerepot ignorerar värdet. Poängen är att ViewModel:en ska gå att testa
-     * utan Firebase på klassvägen, vilket är hela skälet till att AuthRepository lämnar ut
-     * [AuthUser] och inte FirebaseUser.
-     */
-    private val activityContext: Context = mockk(relaxed = true)
-
-    @Test
-    fun `en lyckad inloggning speglas i uiState via currentUser`() = runTest(dispatcher) {
-        val vm = viewModel()
-
-        vm.uiState.test {
-            assertNull(awaitItem().googleUser)
-
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            var state = awaitItem()
-            while (state.googleUser == null) state = awaitItem()
-
-            assertEquals("test@example.com", state.googleUser?.email)
-            assertNull(state.signInError)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `ett avbrutet kontoval ger inget felmeddelande`() = runTest(dispatcher) {
-        // Att stänga kontoväljaren är ett val, inte ett fel. Visades det som ett fick användaren
-        // en röd rad för något hen själv just gjorde med flit.
-        signInResult = Result.failure(SignInException(SignInException.Reason.CANCELLED))
-        val vm = viewModel()
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            advanceUntilIdle()
-
-            // Läser StateFlow:ens värde i stället för att vänta på en emission: utebliven
-            // emission är själva poängen här, och ett awaitItem/expectMostRecentItem hade
-            // gjort testet beroende av om combine råkar konflatera signInInProgress-svängen
-            // eller inte. Prenumerationen finns (vi står i test-blocket), så .value är aktuellt.
-            assertNull(vm.uiState.value.signInError)
-            assertFalse(vm.uiState.value.signInInProgress)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `ett riktigt fel visas med sin orsak`() = runTest(dispatcher) {
-        signInResult = Result.failure(SignInException(SignInException.Reason.NO_CREDENTIAL))
-        val vm = viewModel()
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            var state = awaitItem()
-            while (state.signInError == null) state = awaitItem()
-
-            assertEquals(DataError.SignInNoCredential, state.signInError?.cause)
-            assertNull(state.googleUser)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `ett fel utan orsak faller tillbaka pa FAILED i stallet for att forsvinna`() = runTest(dispatcher) {
-        // Ett undantag som inte är en SignInException (kastat under vägen, inte mappat i
-        // repositoryt) får inte ge ett tyst misslyckande där knappen bara slutar snurra.
-        signInResult = Result.failure(IllegalStateException("oväntat"))
-        val vm = viewModel()
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            var state = awaitItem()
-            while (state.signInError == null) state = awaitItem()
-
-            assertEquals(DataError.SignInFailed, state.signInError?.cause)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `onSignInErrorDismissed kvitterar felet sa det inte spelas upp igen`() = runTest(dispatcher) {
-        // Samma engångshändelse-princip som issue #78: uiState är WhileSubscribed, så ett fel
-        // som ligger kvar som tillstånd kommer tillbaka vid varje återbesök i Inställningar.
-        signInResult = Result.failure(SignInException(SignInException.Reason.FAILED))
-        val vm = viewModel()
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            var state = awaitItem()
-            while (state.signInError == null) state = awaitItem()
-
-            vm.onEvent(SettingsEvent.SignInErrorDismissed)
-            state = awaitItem()
-            while (state.signInError != null) state = awaitItem()
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `signOut loggar ut och tommer anvandaren i uiState`() = runTest(dispatcher) {
-        val vm = viewModel()
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            var state = awaitItem()
-            while (state.googleUser == null) state = awaitItem()
-
-            vm.onEvent(SettingsEvent.SignOut)
-            state = awaitItem()
-            while (state.googleUser != null) state = awaitItem()
-
-            assertTrue(signOutCalled)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun `dubbeltryck pa logga in startar inte tva samtidiga inloggningar`() = runTest(dispatcher) {
-        // Samma spärr som export/restore (issue #75): kontoväljaren ger ingen synlig
-        // återkoppling förrän den öppnats, och två parallella anrop ger två väljare.
-        var calls = 0
-        val countingAuthRepo = object : AuthRepository {
-            override val currentUser: Flow<AuthUser?> = authUser
-            override suspend fun signInWithGoogle(activityContext: Context): Result<AuthUser> {
-                calls++
-                return signInResult.onSuccess { authUser.value = it }
-            }
-            override suspend fun signOut() = Unit
-        }
-        val vm = SettingsViewModel(
-            PreferencesRepository(dataStore), fakeTransactionRepo, fakeScheduler,
-            fakeBackupRepo, fakeFundPriceRepo, fakeFundMetadataRepo, countingAuthRepo, fakeDriveRepo,
-            BackupStatusRepository(fakeBackupRepo, PreferencesRepository(dataStore))
-        )
-
-        vm.uiState.test {
-            awaitItem()
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            vm.onEvent(SettingsEvent.SignIn(activityContext))
-            advanceUntilIdle()
-
-            assertEquals(1, calls)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
     // --- Molnbackup till Drive (SET-7) ---
 
     private fun collectAuth(): (PendingIntent) -> Unit = { authorizationRequests += it }
@@ -856,8 +679,13 @@ class SettingsViewModelTest {
         }
         val preferences = PreferencesRepository(dataStore)
         val vm = SettingsViewModel(
-            preferences, fakeTransactionRepo, fakeScheduler, fakeBackupRepo,
-            fakeFundPriceRepo, fakeFundMetadataRepo, fakeAuthRepo, countingDrive,
+            preferences,
+            fakeTransactionRepo,
+            fakeScheduler,
+            fakeBackupRepo,
+            fakeFundPriceRepo,
+            fakeFundMetadataRepo,
+            countingDrive,
             BackupStatusRepository(fakeBackupRepo, preferences)
         )
 

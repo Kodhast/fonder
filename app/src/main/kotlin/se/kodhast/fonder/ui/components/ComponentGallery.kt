@@ -8,7 +8,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -75,7 +74,6 @@ private fun Values() = Column(verticalArrangement = Arrangement.spacedBy(Spacing
 
 @Composable
 private fun CardsAndBadges() = Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-    var level by remember { mutableIntStateOf(4) }
     var followed by remember { mutableStateOf(false) }
     Label("TotalCard")
     TotalCard(
@@ -99,8 +97,7 @@ private fun CardsAndBadges() = Column(verticalArrangement = Arrangement.spacedBy
     ExpandableInfoRow(explanation = "Årstakten är den genomsnittliga avkastningen per år sedan första köpet.") {
         Text("Årstakt 6,1 %")
     }
-    Label("RiskLevelPicker · FollowedToggleRow")
-    RiskLevelPicker(selected = level, onSelect = { level = it }, marked = 5, markedDescription = "Säljfondens nivå")
+    Label("FollowedToggleRow")
     FollowedToggleRow(followed = followed, onFollowedChange = { followed = it })
 }
 

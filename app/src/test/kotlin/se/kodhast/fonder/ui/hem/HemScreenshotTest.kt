@@ -124,17 +124,6 @@ class HemScreenshotTest {
     }
 
     @Test
-    fun `kugghjulet i sidhuvudet oppnar Installningar (SET)`() {
-        // Kugghjulet flyttade från skalet till Översikts egen ram (#266 F3) – det ska finnas även vid läsfel.
-        var opened = 0
-        composeRule.setContent {
-            FonderTheme { HemContent(state = HemUiState(portfolio = DetailUiState.Error(AppErrors.map(DataError.Database))), onOpenSettings = { opened++ }) }
-        }
-        composeRule.onNodeWithContentDescription("Inställningar").performClick()
-        assertEquals(1, opened)
-    }
-
-    @Test
     fun `lasfelets Forsok igen laser om oversikten (NFR-6)`() {
         var retries = 0
         composeRule.setContent {

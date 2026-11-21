@@ -43,6 +43,7 @@ import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.APP_HEADER_TAG
+import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.EntityDetailScreen
 import se.kodhast.ui.components.SettingsPage
 
@@ -51,7 +52,7 @@ import se.kodhast.ui.components.SettingsPage
  * flikrad, plusknapp och meny, men enkla ersättare för skärmarna
  * så att testet inte behöver Hilt: fyra flikar med Översikt som start och Kodhäst-sidhuvudet, plusknappens
  * meny med de fyra valen i ordning, som öppnar sina skärmar, bakåt som stänger menyn, Inställningar bakom
- * ikonen på Översikt, flikraden och plusmenyn borta på en djupare skärm, underskärmarnas topprad med
+ * avatarmenyn, flikraden och plusmenyn borta på en djupare skärm, underskärmarnas topprad med
  * tillbakapil, ramskärmarna utan, bakåt från en annan flik till Översikt, att en flik behåller sitt tillstånd
  * vid flikbyte, att stacken återställs efter rotation och sidhuvudets prickar under en kursuppdatering (NAV-6).
  */
@@ -151,7 +152,21 @@ class FonderNavHostTest {
 
     private fun setShell(beslutBadgeCount: Int = 0) = composeRule.setContent {
         FonderTheme {
-            FonderNavHost(backStack = backStack, entryProvider = ::stubEntry, beslutBadgeCount = beslutBadgeCount)
+            FonderNavHost(
+                backStack = backStack,
+                entryProvider = ::stubEntry,
+                beslutBadgeCount = beslutBadgeCount,
+                account = {
+                    AccountMenuAvatar(
+                        account = null,
+                        appName = "Fonder",
+                        onOpenSettings = { backStack.push(SettingsKey) },
+                        onOpenAbout = { backStack.push(AboutKey) },
+                        onSignIn = {},
+                        onSignOut = {}
+                    )
+                }
+            )
         }
     }
 
@@ -258,8 +273,22 @@ class FonderNavHostTest {
     }
 
     @Test
+    fun `avatarmenyn står på de tre flikarna med sidhuvud och öppnar Inställningar (NAV-7)`() {
+        setShell()
+        listOf("Innehav", "Beslut", "Översikt").forEach { tab ->
+            composeRule.onNodeWithContentDescription(tab).performClick()
+            composeRule.onNodeWithContentDescription("Konto och inställningar").assertIsDisplayed()
+        }
+
+        composeRule.onNodeWithContentDescription("Konto och inställningar").performClick()
+        composeRule.onNodeWithText("Logga in med Google").assertIsDisplayed()
+        composeRule.onNodeWithText("Inställningar").performClick()
+
+        assertOnScreen("settings")
+    }
+
+    @Test
     fun `Inställningar är en underskärm med bakåtpil och utan flikrad`() {
-        // Kugghjulet sitter i Översikts sidhuvud (HemContent, testat i HemScreenshotTest); här skalets del.
         setShell()
 
         composeRule.runOnUiThread { backStack.push(SettingsKey) }

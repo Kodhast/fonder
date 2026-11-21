@@ -27,8 +27,8 @@ import se.kodhast.fonder.domain.model.Fund
 import se.kodhast.fonder.domain.usecase.MoneyFormat
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.ui.components.PeriodRow
+import se.kodhast.fonder.ui.components.RISK_LEVELS
 import se.kodhast.fonder.ui.components.RiskBadge
-import se.kodhast.fonder.ui.components.RiskLevelPicker
 import se.kodhast.fonder.ui.components.copyableFundName
 import se.kodhast.fonder.ui.diagram.ChartSeries
 import se.kodhast.fonder.ui.diagram.ComparisonChart
@@ -37,6 +37,7 @@ import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.ButtonVariant
+import se.kodhast.ui.components.ChoiceChips
 import se.kodhast.ui.components.EntityDetailScreen
 import se.kodhast.ui.components.GroupLabel
 import se.kodhast.ui.components.ItemRowText
@@ -368,8 +369,8 @@ private fun HeaderCard(state: SwitchWatchUiState) {
 
 /**
  * Risknivån appen föreslår fonder på och filtret "Bara indexfonder" (ANA-13, issue #150). Nivån
- * väljs i den delade [RiskLevelPicker] med säljfondens egen nivå markerad, så användaren ser vad
- * "något likvärdigt" hade varit; filtret är en delad [SwitchRow]. Båda byter appens förslag —
+ * väljs bland bibliotekets [ChoiceChips] (#280 C); säljfondens egen nivå står i texten under, så
+ * användaren ser vad "något likvärdigt" hade varit; filtret är en delad [SwitchRow]. Båda byter appens förslag —
  * ViewModeln tar bort de gamla och hämtar nya, de handplockade ligger kvar.
  */
 @Composable
@@ -380,11 +381,11 @@ private fun TargetLevelCard(
 ) {
     val content = state.content
     SectionCard(title = stringResource(R.string.switch_watch_level_title), modifier = Modifier.fillMaxWidth()) {
-        RiskLevelPicker(
+        ChoiceChips(
+            options = RISK_LEVELS.toList(),
             selected = content.targetLevel,
-            onSelect = onSelectTargetLevel,
-            marked = content.sellLevel,
-            markedDescription = stringResource(R.string.switch_watch_level_marked)
+            onSelect = { level -> level?.let(onSelectTargetLevel) },
+            label = { it.toString() }
         )
         Text(
             levelHint(state),

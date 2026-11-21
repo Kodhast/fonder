@@ -38,7 +38,7 @@ komponent som används för vad → skill `shared-ui-components`. Koden är faci
 | `Tone.Gain` (Fonders) | `GainContainer*` + `OnGainContainer*` (= `ReturnColors.gainContainer`/`onGainContainer`) |
 | `Tone.Tertiary` (Fonders) | `tertiaryContainer` + `onTertiaryContainer` (Besluts "Avgift") |
 | `Tone.Neutral` (Fonders) | `surfaceVariant` + `onSurfaceVariant` (risknivån, Avstått/Avbrutet/Utgånget) |
-| `Tone.NeutralPrimary` (Fonders) | `surfaceVariant` + `primary` (Översiktens kugghjul, `AppIconButton` Tonal) |
+| `Tone.NeutralPrimary` (Fonders) | `surfaceVariant` + `primary` (`AppIconButton` Tonal) |
 | `Tone.Filled` (Fonders) | `surfaceContainerHigh` + `onSurface` (kort inne i ett kort, `AppCard(tone = Tone.Filled)`) |
 | `Tone.Error` (Fonders) | `errorContainer` + `onErrorContainer` (farozonen i Inställningar) |
 | `LocalAppButtonStyle` / `LocalAppCardStyle` | ingen egen – bibliotekets standard: knappar 56 dp (kompakt 40 dp, ingen morf, Material 3:s tonade), kort med 22 dp hörn och bibliotekets luft; kortens kant och skugga kommer från djupet (`FonderLight/DarkDepth`, UI-18). Sedan 1.4.0 och F1 (#266) finns varken `FonderShapes` eller egna kortstilar |

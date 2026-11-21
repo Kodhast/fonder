@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
@@ -27,10 +28,15 @@ import se.kodhast.fonder.ui.imports.ImportHoldingsScreen
 import se.kodhast.fonder.ui.imports.ImportOrdersScreen
 import se.kodhast.fonder.ui.portfolj.PortfoljScreen
 import se.kodhast.fonder.ui.riskprofil.RiskProfilScreen
+import se.kodhast.fonder.ui.settings.AboutScreen
+import se.kodhast.fonder.ui.settings.AccountViewModel
 import se.kodhast.fonder.ui.settings.SettingsScreen
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
 import se.kodhast.ui.common.SyncUiState
+import se.kodhast.ui.common.UiError
+import se.kodhast.ui.components.AccountInfo
+import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.AppMenuItem
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
@@ -46,10 +52,13 @@ import se.kodhast.ui.navigation.AppNavHost
 fun AppNavigation(
     modifier: Modifier = Modifier,
     workerStatusViewModel: WorkerStatusViewModel = hiltViewModel(),
-    decisionBadgeViewModel: DecisionBadgeViewModel = hiltViewModel()
+    decisionBadgeViewModel: DecisionBadgeViewModel = hiltViewModel(),
+    accountViewModel: AccountViewModel = hiltViewModel()
 ) {
     val isRunning by workerStatusViewModel.isRunning.collectAsStateWithLifecycle()
     val beslutBadgeCount by decisionBadgeViewModel.count.collectAsStateWithLifecycle()
+    val user by accountViewModel.user.collectAsStateWithLifecycle()
+    val accountError by accountViewModel.error.collectAsStateWithLifecycle()
 
     // Engångsbegäran från Översiktens påminnelse: Inställningar skrollar fram säkerhetskopieringen
     // och kvitterar. Sparad så den överlever rotation mellan trycket och skrollningen.
@@ -60,19 +69,38 @@ fun AppNavigation(
     val tabOwner = checkNotNull(LocalViewModelStoreOwner.current) { "AppNavigation kräver en ViewModelStoreOwner" }
     val entries = remember(backStack, tabOwner) { fonderEntries(backStack, scrollSettingsToBackup, fundPick, tabOwner) }
 
+    val context = LocalContext.current
     FonderNavHost(
         backStack = backStack,
         entryProvider = entries,
         modifier = modifier,
         isWorkerRunning = isRunning,
-        beslutBadgeCount = beslutBadgeCount
+        beslutBadgeCount = beslutBadgeCount,
+        accountError = accountError,
+        onAccountErrorShow = accountViewModel::onErrorShown,
+        // Samma lambda tills kontot ändras, så att flikarnas sidhuvud inte ritas om i onödan.
+        account = remember(user, backStack) {
+            {
+                AccountMenuAvatar(
+                    user?.let { AccountInfo(it.displayName, it.email, photoUrl = null) },
+                    stringResource(R.string.app_name),
+                    onOpenSettings = { backStack.push(SettingsKey) },
+                    onOpenAbout = { backStack.push(AboutKey) },
+                    onSignIn = { accountViewModel.signIn(context) },
+                    onSignOut = accountViewModel::signOut,
+                    signInNote = stringResource(R.string.account_sign_in_note),
+                    onOpenGallery = if (BuildConfig.DEBUG) ({ backStack.push(ComponentGalleryKey) }) else null
+                )
+            }
+        }
     )
 }
 
 /**
  * Navigationsramen med Fonders flikrad (NAV-1, NAV-7): fyra flikar, kopparmärket med antalet beslut på
  * Beslut ([beslutBadgeCount], 0 ritar inget, NAV-9) och plusknappens FAB-meny (NAV-8). [isWorkerRunning]
- * får sidhuvudets prickar att hoppa (NAV-6). [entryProvider] ger skärmarna – i appen [fonderEntries], i
+ * får sidhuvudets prickar att hoppa (NAV-6). [account] står längst till höger i flikarnas sidhuvud (avatarmenyn,
+ * NAV-7); [accountError] visas en gång som snackbar. [entryProvider] ger skärmarna – i appen [fonderEntries], i
  * testerna enkla ersättare. Varje skärm står på en av android-ui:s ramar och ritar sin egen topprad (#266 F6).
  */
 @Composable
@@ -81,7 +109,10 @@ fun FonderNavHost(
     entryProvider: (AppKey) -> NavEntry<AppKey>,
     modifier: Modifier = Modifier,
     isWorkerRunning: Boolean = false,
-    beslutBadgeCount: Int = 0
+    beslutBadgeCount: Int = 0,
+    accountError: UiError? = null,
+    onAccountErrorShow: () -> Unit = {},
+    account: @Composable () -> Unit = {}
 ) {
     val tabs = Screen.entries.map { tab ->
         ToolbarItem(
@@ -99,8 +130,11 @@ fun FonderNavHost(
             NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
         },
         modifier = modifier,
-        sync = SyncUiState(pending = isWorkerRunning),
-        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack))
+        // Ett inloggningsfel från avatarmenyn visas som ramens snackbar (TP-6).
+        sync = SyncUiState(pending = isWorkerRunning, writeError = accountError),
+        onSyncErrorShown = onAccountErrorShow,
+        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
+        account = account
     )
 }
 
@@ -136,7 +170,6 @@ fun fonderEntries(
         HemScreen(
             onFundClick = { fundId -> backStack.push(FondDetaljKey(fundId)) },
             onOpenBeslut = { backStack.select(BeslutKey) },
-            onOpenSettings = { backStack.push(SettingsKey) },
             onOpenBackup = openBackup,
             onWatchFund = { backStack.push(FundSearchKey) },
             onImportHoldings = { backStack.push(ImportHoldingsKey) },
@@ -180,14 +213,16 @@ fun fonderEntries(
             onOpenRiskProfile = { backStack.push(RiskProfileKey) },
             onOpenFacit = { backStack.push(FacitKey) },
             onOpenBenchmarkPicker = { backStack.push(BenchmarkPickerKey) },
-            onOpenGallery = if (BuildConfig.DEBUG) ({ backStack.push(ComponentGalleryKey) }) else null,
             scrollToBackup = scrollSettingsToBackup.value,
             onScrolledToBackup = { scrollSettingsToBackup.value = false },
             pickedBenchmark = (fundPick.value as? FundPick.Benchmark)?.fund,
             onPickedBenchmarkAcknowledge = { fundPick.value = null }
         )
     }
-    // Komponentgalleriet – bara nåbart i debug-bygget (Inställningar visar länken bara då).
+    entry<AboutKey> { key ->
+        AboutScreen(onBack = { backStack.popIfTop(key) })
+    }
+    // Komponentgalleriet – bara nåbart i debug-bygget (avatarmenyn visar raden bara då).
     entry<ComponentGalleryKey> { key ->
         ComponentGallery(onBack = { backStack.popIfTop(key) })
     }
