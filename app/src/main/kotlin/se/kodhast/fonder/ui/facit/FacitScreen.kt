@@ -289,7 +289,7 @@ private fun FacitRadRow(row: FacitRad, onFollowedChange: (Long, Boolean) -> Unit
                         row.sellFundName,
                         row.buyFundName
                     ),
-                    style = MaterialTheme.typography.titleSmall
+                    style = AppTheme.typography.itemTitle
                 )
                 Text(
                     stringResource(

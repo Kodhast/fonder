@@ -562,7 +562,7 @@ private fun SuggestionInfoSheet(
         val sale = suggestion.switchValueKr?.takeIf { isPlan }?.let { stringResource(R.string.format_beslut_info_sale, MoneyFormat.krWhole(it)) }
         Text(
             listOfNotNull(sale, if (isPlan) planEffectText(suggestion, effect) else feeEffectText(row)).joinToString(" "),
-            style = MaterialTheme.typography.bodyMedium,
+            style = AppTheme.typography.body,
             modifier = Modifier.padding(top = Spacing.xs, bottom = Spacing.m)
         )
         FundFactsCard(

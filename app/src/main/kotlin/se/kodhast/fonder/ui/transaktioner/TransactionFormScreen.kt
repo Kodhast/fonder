@@ -132,7 +132,7 @@ fun TransactionFormContent(
     ) {
         state.followIntro?.let { intro ->
             AppCard(tone = Tone.Filled, modifier = Modifier.fillMaxWidth()) {
-                Text(followIntroText(intro), style = MaterialTheme.typography.bodyMedium)
+                Text(followIntroText(intro), style = AppTheme.typography.body)
             }
         }
 

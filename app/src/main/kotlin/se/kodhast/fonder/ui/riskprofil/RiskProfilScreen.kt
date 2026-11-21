@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -88,7 +87,7 @@ fun RiskProfilContent(
     ) {
         Text(
             stringResource(R.string.riskprofile_intro),
-            style = MaterialTheme.typography.bodyMedium,
+            style = AppTheme.typography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
@@ -118,7 +117,7 @@ fun RiskProfilContent(
         }
 
         if (state.suggestedAllocation != null && !state.hasManualEdit) {
-            Text(stringResource(R.string.riskprofile_suggestion_hint), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.riskprofile_suggestion_hint), style = AppTheme.typography.body)
         }
 
         AllocationSection(state, onAllocationPercentChange)
@@ -128,7 +127,7 @@ fun RiskProfilContent(
 @Composable
 private fun QuestionSection(title: String, content: @Composable () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text(title, style = MaterialTheme.typography.titleSmall)
+        Text(title, style = AppTheme.typography.itemTitle)
         content()
     }
 }
@@ -139,7 +138,7 @@ private fun AllocationSection(state: RiskProfilUiState, onAllocationPercentChang
     Column {
         Text(
             stringResource(R.string.riskprofile_allocation_title),
-            style = MaterialTheme.typography.titleSmall,
+            style = AppTheme.typography.itemTitle,
             modifier = Modifier.padding(bottom = Spacing.xs)
         )
         Text(
@@ -164,7 +163,7 @@ private fun AllocationSection(state: RiskProfilUiState, onAllocationPercentChang
             }
             Text(
                 stringResource(R.string.format_riskprofile_allocation_sum, state.allocationSumPercent),
-                style = MaterialTheme.typography.bodyMedium,
+                style = AppTheme.typography.body,
                 color = if (state.valid) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = Spacing.s)
             )
@@ -188,16 +187,17 @@ private fun AllocationRow(level: Int, percentText: String, onPercentChange: (Str
     ) {
         Text(
             stringResource(R.string.format_riskprofile_level_label, level),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
+            style = AppTheme.typography.body,
+            modifier = Modifier.weight(2f)
         )
+        // En tredjedel av raden (ungefär som de 100 dp fältet hade förut), utan en literal bredd (regel 4).
         AppTextField(
             value = percentText,
             onValueChange = onPercentChange,
             label = stringResource(R.string.riskprofile_allocation_field_label),
             suffix = "%",
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.width(100.dp).testTag(allocationFieldTestTag(level))
+            modifier = Modifier.weight(1f).testTag(allocationFieldTestTag(level))
         )
     }
 }

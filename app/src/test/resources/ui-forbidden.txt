@@ -8,12 +8,12 @@
 # [vico]           = all Kotlin under app/src/main utom ui/diagram/ (diagrambiblioteket bara i FundLineChart, TP-12)
 # [dispatchers]    = all Kotlin under app/src/main utom di/ (skill android:kotlin-coroutines)
 # [events]         = all Kotlin under ui/, även ui/components, ui/diagram och ui/theme (skill android:kotlin-flows)
-# Tillåtet i feature-kod: Text och Icon med MaterialTheme.typography/colorScheme, Column, Row, Box, Spacer,
+# Tillåtet i feature-kod: Text (med AppTheme.typography, MonoAmountStyle) och Icon med MaterialTheme.colorScheme, Column, Row, Box, Spacer,
 # padding, spacedBy och PaddingValues med Spacing (android-ui) och allt i ui/components, ui/diagram och ui/theme.
-# Avstånd är literala dp bara i en delad komponent; storlekar (ikon, bredd, strokebredd, hörn) är inte avstånd.
+# Avstånd och storlekar (bredd, höjd, size, clip) är literala dp bara i en delad komponent.
 # Avståndsmönstren stannar vid första ')' och går rad för rad: Spacer-bredder, dp efter en inre parentes och
 # anrop över flera rader fångas inte (skill ui-style → Avstånd).
-# Scaffold är tillåten i komponentkatalogen (egen topprad); skärmarna står på android-ui:s ramar. Topprad, flikrad och plusknapp
+# Skärmarna står på android-ui:s ramar (ingen Scaffold, LazyColumn eller Snackbar i feature-kod). Topprad, flikrad och plusknapp
 # har sina delade komponenter i android-ui (AppTopBar, AppFloatingToolbar med ToolbarAction).
 # Importrader och kommentarer kontrolleras inte.
 # Regexarna ska fungera både i JavaScript och Kotlin (ingen lookbehind).
@@ -23,10 +23,11 @@
 \bColor\.[A-Z][A-Za-z]*	MaterialTheme.colorScheme / ReturnColors / StatusColors / ChartSeriesColors (ui/theme)
 \bRoundedCornerShape\(	AppTheme.shapes (android-ui)
 \bCutCornerShape\(	AppTheme.shapes (android-ui)
-\bTextStyle\(	MaterialTheme.typography (FonderTypography) / MonoAmountStyle
-\b(fontSize|lineHeight|letterSpacing)\s*=	MaterialTheme.typography (FonderTypography) / MonoAmountStyle
+\bTextStyle\(	AppTheme.typography (android-ui) / MonoAmountStyle
+\bMaterialTheme\.typography\b	AppTheme.typography (android-ui; brödtext body, radrubrik itemTitle, undertext itemSubtitle)
+\b(fontSize|fontWeight|lineHeight|letterSpacing)\s*=	AppTheme.typography (android-ui) / MonoAmountStyle
 \.shadow\(	AppCard (android-ui)
-\.(height|requiredHeight|heightIn)\(\s*[0-9]+(\.[0-9]+)?\.dp	komponentens parametrar (ingen literal höjd i feature-kod)
+\.(height|width|size|clip|requiredHeight|requiredWidth|requiredSize|heightIn)\(\s*[0-9]+(\.[0-9]+)?\.dp	komponentens parametrar, weight eller Spacing (ingen literal storlek i feature-kod)
 \bpadding\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
 \bPaddingValues\([^)]*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
 \bspacedBy\(\s*[0-9]+(\.[0-9]+)?\.dp	Spacing (se.kodhast.ui.theme, xs 4 · s 8 · m 12 · l 16 · xl 24 · xxl 32)
@@ -50,6 +51,17 @@
 \b[A-Za-z]*FloatingActionButton(Menu|MenuItem)?\s*[({]	AppFloatingToolbar med ToolbarAction (android-ui)
 \b(CenterAligned|Medium|Large)?(Flexible)?TopAppBar\s*[({]	AppTopBar / AppHeader (android-ui)
 \b(Horizontal|Vertical)?Divider\s*[({]	AppDivider (android-ui)
+\bRadioButton\s*[({]	AppSegmentedChoice / ChoiceChips (android-ui)
+\b[A-Za-z]*SegmentedButton[A-Za-z]*\s*[({]	AppSegmentedChoice (android-ui)
+\b[A-Za-z]*ToggleButton\s*[({]	ChoiceChips / AppSegmentedChoice (android-ui)
+\bSlider\s*[({]	QuantityStepper / ChoiceChips (android-ui)
+\bSnackbar(Host)?\s*[({]	AppSnackbarHost / ErrorSnackbar (android-ui)
+\bLazyColumn\s*[({]	EntityListScreen (android-ui)
+\bLazy(Row|VerticalGrid|HorizontalGrid|VerticalStaggeredGrid)\s*[({]	EntityListScreen (gruppering, columns) / ChoiceChips (android-ui)
+\bScaffold\s*[({]	EntityListScreen / EntityDetailScreen / EntityEditScreen (android-ui)
+\bSwipeToDismissBox\s*[({]	SwipeToDelete / SwipeToHide / Foldout(delete) (android-ui)
+\bExperimentalMaterial3ExpressiveApi\b	en delad komponent (Expressive-opt-in bara i ui/components och ui/theme)
+\bIcons\.[A-Z]	appens ikoner i res/drawable eller android-ui:s (ic_check …); material-icons är inget beroende
 
 [component-only]
 \bPullToRefreshBox\b	AppPullToRefresh (android-ui)

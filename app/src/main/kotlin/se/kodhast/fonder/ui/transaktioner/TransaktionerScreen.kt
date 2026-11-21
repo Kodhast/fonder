@@ -322,7 +322,7 @@ private fun HandelseRowText(row: TransaktionRad) {
             val isSell = tx.type == TransactionType.SALJ
             Text(
                 MoneyFormat.krSigned(if (isSell) tx.amount else -tx.amount),
-                style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
+                style = MonoAmountStyle.merge(AppTheme.typography.body),
                 color = if (isSell) ReturnColors.gain else MaterialTheme.colorScheme.onSurface
             )
         }

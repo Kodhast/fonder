@@ -3,12 +3,11 @@ package se.kodhast.fonder.ui.fondsok
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -24,6 +23,7 @@ import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyContent
 import se.kodhast.ui.components.EntityListScreen
 import se.kodhast.ui.components.ItemRow
+import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.SelectField
 import se.kodhast.ui.components.TopBarSize
 import se.kodhast.ui.theme.Spacing
@@ -159,7 +159,7 @@ private fun FundResultRow(
         below = { RiskBadge(level = riskLevel) },
         trailing = {
             if (added) {
-                Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.fondsok_added))
+                Icon(painterResource(UiR.drawable.ic_check), contentDescription = stringResource(R.string.fondsok_added))
             } else {
                 AppButton(
                     text = actionLabel,
