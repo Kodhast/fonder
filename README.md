@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.11.1 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.11.2 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.11.2 | **android-ui 3.11.0**: menyer, dialoger och väljare får kant och tonad skugga som snackbaren; dialogerna blir 56 dp smalare. Inga beteendeändringar. android-ui 3.9.0 → 3.11.0. |
 | 1.11.1 | **Förbudslistan som ReseApotekets** (fonder #280 F): feature-koden tar textstilen ur `AppTheme.typography` (brödtext och belopp i rader `body`, rubriker i kort `itemTitle`) i stället för `MaterialTheme.typography` – några texter på Beslut, Facit, Riskprofil, importen, transaktionsformuläret, Pågående byte och Händelsers belopp går från 14 till 16 sp, som samma sorts text på de andra skärmarna och i de andra apparna. Riskprofilens procentfält tar en tredjedel av raden i stället för 100 dp. Fondsöks bock är bibliotekets ikon, och `material-icons-extended` är inget beroende längre. Förbudslistan stoppar nu också `MaterialTheme.typography`, `fontWeight`, literal bredd/storlek/clip, `LazyColumn`, `Scaffold`, `Snackbar`, `RadioButton`, `SegmentedButton`, `ToggleButton`, `Slider`, `SwipeToDismissBox`, Expressive-opt-in och `Icons.` i feature-kod |
 | 1.11.0 | **Radera en rad som i de andra apparna** (fonder #280 D, android-ui #118, TRX-2, ANA-13, UI-16): Händelsers rad står på android-ui 3.9.0:s `Foldout` med chevron; Radera står sist i det utfällda efter "Bevaka alternativ", och svep åt vänster begär samma radering. Båda frågar i "Radera transaktion?". Långtrycket raderar inte längre. I Pågående byte heter ett handplockat alternativs knapp Radera (felfärg) och frågar först; svep åt vänster på kortet gör samma sak |
 | 1.10.1 | **Förklaringsraderna på bibliotekets läge** (fonder #280 E, ingen synlig ändring): `ExpandableInfoRow` håller inte längre sitt eget utfällda läge utan använder android-ui:s `Foldout` med sparat läge och `onExpand`. `PeriodRow`, `ApproxTaxRow`, `ValueAsOfRow`, `FollowedToggleRow`, `ImportCompleteDialog` och `copyableFundName` stannar: de har redan ingen egen layout, bara Fonders formatering och texter, och används på två eller fler ställen |
