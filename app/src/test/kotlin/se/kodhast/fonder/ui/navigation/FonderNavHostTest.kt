@@ -39,11 +39,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import se.kodhast.fonder.R
 import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 import se.kodhast.ui.common.DetailUiState
+import se.kodhast.ui.common.UiError
 import se.kodhast.ui.components.APP_HEADER_TAG
-import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.EntityDetailScreen
 import se.kodhast.ui.components.SettingsPage
 
@@ -150,21 +151,21 @@ class FonderNavHostTest {
 
     private val viewModels = mutableMapOf<AppKey, StubViewModel>()
 
-    private fun setShell(beslutBadgeCount: Int = 0) = composeRule.setContent {
+    private fun setShell(
+        beslutBadgeCount: Int = 0,
+        showGallery: Boolean = false,
+        accountError: UiError? = null,
+        onAccountErrorShow: () -> Unit = {}
+    ) = composeRule.setContent {
         FonderTheme {
             FonderNavHost(
                 backStack = backStack,
                 entryProvider = ::stubEntry,
                 beslutBadgeCount = beslutBadgeCount,
+                accountError = accountError,
+                onAccountErrorShow = onAccountErrorShow,
                 account = {
-                    AccountMenuAvatar(
-                        account = null,
-                        appName = "Fonder",
-                        onOpenSettings = { backStack.push(SettingsKey) },
-                        onOpenAbout = { backStack.push(AboutKey) },
-                        onSignIn = {},
-                        onSignOut = {}
-                    )
+                    FonderAccountMenu(user = null, backStack = backStack, onSignIn = {}, onSignOut = {}, showGallery = showGallery)
                 }
             )
         }
@@ -285,6 +286,43 @@ class FonderNavHostTest {
         composeRule.onNodeWithText("Inställningar").performClick()
 
         assertOnScreen("settings")
+    }
+
+    @Test
+    fun `avatarmenyn öppnar Om Fonder (SET-9)`() {
+        setShell()
+        composeRule.onNodeWithContentDescription("Konto och inställningar").performClick()
+        composeRule.onNodeWithText("Om Fonder").performClick()
+
+        assertOnScreen(name(AboutKey))
+    }
+
+    @Test
+    fun `komponentgalleriet står i avatarmenyn bara i debug-bygget`() {
+        setShell(showGallery = false)
+        composeRule.onNodeWithContentDescription("Konto och inställningar").performClick()
+        composeRule.onNodeWithText("Komponentgalleri").assertDoesNotExist()
+    }
+
+    @Test
+    fun `komponentgalleriet i debug öppnar galleriet`() {
+        setShell(showGallery = true)
+        composeRule.onNodeWithContentDescription("Konto och inställningar").performClick()
+        composeRule.onNodeWithText("Komponentgalleri").performClick()
+
+        assertOnScreen(name(ComponentGalleryKey))
+    }
+
+    @Test
+    fun `ett inloggningsfel visas en gång som snackbar (TP-6)`() {
+        var shown = 0
+        setShell(
+            accountError = UiError(IllegalStateException("test"), R.string.sign_in_failed),
+            onAccountErrorShow = { shown++ }
+        )
+
+        composeRule.onNodeWithText("Inloggningen misslyckades. Försök igen.").assertIsDisplayed()
+        composeRule.waitUntil(5_000) { shown > 0 }
     }
 
     @Test

@@ -466,7 +466,7 @@
     <string name="facit_not_evaluable_explain">Kan inte utvärderas — kursen vid förslaget saknas för någon av fonderna, så det finns inget utgångsläge att mäta från.</string>
     <string name="facit_followed_label">Genomförd</string>
     <string name="facit_disclaimer">Båda fonderna mäts alltid på samma dag — den senaste dag båda har en kurs. Måttet jämför de två fondernas kursutveckling sedan förslagsdagen. Det är inte din faktiska avkastning: den beror på vilken dag du bytte och på eventuella avgifter, och skatt räknas inte alls (bytesförslag ges bara i ISK/KF, där ett byte inte utlöser skatt). Bara förslag som faktiskt gavs mäts här — perioder utan plan syns inte.</string>
-    <string name="settings_about_section">Om appen</string>
+    <string name="settings_about_section">Om Fonder</string>
 
     <!-- Importera innehav (issue #8) -->
     <string name="import_title">Importera innehav</string>
@@ -618,8 +618,8 @@
     <string name="format_switch_watch_level_hint_unknown_sell">Appen föreslår fonder på nivå %1$d.</string>
     <string name="switch_watch_level_hint_none">Välj en nivå så föreslår appen fonder på den.</string>
     <string name="format_switch_watch_level_hint_profile">Nivå %1$d: din riskprofil har %2$d procentenheter för lite där.</string>
-    <string name="format_switch_watch_level_hint_frame">Säljfonden ligger på nivå %1$d.</string>
-    <string name="switch_watch_level_hint_frame_same">Det är också säljfondens egen nivå.</string>
+    <string name="format_switch_watch_level_hint_sell">Säljfonden ligger på nivå %1$d.</string>
+    <string name="switch_watch_level_hint_sell_same">Det är också säljfondens egen nivå.</string>
     <string name="format_switch_watch_level_hint_profile_other">Vald nivå %1$d. Riskprofilen saknar mest på nivå %2$d.</string>
     <string name="format_switch_watch_alternatives_heading">Sedan säljdagen · nivå %1$d</string>
     <string name="format_switch_watch_alternatives_heading_index">Sedan säljdagen · nivå %1$d · indexfonder</string>

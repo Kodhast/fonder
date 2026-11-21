@@ -1,11 +1,17 @@
 package se.kodhast.fonder.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -17,6 +23,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
 import se.kodhast.fonder.BuildConfig
 import se.kodhast.fonder.R
+import se.kodhast.fonder.data.auth.AuthUser
 import se.kodhast.fonder.ui.beslut.BeslutScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchScreen
 import se.kodhast.fonder.ui.components.ComponentGallery
@@ -38,6 +45,9 @@ import se.kodhast.ui.common.UiError
 import se.kodhast.ui.components.AccountInfo
 import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.AppMenuItem
+import se.kodhast.ui.components.AppSnackbarHost
+import se.kodhast.ui.components.ErrorSnackbar
+import se.kodhast.ui.components.FloatingToolbarClearance
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
@@ -81,18 +91,38 @@ fun AppNavigation(
         // Samma lambda tills kontot ändras, så att flikarnas sidhuvud inte ritas om i onödan.
         account = remember(user, backStack) {
             {
-                AccountMenuAvatar(
-                    user?.let { AccountInfo(it.displayName, it.email, photoUrl = null) },
-                    stringResource(R.string.app_name),
-                    onOpenSettings = { backStack.push(SettingsKey) },
-                    onOpenAbout = { backStack.push(AboutKey) },
+                FonderAccountMenu(
+                    user = user,
+                    backStack = backStack,
                     onSignIn = { accountViewModel.signIn(context) },
-                    onSignOut = accountViewModel::signOut,
-                    signInNote = stringResource(R.string.account_sign_in_note),
-                    onOpenGallery = if (BuildConfig.DEBUG) ({ backStack.push(ComponentGalleryKey) }) else null
+                    onSignOut = accountViewModel::signOut
                 )
             }
         }
+    )
+}
+
+/**
+ * Avatarmenyn i flikarnas sidhuvud (NAV-7): bibliotekets [AccountMenuAvatar] med Fonders mål – Inställningar, Om Fonder
+ * och i debug-bygget komponentgalleriet ([showGallery]). Egen funktion så att testerna prövar samma koppling som appen.
+ */
+@Composable
+fun FonderAccountMenu(
+    user: AuthUser?,
+    backStack: AppBackStack,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
+    showGallery: Boolean = BuildConfig.DEBUG
+) {
+    AccountMenuAvatar(
+        user?.let { AccountInfo(it.displayName, it.email, photoUrl = null) },
+        stringResource(R.string.app_name),
+        onOpenSettings = { backStack.push(SettingsKey) },
+        onOpenAbout = { backStack.push(AboutKey) },
+        onSignIn = onSignIn,
+        onSignOut = onSignOut,
+        signInNote = stringResource(R.string.account_sign_in_note),
+        onOpenGallery = if (showGallery) ({ backStack.push(ComponentGalleryKey) }) else null
     )
 }
 
@@ -121,21 +151,29 @@ fun FonderNavHost(
             badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
         )
     }
-    AppNavHost(
-        backStack = backStack,
-        tabs = tabs,
-        // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
-        entryProvider = { key ->
-            val entry = entryProvider(key)
-            NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
-        },
-        modifier = modifier,
-        // Ett inloggningsfel från avatarmenyn visas som ramens snackbar (TP-6).
-        sync = SyncUiState(pending = isWorkerRunning, writeError = accountError),
-        onSyncErrorShown = onAccountErrorShow,
-        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
-        account = account
-    )
+    // Ett inloggningsfel från avatarmenyn visas en gång som snackbar över flikraden (TP-6). Inte ramens sync.writeError:
+    // den skriver "En ändring kunde inte sparas och har ångrats" före orsaken.
+    val messages = remember { SnackbarHostState() }
+    ErrorSnackbar(accountError, messages, onShown = onAccountErrorShow)
+    Box(modifier.fillMaxSize()) {
+        AppNavHost(
+            backStack = backStack,
+            tabs = tabs,
+            // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
+            entryProvider = { key ->
+                val entry = entryProvider(key)
+                NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
+            },
+            modifier = Modifier.fillMaxSize(),
+            sync = SyncUiState(pending = isWorkerRunning),
+            action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
+            account = account
+        )
+        AppSnackbarHost(
+            messages,
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = FloatingToolbarClearance)
+        )
+    }
 }
 
 /** Plusknappens val (NAV-8) i samma ordning som förut, med ikoner som i FAB-menyn. */

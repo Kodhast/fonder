@@ -49,7 +49,7 @@ repository-kontrakt, CI) finns; slutfunktionerna byggs som egna issues:
 - [x] Riskprofil som målfördelning över flera risknivåer, i stället för en enda nivå (SET-3/HEM-7/POR-9, #71)
 - [x] Bytesplan i ISK: rangordnade fondbyten mot målfördelningen, med facit-inspelning (SET-4/HEM-8, #70)
 - [x] Säkerhetskopiering till fil — export/återställning av all användardata via SAF (SET-6, #82)
-- [x] Google-inloggning — Firebase Auth + Credential Manager, kontokort i Inställningar
+- [x] Google-inloggning — Firebase Auth + Credential Manager, i avatarmenyn (NAV-7)
       (TP-6, #106)
 - [x] Google Drive-backup — hela backup-kontraktet till `appDataFolder` på begäran
       (TP-7 steg 2 / SET-7, #110)

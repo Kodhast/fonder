@@ -14,7 +14,7 @@ import se.kodhast.fonder.testing.captureLightAndDark
 import se.kodhast.fonder.ui.theme.FonderTheme
 
 /**
- * Om appen (SET-9, #280 C): en egen underskärm från avatarmenyn med appens namn, versionen och Kodhästs
+ * Om Fonder (SET-9, #280 C): en egen underskärm från avatarmenyn med appens namn, versionen och Kodhästs
  * signatur – inte längre sist i Inställningar, och komponentgalleriet nås från menyn.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -28,6 +28,7 @@ class AboutScreenTest {
         var closed = 0
         rule.setContent { FonderTheme { AboutScreen(onBack = { closed++ }, versionName = "1.10.0") } }
 
+        rule.onNodeWithText("Om Fonder").assertIsDisplayed()
         rule.onNodeWithText("Version 1.10.0", substring = true).assertIsDisplayed()
         rule.onNodeWithText("En kodhäst-app").assertIsDisplayed()
         rule.onNodeWithContentDescription("Tillbaka").performClick()
@@ -35,7 +36,7 @@ class AboutScreenTest {
     }
 
     @Test
-    fun `Inställningar har varken Om appen eller Komponenter`() {
+    fun `Inställningar har varken Om Fonder eller Komponenter`() {
         rule.setContent { FonderTheme { SettingsContent(state = SettingsUiState()) } }
 
         rule.onNodeWithText("En kodhäst-app").assertDoesNotExist()

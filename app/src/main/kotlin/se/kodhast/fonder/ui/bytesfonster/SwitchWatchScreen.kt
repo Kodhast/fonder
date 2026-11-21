@@ -421,8 +421,8 @@ private fun levelHint(state: SwitchWatchUiState): String {
             val reason = stringResource(R.string.format_switch_watch_level_hint_profile, target, gap)
             when (sell) {
                 null -> reason
-                target -> "$reason ${stringResource(R.string.switch_watch_level_hint_frame_same)}"
-                else -> "$reason ${stringResource(R.string.format_switch_watch_level_hint_frame, sell)}"
+                target -> "$reason ${stringResource(R.string.switch_watch_level_hint_sell_same)}"
+                else -> "$reason ${stringResource(R.string.format_switch_watch_level_hint_sell, sell)}"
             }
         }
 
