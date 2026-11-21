@@ -1,12 +1,19 @@
 package se.kodhast.fonder.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
@@ -16,6 +23,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.entryProvider
 import se.kodhast.fonder.BuildConfig
 import se.kodhast.fonder.R
+import se.kodhast.fonder.data.auth.AuthUser
 import se.kodhast.fonder.ui.beslut.BeslutScreen
 import se.kodhast.fonder.ui.bytesfonster.SwitchWatchScreen
 import se.kodhast.fonder.ui.components.ComponentGallery
@@ -27,11 +35,19 @@ import se.kodhast.fonder.ui.imports.ImportHoldingsScreen
 import se.kodhast.fonder.ui.imports.ImportOrdersScreen
 import se.kodhast.fonder.ui.portfolj.PortfoljScreen
 import se.kodhast.fonder.ui.riskprofil.RiskProfilScreen
+import se.kodhast.fonder.ui.settings.AboutScreen
+import se.kodhast.fonder.ui.settings.AccountViewModel
 import se.kodhast.fonder.ui.settings.SettingsScreen
 import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
 import se.kodhast.ui.common.SyncUiState
+import se.kodhast.ui.common.UiError
+import se.kodhast.ui.components.AccountInfo
+import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.AppMenuItem
+import se.kodhast.ui.components.AppSnackbarHost
+import se.kodhast.ui.components.ErrorSnackbar
+import se.kodhast.ui.components.FloatingToolbarClearance
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
@@ -46,10 +62,13 @@ import se.kodhast.ui.navigation.AppNavHost
 fun AppNavigation(
     modifier: Modifier = Modifier,
     workerStatusViewModel: WorkerStatusViewModel = hiltViewModel(),
-    decisionBadgeViewModel: DecisionBadgeViewModel = hiltViewModel()
+    decisionBadgeViewModel: DecisionBadgeViewModel = hiltViewModel(),
+    accountViewModel: AccountViewModel = hiltViewModel()
 ) {
     val isRunning by workerStatusViewModel.isRunning.collectAsStateWithLifecycle()
     val beslutBadgeCount by decisionBadgeViewModel.count.collectAsStateWithLifecycle()
+    val user by accountViewModel.user.collectAsStateWithLifecycle()
+    val accountError by accountViewModel.error.collectAsStateWithLifecycle()
 
     // Engångsbegäran från Översiktens påminnelse: Inställningar skrollar fram säkerhetskopieringen
     // och kvitterar. Sparad så den överlever rotation mellan trycket och skrollningen.
@@ -60,19 +79,58 @@ fun AppNavigation(
     val tabOwner = checkNotNull(LocalViewModelStoreOwner.current) { "AppNavigation kräver en ViewModelStoreOwner" }
     val entries = remember(backStack, tabOwner) { fonderEntries(backStack, scrollSettingsToBackup, fundPick, tabOwner) }
 
+    val context = LocalContext.current
     FonderNavHost(
         backStack = backStack,
         entryProvider = entries,
         modifier = modifier,
         isWorkerRunning = isRunning,
-        beslutBadgeCount = beslutBadgeCount
+        beslutBadgeCount = beslutBadgeCount,
+        accountError = accountError,
+        onAccountErrorShow = accountViewModel::onErrorShown,
+        // Samma lambda tills kontot ändras, så att flikarnas sidhuvud inte ritas om i onödan.
+        account = remember(user, backStack) {
+            {
+                FonderAccountMenu(
+                    user = user,
+                    backStack = backStack,
+                    onSignIn = { accountViewModel.signIn(context) },
+                    onSignOut = accountViewModel::signOut
+                )
+            }
+        }
+    )
+}
+
+/**
+ * Avatarmenyn i flikarnas sidhuvud (NAV-7): bibliotekets [AccountMenuAvatar] med Fonders mål – Inställningar, Om Fonder
+ * och i debug-bygget komponentgalleriet ([showGallery]). Egen funktion så att testerna prövar samma koppling som appen.
+ */
+@Composable
+fun FonderAccountMenu(
+    user: AuthUser?,
+    backStack: AppBackStack,
+    onSignIn: () -> Unit,
+    onSignOut: () -> Unit,
+    showGallery: Boolean = BuildConfig.DEBUG
+) {
+    AccountMenuAvatar(
+        user?.let { AccountInfo(it.displayName, it.email, photoUrl = null) },
+        stringResource(R.string.app_name),
+        onOpenSettings = { backStack.push(SettingsKey) },
+        onOpenAbout = { backStack.push(AboutKey) },
+        onSignIn = onSignIn,
+        onSignOut = onSignOut,
+        signInNote = stringResource(R.string.account_sign_in_note),
+        onOpenGallery = if (showGallery) ({ backStack.push(ComponentGalleryKey) }) else null
     )
 }
 
 /**
  * Navigationsramen med Fonders flikrad (NAV-1, NAV-7): fyra flikar, kopparmärket med antalet beslut på
  * Beslut ([beslutBadgeCount], 0 ritar inget, NAV-9) och plusknappens FAB-meny (NAV-8). [isWorkerRunning]
- * får sidhuvudets prickar att hoppa (NAV-6). [entryProvider] ger skärmarna – i appen [fonderEntries], i
+ * får sidhuvudets prickar att hoppa (NAV-6). [account] står längst till höger i flikarnas sidhuvud (avatarmenyn,
+ * NAV-7); [accountError] visas en gång som snackbar. [entryProvider] ger skärmarna – i appen [fonderEntries], i
  * testerna enkla ersättare. Varje skärm står på en av android-ui:s ramar och ritar sin egen topprad (#266 F6).
  */
 @Composable
@@ -81,7 +139,10 @@ fun FonderNavHost(
     entryProvider: (AppKey) -> NavEntry<AppKey>,
     modifier: Modifier = Modifier,
     isWorkerRunning: Boolean = false,
-    beslutBadgeCount: Int = 0
+    beslutBadgeCount: Int = 0,
+    accountError: UiError? = null,
+    onAccountErrorShow: () -> Unit = {},
+    account: @Composable () -> Unit = {}
 ) {
     val tabs = Screen.entries.map { tab ->
         ToolbarItem(
@@ -90,18 +151,29 @@ fun FonderNavHost(
             badgeCount = beslutBadgeCount.takeIf { tab == Screen.Beslut }
         )
     }
-    AppNavHost(
-        backStack = backStack,
-        tabs = tabs,
-        // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
-        entryProvider = { key ->
-            val entry = entryProvider(key)
-            NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
-        },
-        modifier = modifier,
-        sync = SyncUiState(pending = isWorkerRunning),
-        action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack))
-    )
+    // Ett inloggningsfel från avatarmenyn visas en gång som snackbar över flikraden (TP-6). Inte ramens sync.writeError:
+    // den skriver "En ändring kunde inte sparas och har ångrats" före orsaken.
+    val messages = remember { SnackbarHostState() }
+    ErrorSnackbar(accountError, messages, onShown = onAccountErrorShow)
+    Box(modifier.fillMaxSize()) {
+        AppNavHost(
+            backStack = backStack,
+            tabs = tabs,
+            // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
+            entryProvider = { key ->
+                val entry = entryProvider(key)
+                NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
+            },
+            modifier = Modifier.fillMaxSize(),
+            sync = SyncUiState(pending = isWorkerRunning),
+            action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
+            account = account
+        )
+        AppSnackbarHost(
+            messages,
+            Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = FloatingToolbarClearance)
+        )
+    }
 }
 
 /** Plusknappens val (NAV-8) i samma ordning som förut, med ikoner som i FAB-menyn. */
@@ -136,7 +208,6 @@ fun fonderEntries(
         HemScreen(
             onFundClick = { fundId -> backStack.push(FondDetaljKey(fundId)) },
             onOpenBeslut = { backStack.select(BeslutKey) },
-            onOpenSettings = { backStack.push(SettingsKey) },
             onOpenBackup = openBackup,
             onWatchFund = { backStack.push(FundSearchKey) },
             onImportHoldings = { backStack.push(ImportHoldingsKey) },
@@ -180,14 +251,16 @@ fun fonderEntries(
             onOpenRiskProfile = { backStack.push(RiskProfileKey) },
             onOpenFacit = { backStack.push(FacitKey) },
             onOpenBenchmarkPicker = { backStack.push(BenchmarkPickerKey) },
-            onOpenGallery = if (BuildConfig.DEBUG) ({ backStack.push(ComponentGalleryKey) }) else null,
             scrollToBackup = scrollSettingsToBackup.value,
             onScrolledToBackup = { scrollSettingsToBackup.value = false },
             pickedBenchmark = (fundPick.value as? FundPick.Benchmark)?.fund,
             onPickedBenchmarkAcknowledge = { fundPick.value = null }
         )
     }
-    // Komponentgalleriet – bara nåbart i debug-bygget (Inställningar visar länken bara då).
+    entry<AboutKey> { key ->
+        AboutScreen(onBack = { backStack.popIfTop(key) })
+    }
+    // Komponentgalleriet – bara nåbart i debug-bygget (avatarmenyn visar raden bara då).
     entry<ComponentGalleryKey> { key ->
         ComponentGallery(onBack = { backStack.popIfTop(key) })
     }

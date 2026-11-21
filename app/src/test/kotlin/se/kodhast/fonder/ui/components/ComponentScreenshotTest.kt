@@ -45,7 +45,6 @@ class ComponentScreenshotTest {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AppSegmentedChoice(options = modes, selectedIndex = 2, onSelect = {})
             ChoiceChips(options = answers, selected = "3–10 år", onSelect = {}, label = { it })
-            RiskLevelPicker(selected = 4, onSelect = {}, marked = 5)
         }
     }
 

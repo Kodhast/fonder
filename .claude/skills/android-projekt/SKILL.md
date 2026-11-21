@@ -132,8 +132,7 @@ UI-10 (risknivå i text). Semantiken ligger i komponenten, aldrig hos anroparen.
 - `FundLineChart` sätter en `contentDescription` med period, antal punkter, lägsta och högsta
   värde och i procentläge kurvornas namn (`format_fond_chart_description*` i `strings.xml`).
 - Sidhuvudets prickar säger "Uppdaterar kurser i bakgrunden" (`sync_pending`, NAV-6); ett värde på väg säger "Hämtar …" i text, ingen snurra i korten (UI-19).
-- Periodvalet och övriga val (`ChoiceChips`, `AppSegmentedChoice` från android-ui) läses som radioval;
-  `RiskLevelPicker` använder `minimumInteractiveComponentSize()`.
+- Periodvalet, köpnivån i Pågående byte och övriga val (`ChoiceChips`, `AppSegmentedChoice` från android-ui) läses som radioval.
 - `Foldout` (android-ui), `ExpandableInfoRow` och `FollowedToggleRow` kommunicerar läget.
 - Belopp i `MonoAmountStyle` behåller kolumnerna vid stor text; etiketten kapas, värdet aldrig.
 - Tester: Robolectric i `app/src/test` (`EmptyStateTest`, `ChoiceControlsTest`) och instrument i

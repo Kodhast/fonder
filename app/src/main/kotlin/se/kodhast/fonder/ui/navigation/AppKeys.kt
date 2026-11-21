@@ -35,9 +35,13 @@ data object BeslutKey : TabKey
 @Serializable
 data object HandelserKey : TabKey
 
-/** Inställningar — en skärm bakom ikonen på Översikt, inte en flik (NAV-7). */
+/** Inställningar — en skärm bakom avatarmenyn, inte en flik (NAV-7). */
 @Serializable
 data object SettingsKey : AppKey
+
+/** Om appen (SET-9) — avatarmenyns "Om Fonder" (NAV-7). */
+@Serializable
+data object AboutKey : AppKey
 
 /**
  * Fonddetalj för [fundId] (Handelsbankens fondlista-id, TP-9) – på android-ui:s detaljram med fondens

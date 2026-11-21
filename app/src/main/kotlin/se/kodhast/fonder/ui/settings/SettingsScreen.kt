@@ -7,13 +7,9 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -35,7 +30,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import se.kodhast.fonder.BuildConfig
 import se.kodhast.fonder.R
 import se.kodhast.fonder.data.datastore.ThemeMode
 import se.kodhast.fonder.domain.model.AccountType
@@ -46,8 +40,6 @@ import se.kodhast.fonder.domain.usecase.BackupReminderCalc
 import se.kodhast.fonder.domain.usecase.SwitchWatchCalc
 import se.kodhast.fonder.ui.navigation.PickedFundEffect
 import se.kodhast.fonder.ui.theme.Error
-import se.kodhast.ui.components.AboutCard
-import se.kodhast.ui.components.AccountRow
 import se.kodhast.ui.components.AppButton
 import se.kodhast.ui.components.AppCard
 import se.kodhast.ui.components.AppDivider
@@ -60,7 +52,6 @@ import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.SettingsCard
 import se.kodhast.ui.components.SettingsPage
-import se.kodhast.ui.components.SignOutRow
 import se.kodhast.ui.theme.AppTheme
 import se.kodhast.ui.theme.Spacing
 import se.kodhast.ui.theme.Tone
@@ -86,7 +77,6 @@ fun SettingsScreen(
     onOpenRiskProfile: () -> Unit = {},
     onOpenFacit: () -> Unit = {},
     onOpenBenchmarkPicker: () -> Unit = {},
-    onOpenGallery: (() -> Unit)? = null,
     scrollToBackup: Boolean = false,
     onScrolledToBackup: () -> Unit = {},
     pickedBenchmark: Fund? = null,
@@ -149,7 +139,6 @@ fun SettingsScreen(
         onOpenRiskProfile = onOpenRiskProfile,
         onOpenFacit = onOpenFacit,
         onOpenBenchmarkPicker = onOpenBenchmarkPicker,
-        onOpenGallery = onOpenGallery,
         onClearBenchmark = { viewModel.onEvent(SettingsEvent.ClearBenchmark) },
         onAccountTypeSelect = { viewModel.onEvent(SettingsEvent.SetAccountType(it)) },
         onSwitchWatchTtlSelect = { viewModel.onEvent(SettingsEvent.SetSwitchWatchTtl(it)) },
@@ -158,9 +147,6 @@ fun SettingsScreen(
         onBackupMessageDismiss = { viewModel.onEvent(SettingsEvent.BackupMessageDismissed) },
         onBackupToDrive = { viewModel.onEvent(SettingsEvent.BackupToDrive(launchDriveAuth)) },
         onRestoreFromDrive = { viewModel.onEvent(SettingsEvent.RestoreFromDrive(launchDriveAuth)) },
-        onSignIn = { viewModel.onEvent(SettingsEvent.SignIn(context)) },
-        onSignOut = { viewModel.onEvent(SettingsEvent.SignOut) },
-        onSignInErrorDismiss = { viewModel.onEvent(SettingsEvent.SignInErrorDismissed) },
         onClearDatabase = { viewModel.onEvent(SettingsEvent.ClearDatabase) },
         onClearedMessageDismiss = { viewModel.onEvent(SettingsEvent.ClearedMessageDismissed) },
         scrollToBackup = scrollToBackup,
@@ -171,8 +157,8 @@ fun SettingsScreen(
 }
 
 /**
- * Tillståndsdriven, testbar del av [SettingsScreen] — inget ViewModel/Hilt-beroende (issue #27).
- * [onOpenGallery] öppnar komponentgalleriet; bara satt i debug-bygget, annars `null` och kortet syns inte.
+ * Tillståndsdriven, testbar del av [SettingsScreen] — inget ViewModel/Hilt-beroende (issue #27). Kontot, Om appen
+ * och komponentgalleriet ligger i avatarmenyn (#280 C), inte här.
  */
 @OptIn(ExperimentalFoundationApi::class) // BringIntoViewRequester, för Hems påminnelse (HEM-12)
 @Composable
@@ -185,7 +171,6 @@ fun SettingsContent(
     onOpenRiskProfile: () -> Unit = {},
     onOpenFacit: () -> Unit = {},
     onOpenBenchmarkPicker: () -> Unit = {},
-    onOpenGallery: (() -> Unit)? = null,
     onClearBenchmark: () -> Unit = {},
     onAccountTypeSelect: (AccountType) -> Unit = {},
     onSwitchWatchTtlSelect: (Long) -> Unit = {},
@@ -194,15 +179,11 @@ fun SettingsContent(
     onBackupMessageDismiss: () -> Unit = {},
     onBackupToDrive: () -> Unit = {},
     onRestoreFromDrive: () -> Unit = {},
-    onSignIn: () -> Unit = {},
-    onSignOut: () -> Unit = {},
-    onSignInErrorDismiss: () -> Unit = {},
     onClearDatabase: () -> Unit = {},
     onClearedMessageDismiss: () -> Unit = {},
     scrollToBackup: Boolean = false,
     onScrolledToBackup: () -> Unit = {},
-    onBack: (() -> Unit)? = null,
-    versionName: String = BuildConfig.VERSION_NAME
+    onBack: (() -> Unit)? = null
 ) {
     // Hems påminnelse (HEM-12) landar här: säkerhetskopieringen ligger långt ned, så den
     // skrollas fram och begäran kvitteras — en gång, inte vid varje återbesök.
@@ -223,43 +204,6 @@ fun SettingsContent(
     // Inställningarnas ram från android-ui (UI-19): topprad, grupprubrik över varje kort, samma avstånd som
     // i ReseApoteket och Dagboken. Bakgrundsjobb syns som prickarna i toppraden, inte som en snurra i ett kort.
     SettingsPage(stringResource(R.string.nav_settings), modifier, onBack) {
-        // Google-konto (TP-6). Inloggningen flyttar ingen data i sig — den är förutsättningen
-        // för molnbackupen (TP-7 steg 2), vilket kortets text säger rakt ut så att "inloggad"
-        // inte förväxlas med "säkerhetskopierad".
-        GroupLabel(stringResource(R.string.settings_account_section))
-        SettingsCard {
-            val user = state.googleUser
-            if (user == null) {
-                ItemRow(
-                    title = stringResource(R.string.settings_account_signed_out),
-                    subtitle = stringResource(R.string.settings_account_body),
-                    below = {
-                        AppButton(
-                            text = stringResource(R.string.settings_account_sign_in_button),
-                            onClick = onSignIn,
-                            enabled = !state.signInInProgress
-                        )
-                    }
-                )
-            } else {
-                AccountRow(user.displayName, user.email, photoUrl = null)
-                AppDivider()
-                SignOutRow(stringResource(R.string.app_name), onSignOut = onSignOut)
-                ItemRowText(title = null, subtitle = stringResource(R.string.settings_account_body), modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s))
-            }
-            // Ett avbrutet kontoval är inget fel och når aldrig hit — se
-            // SettingsViewModel.signIn. Kvitteras bort som övriga engångshändelser (#78).
-            state.signInError?.let { error ->
-                FieldError(stringResource(error.message), modifier = Modifier.padding(horizontal = Spacing.m))
-                AppButton(
-                    text = stringResource(R.string.close),
-                    onClick = onSignInErrorDismiss,
-                    modifier = Modifier.padding(horizontal = Spacing.s),
-                    variant = ButtonVariant.Text
-                )
-            }
-        }
-
         GroupLabel(stringResource(R.string.settings_appearance_section))
         SettingsCard {
             ItemRow(
@@ -438,18 +382,6 @@ fun SettingsContent(
             )
         }
 
-        if (onOpenGallery != null) {
-            GroupLabel(stringResource(R.string.settings_developer_section))
-            SettingsCard {
-                ItemRow(
-                    title = stringResource(R.string.component_gallery_title),
-                    subtitle = stringResource(R.string.settings_components_body),
-                    onClick = onOpenGallery,
-                    navigates = true
-                )
-            }
-        }
-
         GroupLabel(stringResource(R.string.settings_danger_section))
         AppCard(tone = Tone.Error, contentColor = MaterialTheme.colorScheme.onErrorContainer) {
             ItemRowText(title = null, subtitle = stringResource(R.string.settings_danger_body), modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.s))
@@ -469,10 +401,6 @@ fun SettingsContent(
                 )
             }
         }
-
-        // Om-kortet med Kodhästs signatur sist i Inställningar (SET-9).
-        GroupLabel(stringResource(R.string.settings_about_section))
-        AboutCard(appName = stringResource(R.string.app_name), version = versionName)
     }
 
     if (showClearConfirm) {

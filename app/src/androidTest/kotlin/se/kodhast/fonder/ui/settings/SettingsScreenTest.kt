@@ -13,7 +13,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import se.kodhast.fonder.data.auth.AuthUser
 import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.common.DataError
 import se.kodhast.fonder.data.repository.RestoreSummary
@@ -333,82 +332,6 @@ class SettingsScreenTest {
         assertEquals(1, opened)
     }
 
-    // --- Google-konto (TP-6) ---
-
-    @Test
-    fun utloggad_visar_logga_in_och_inte_logga_ut() {
-        composeRule.setContent {
-            FonderTheme { SettingsContent(state = SettingsUiState(googleUser = null)) }
-        }
-
-        composeRule.onNodeWithText("Inte inloggad").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Logga in med Google").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Logga ut").assertDoesNotExist()
-    }
-
-    @Test
-    fun inloggad_visar_mejladressen_och_logga_ut() {
-        composeRule.setContent {
-            FonderTheme {
-                SettingsContent(
-                    state = SettingsUiState(
-                        googleUser = AuthUser("uid-1", "Test Testsson", "test@example.com")
-                    )
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("test@example.com", substring = true).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Logga ut").performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText("Logga in med Google").assertDoesNotExist()
-    }
-
-    @Test
-    fun anvandare_utan_mejladress_visas_anda_aldrig_som_tom_rad() {
-        // Ett Google-konto utan läsbar mejladress ska ge en begriplig rad, inte "Inloggad som ".
-        composeRule.setContent {
-            FonderTheme {
-                SettingsContent(state = SettingsUiState(googleUser = AuthUser("uid-1", null, null)))
-            }
-        }
-
-        composeRule.onNodeWithText("Inloggad med Google", substring = true).performScrollTo().assertIsDisplayed()
-    }
-
-    @Test
-    fun logga_in_knappen_anropar_callbacken() {
-        var signIns = 0
-        composeRule.setContent {
-            FonderTheme { SettingsContent(state = SettingsUiState(), onSignIn = { signIns++ }) }
-        }
-
-        composeRule.onNodeWithText("Logga in med Google").performScrollTo().performClick()
-
-        assertEquals(1, signIns)
-    }
-
-    @Test
-    fun logga_in_knappen_ar_slackt_medan_inloggning_pagar() {
-        composeRule.setContent {
-            FonderTheme { SettingsContent(state = SettingsUiState(signInInProgress = true)) }
-        }
-
-        composeRule.onNodeWithText("Logga in med Google").performScrollTo().assertIsNotEnabled()
-    }
-
-    @Test
-    fun ett_inloggningsfel_visas_med_sin_egen_text() {
-        composeRule.setContent {
-            FonderTheme {
-                SettingsContent(
-                    state = SettingsUiState(signInError = AppErrors.map(DataError.SignInNoCredential))
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Inget Google-konto", substring = true).performScrollTo().assertIsDisplayed()
-    }
-
     // --- Säkerhetskopiering: Drive och fil (SET-6, SET-7, HEM-12) ---
 
     @Test
@@ -522,25 +445,5 @@ class SettingsScreenTest {
         composeRule.onNodeWithText("60 dagar").performScrollTo().performClick()
 
         assertEquals(60L, selected)
-    }
-
-    @Test
-    fun logga_ut_fragar_innan_callbacken_koms() {
-        var signOuts = 0
-        composeRule.setContent {
-            FonderTheme {
-                SettingsContent(
-                    state = SettingsUiState(googleUser = AuthUser("uid-1", "Test Testsson", "test@example.com")),
-                    onSignOut = { signOuts++ }
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Logga ut").performScrollTo().performClick()
-        assertEquals(0, signOuts)
-        composeRule.onNodeWithText("Logga ut?").assertExists()
-
-        composeRule.onNodeWithText("Avbryt").performClick()
-        assertEquals(0, signOuts)
     }
 }

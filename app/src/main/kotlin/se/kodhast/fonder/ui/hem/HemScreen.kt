@@ -32,15 +32,12 @@ import se.kodhast.fonder.ui.diagram.ChartValueAxis
 import se.kodhast.fonder.ui.diagram.FundLineChart
 import se.kodhast.fonder.ui.theme.Copper
 import se.kodhast.fonder.ui.theme.MonoAmountStyle
-import se.kodhast.fonder.ui.theme.NeutralPrimary
 import se.kodhast.ui.common.DetailUiState
 import se.kodhast.ui.components.AppDivider
-import se.kodhast.ui.components.AppIconButton
 import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyState
 import se.kodhast.ui.components.EntityDetailScreen
-import se.kodhast.ui.components.IconButtonVariant
 import se.kodhast.ui.components.ItemRow
 import se.kodhast.ui.components.ItemRowText
 import se.kodhast.ui.components.LeadingSlot
@@ -56,7 +53,6 @@ fun HemScreen(
     onFundClick: (String) -> Unit,
     onOpenBeslut: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenSettings: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onWatchFund: () -> Unit = {},
     onImportHoldings: () -> Unit = {},
@@ -69,7 +65,6 @@ fun HemScreen(
         onRefresh = { viewModel.onEvent(HemEvent.Refresh) },
         onFundClick = onFundClick,
         onOpenBeslut = onOpenBeslut,
-        onOpenSettings = onOpenSettings,
         onOpenBackup = onOpenBackup,
         onRetry = { viewModel.onEvent(HemEvent.Retry) },
         onWatchFund = onWatchFund,
@@ -80,7 +75,7 @@ fun HemScreen(
 
 /**
  * Tillståndsdriven, testbar del av [HemScreen] — inget ViewModel/Hilt-beroende (issue #14). Fliken står på
- * android-ui:s detaljram i flikläge (#266 F3): Kodhäst-sidhuvudet med Inställningar som åtgärd, ramens
+ * android-ui:s detaljram i flikläge (#266 F3): Kodhäst-sidhuvudet med avatarmenyn (NAV-7), ramens
  * laddning vid första läsningen och läsfelet med "Försök igen" (NFR-6), och korten som sektioner som rullar
  * under sidhuvudet (UI-5). Bakgrundshämtningen syns bara som sidhuvudets prickar (NAV-6) – inga snurror i korten.
  */
@@ -91,7 +86,6 @@ fun HemContent(
     onRefresh: () -> Unit = {},
     onFundClick: (String) -> Unit = {},
     onOpenBeslut: () -> Unit = {},
-    onOpenSettings: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onRetry: () -> Unit = {},
     onWatchFund: () -> Unit = {},
@@ -104,7 +98,6 @@ fun HemContent(
         modifier = modifier,
         title = stringResource(R.string.nav_oversikt),
         onRetry = onRetry,
-        actions = { SettingsButton(onOpenSettings) },
         // Dra ned uppdaterar (UI-11) — bara med innehav: utan dem finns ingen kurs att hämta, och en gest
         // som inte gör något är värre än ingen gest.
         refreshing = state.pricesWorking,
@@ -149,16 +142,6 @@ fun HemContent(
         portfolio.risk?.let { risk -> RiskCard(risk = risk, portfolioRisk = portfolio.portfolioRisk) }
     }
 }
-
-/** Inställningar (SET) som sidhuvudets åtgärd på Översikt (NAV-7) – Fonder kräver ingen inloggning, så kontot står inte där. */
-@Composable
-private fun SettingsButton(onClick: () -> Unit) = AppIconButton(
-    icon = R.drawable.ic_settings,
-    contentDescription = stringResource(R.string.nav_settings),
-    onClick = onClick,
-    variant = IconButtonVariant.Tonal,
-    tone = Tone.NeutralPrimary
-)
 
 /**
  * Årets ungefärliga schablonskatt i ISK/KF (HEM-16, issue #199) direkt under totalresultatet, som i

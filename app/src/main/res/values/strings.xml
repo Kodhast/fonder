@@ -380,17 +380,11 @@
     <string name="settings_appearance_section">Utseende</string>
     <string name="settings_portfolio_section">Portfölj</string>
     <string name="settings_data_section">Data</string>
-    <string name="settings_developer_section">Utveckling</string>
     <string name="settings_backup_file_title">Till fil</string>
     <string name="theme_light">Ljust</string>
     <string name="theme_dark">Mörkt</string>
     <string name="theme_auto">Auto</string>
-    <string name="settings_account_section">Google-konto</string>
-    <string name="settings_account_signed_out">Inte inloggad</string>
-    <string name="format_settings_account_signed_in">Inloggad som %1$s</string>
-    <string name="settings_account_unknown_user">ditt Google-konto</string>
-    <string name="settings_account_body">Inloggningen flyttar ingen data i sig — den behövs för att säkerhetskopiera till Google Drive. Säkerhetskopiering till fil fungerar utan inloggning.</string>
-    <string name="settings_account_sign_in_button">Logga in med Google</string>
+    <string name="account_sign_in_note">För säkerhetskopia på Drive</string>
     <string name="sign_in_failed">Inloggningen misslyckades. Försök igen.</string>
     <string name="sign_in_failed_no_credential">Inget Google-konto hittades på enheten. Lägg till ett konto i Androids inställningar och försök igen.</string>
     <!-- Kursuppdatering (SET-2, issue #27) -->
@@ -427,8 +421,6 @@
     <string name="settings_facit_section">Facit</string>
     <string name="settings_facit_body">Se hur bytesförslagen på Beslut gick jämfört med att ha behållit innehavet.</string>
     <!-- Komponentgalleriet (bara i debug-bygget, skill shared-ui-components) -->
-    <string name="component_gallery_title">Komponenter</string>
-    <string name="settings_components_body">Alla delade komponenter i alla lägen, med påhittad data. Finns bara i debug-bygget.</string>
     <string name="facit_empty_title">Inget facit än</string>
     <string name="facit_empty_body">Här visas utfallet av bytesförslagen på Beslut. Inga förslag har spelats in ännu — de skapas av bakgrundsuppdateringen när riskprofil och kontotyp är satta och portföljen avviker från målfördelningen.</string>
     <string name="facit_summary_title">Meravkastning mot att ha behållit</string>
@@ -474,7 +466,7 @@
     <string name="facit_not_evaluable_explain">Kan inte utvärderas — kursen vid förslaget saknas för någon av fonderna, så det finns inget utgångsläge att mäta från.</string>
     <string name="facit_followed_label">Genomförd</string>
     <string name="facit_disclaimer">Båda fonderna mäts alltid på samma dag — den senaste dag båda har en kurs. Måttet jämför de två fondernas kursutveckling sedan förslagsdagen. Det är inte din faktiska avkastning: den beror på vilken dag du bytte och på eventuella avgifter, och skatt räknas inte alls (bytesförslag ges bara i ISK/KF, där ett byte inte utlöser skatt). Bara förslag som faktiskt gavs mäts här — perioder utan plan syns inte.</string>
-    <string name="settings_about_section">Om appen</string>
+    <string name="settings_about_section">Om Fonder</string>
 
     <!-- Importera innehav (issue #8) -->
     <string name="import_title">Importera innehav</string>
@@ -621,14 +613,13 @@
     <string name="switch_watch_empty_lookup_failed">Det gick inte att kontrollera vilka fonder som går att köpa just nu.</string>
     <string name="switch_watch_retry">Försök igen</string>
     <string name="switch_watch_level_title">Köp på risknivå</string>
-    <string name="switch_watch_level_marked">säljfondens nivå</string>
-    <string name="format_switch_watch_level_hint">Appen föreslår fonder på nivå %1$d. Ramen på %2$d är säljfondens egen nivå.</string>
-    <string name="format_switch_watch_level_hint_same">Appen föreslår fonder på nivå %1$d, samma som säljfondens egen nivå (ramen).</string>
+    <string name="format_switch_watch_level_hint">Appen föreslår fonder på nivå %1$d. Säljfonden ligger på nivå %2$d.</string>
+    <string name="format_switch_watch_level_hint_same">Appen föreslår fonder på nivå %1$d, samma som säljfondens egen nivå.</string>
     <string name="format_switch_watch_level_hint_unknown_sell">Appen föreslår fonder på nivå %1$d.</string>
     <string name="switch_watch_level_hint_none">Välj en nivå så föreslår appen fonder på den.</string>
     <string name="format_switch_watch_level_hint_profile">Nivå %1$d: din riskprofil har %2$d procentenheter för lite där.</string>
-    <string name="format_switch_watch_level_hint_frame">Ramen på %1$d är säljfondens egen nivå.</string>
-    <string name="switch_watch_level_hint_frame_same">Det är också säljfondens egen nivå (ramen).</string>
+    <string name="format_switch_watch_level_hint_sell">Säljfonden ligger på nivå %1$d.</string>
+    <string name="switch_watch_level_hint_sell_same">Det är också säljfondens egen nivå.</string>
     <string name="format_switch_watch_level_hint_profile_other">Vald nivå %1$d. Riskprofilen saknar mest på nivå %2$d.</string>
     <string name="format_switch_watch_alternatives_heading">Sedan säljdagen · nivå %1$d</string>
     <string name="format_switch_watch_alternatives_heading_index">Sedan säljdagen · nivå %1$d · indexfonder</string>

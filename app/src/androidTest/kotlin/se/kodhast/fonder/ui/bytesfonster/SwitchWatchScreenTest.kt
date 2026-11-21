@@ -1,13 +1,13 @@
 package se.kodhast.fonder.ui.bytesfonster
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -110,10 +110,10 @@ class SwitchWatchScreenTest {
         composeRule.onNodeWithText("Kandidat A").assertIsDisplayed()
         composeRule.onNodeWithText("Sedan säljdagen").assertIsDisplayed()
         composeRule.onNodeWithText("+3,2 %", substring = true).assertIsDisplayed()
-        composeRule.onNodeWithText("Avgift", substring = true).assertIsDisplayed()
-        // Risknivån alltid som siffra i text, aldrig som enbart en färg (UI-10). Nivåväljaren
-        // ovanför har en knapp med samma beskrivning — det här är radens märke, inte knappen.
-        val badge = hasContentDescription("Risknivå 4 av 7", substring = true) and !hasRole(Role.RadioButton)
+        // Köpnivåns chips kan bryta på två rader på en smal skärm – rulla fram raden i stället för att anta att den syns.
+        composeRule.onNodeWithText("Avgift", substring = true).performScrollTo().assertIsDisplayed()
+        // Risknivån alltid som siffra i text, aldrig som enbart en färg (UI-10).
+        val badge = hasContentDescription("Risknivå 4 av 7", substring = true)
         composeRule.onNode(badge).performScrollTo()
         composeRule.onNode(badge).assertIsDisplayed()
     }
@@ -156,7 +156,7 @@ class SwitchWatchScreenTest {
         composeRule.setContent { FonderTheme { SwitchWatchContent(state = state) } }
 
         composeRule.onNodeWithText("Kandidat A").assertIsDisplayed()
-        composeRule.onNodeWithText("Ingen källa kunde ge kursen", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Ingen källa kunde ge kursen", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -166,7 +166,7 @@ class SwitchWatchScreenTest {
         composeRule.setContent {
             FonderTheme { SwitchWatchContent(state = state(), onBuy = { bought = it }) }
         }
-        composeRule.onNodeWithText("Köpte den här").performClick()
+        composeRule.onNodeWithText("Köpte den här").performScrollTo().performClick()
 
         assertEquals("SE_A", bought)
     }
@@ -291,6 +291,7 @@ class SwitchWatchScreenTest {
 
     @Test
     fun nivavaljaren_visar_vald_niva_och_saljfondens_niva_och_ger_nytt_val() {
+        fun levelChip(level: Int) = hasText(level.toString()) and isSelectable()
         var chosen: Int? = null
         composeRule.setContent {
             FonderTheme {
@@ -302,19 +303,18 @@ class SwitchWatchScreenTest {
         }
 
         composeRule.onNodeWithText("Köp på risknivå").assertIsDisplayed()
-        composeRule.onNode(hasContentDescription("Risknivå 4 av 7") and hasRole(Role.RadioButton)).assertIsSelected()
-        // Ramen bär en betydelse och får aldrig vara ensam om den (UI-3).
-        composeRule.onNode(hasContentDescription("Risknivå 6 av 7, säljfondens nivå") and hasRole(Role.RadioButton))
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Ramen på 6 är säljfondens egen nivå", substring = true).assertIsDisplayed()
-        composeRule.onNode(hasContentDescription("Risknivå 2 av 7") and hasRole(Role.RadioButton)).performClick()
+        // Nivåerna är bibliotekets valchips (#280 C); säljfondens nivå står i texten, inte som en ram.
+        composeRule.onNode(levelChip(4)).assertIsSelected()
+        composeRule.onNode(levelChip(6)).assertIsNotSelected()
+        composeRule.onNodeWithText("Säljfonden ligger på nivå 6", substring = true).assertIsDisplayed()
+        composeRule.onNode(levelChip(2)).performClick()
 
         assertEquals(2, chosen)
     }
 
     @Test
     fun forklaringen_foljer_riskprofilen_och_rubriken_namner_niva_och_filter() {
-        // Issue #150: profilens nivå med gapet, och ramen på säljfondens nivå. Neutral text (granskningen):
+        // Issue #150: profilens nivå med gapet, och säljfondens nivå. Neutral text (granskningen):
         // skärmen vet inte om nivån förvaldes av profilen eller valdes av användaren.
         val profile = mutableStateOf(state().withDetail { copy(targetLevel = 4, sellLevel = 6, profileSuggestedLevel = 4, profileGapPp = 9) })
         composeRule.setContent {
@@ -322,7 +322,7 @@ class SwitchWatchScreenTest {
         }
 
         composeRule.onNodeWithText(
-            "Nivå 4: din riskprofil har 9 procentenheter för lite där. Ramen på 6 är säljfondens egen nivå."
+            "Nivå 4: din riskprofil har 9 procentenheter för lite där. Säljfonden ligger på nivå 6."
         ).assertIsDisplayed()
         composeRule.onNodeWithText("Sedan säljdagen · nivå 4", ignoreCase = true).assertExists()
 
@@ -380,5 +380,3 @@ class SwitchWatchScreenTest {
         composeRule.onNodeWithText("Bara indexfonder").assertDoesNotExist()
     }
 }
-
-private fun hasRole(role: Role) = SemanticsMatcher.expectValue(SemanticsProperties.Role, role)

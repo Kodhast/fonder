@@ -155,7 +155,7 @@ ui/
 │                 skärm ritar sin topprad i sin ram) · AppBackStack (android-ui:s TabBackStack, stack per flik,
 │                 sparas över rotation och processdöd) · AppKeys (@Serializable NavKey per skärm) · Screen ·
 │                 DecisionBadgeViewModel (Beslut-flikens märke, NAV-9)
-├── components/   Delade komponenter (PeriodRow, AnalysisStatusBanner/StatusDot, RiskLevelPicker,
+├── components/   Delade komponenter (PeriodRow, AnalysisStatusBanner/StatusDot,
 │                 copyableFundName — Fonders texter på android-ui:s copyOnLongPress ·
 │                 ExpandableInfoRow — förklaringsrad på android-ui:s Foldout, #22/#85 · RiskBadge/ProfitTakeBadge — på android-ui:s InfoPill, UI-10/#85 …;
 │                 knappar, kort, listrader, märken, avsnittsrubriker och avdelare är android-ui:s sedan 0.77.0;
