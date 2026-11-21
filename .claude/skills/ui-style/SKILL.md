@@ -87,9 +87,13 @@ båda temana och ett par i `ThemeContrastTest`. Aldrig `Color(…)` i feature-ko
   laddad via **Google Fonts-providern** (`GoogleFont.Provider`, `com.google.android.gms.fonts`) –
   inte bundlad i `res/font/`. Utan Play-tjänster eller före första nedladdningen faller texten
   tillbaka till systemfonten.
+- **Feature-kod tar stilen ur `AppTheme.typography`** (android-ui:s roller ur `FonderTypography`), aldrig
+  `MaterialTheme.typography` (förbudslistan sedan 1.11.1, #280 F): `body` för brödtext och belopp i rader,
+  `itemTitle` för en rubrik i ett kort eller en rad, `itemSubtitle` för undertext. Delade komponenter i
+  `ui/components` får använda typskalan direkt.
 - **`MonoAmountStyle`**: Space Grotesk Medium med `fontFeatureSettings = "tnum"` (tabulära
   siffror). Används för belopp, kurser, procent och sifferkolumner så att siffrorna radar upp sig
-  (UI-2). Kombinera med en storlek ur `MaterialTheme.typography` (`MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium)`, som i `PeriodRow`), hårdkoda inte.
+  (UI-2). Kombinera med en storlek ur `AppTheme.typography` (`MonoAmountStyle.merge(AppTheme.typography.body)`, som i `PeriodRow`), hårdkoda inte.
 - Formatering av tal sker bara i `MoneyFormat` / `SwedishNumberFormat` (`domain/usecase`):
   "1 234,50 kr", "+12,3 %", "−5,0 %" (äkta minustecken).
 

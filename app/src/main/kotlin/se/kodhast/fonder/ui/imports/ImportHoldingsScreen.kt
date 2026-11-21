@@ -137,7 +137,7 @@ private fun ImportRowCard(
 
         Text(
             stringResource(R.string.import_occasions_label),
-            style = MaterialTheme.typography.titleSmall,
+            style = AppTheme.typography.itemTitle,
             modifier = Modifier.padding(top = Spacing.m)
         )
         rowState.occasions.forEachIndexed { index, occasion ->

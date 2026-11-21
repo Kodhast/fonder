@@ -342,7 +342,7 @@ private fun HeaderCard(state: SwitchWatchUiState) {
                 content.sellFundName,
                 LocalDate.ofEpochDay(content.soldAtEpochDay).format(dateFormatter)
             ),
-            style = MaterialTheme.typography.titleSmall
+            style = AppTheme.typography.itemTitle
         )
         content.proceedsKr?.let { amount ->
             Text(
@@ -485,7 +485,7 @@ private fun CandidateCardBody(row: CandidateRow, closed: Boolean, onBuy: (String
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 row.name,
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTheme.typography.itemTitle,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f).padding(end = Spacing.s).copyableFundName(row.name)

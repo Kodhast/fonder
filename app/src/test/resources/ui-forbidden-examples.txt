@@ -36,19 +36,18 @@ SelectField(label = "Fond", options = options)
 DateField(label = "Datum", date = date, onDateChange = {})
 ImportCompleteDialog(onDismiss = {})
 FundLineChart(series)
-Text("Hej", style = MaterialTheme.typography.titleMedium)
+Text("Hej", style = AppTheme.typography.itemTitle)
 Text("1 234 kr", style = MonoAmountStyle)
 color = MaterialTheme.colorScheme.onSurfaceVariant
 color = ReturnColors.gain
 shape = MaterialTheme.shapes.medium
-Icon(Icons.Default.Refresh, contentDescription = null)
+Icon(painterResource(R.drawable.ic_refresh), contentDescription = null)
 Modifier.padding(Spacing.l)
 Modifier.padding(horizontal = Spacing.l, vertical = Spacing.s)
 contentPadding = PaddingValues(bottom = Spacing.l)
 verticalArrangement = Arrangement.spacedBy(Spacing.xs)
-Modifier.size(24.dp)
-Spacer(Modifier.width(8.dp))
-LazyColumn(modifier = Modifier.testTag("hem")) { }
+Modifier.weight(1f)
+Spacer(Modifier.width(Spacing.s))
 AppCard(modifier = Modifier.fillMaxWidth()) { }
 AppCard(onClick = {}, tone = Tone.Filled) { }
 AppButton(text = "Spara", onClick = {})
@@ -75,6 +74,17 @@ import androidx.compose.material3.Card
  * Card(modifier) i en KDoc
 
 [stopp]
+Text("Hej", style = MaterialTheme.typography.titleMedium)
+Icon(Icons.Default.Refresh, contentDescription = null)
+Modifier.size(24.dp)
+Spacer(Modifier.width(8.dp))
+LazyColumn(modifier = Modifier.testTag("hem")) { }
+Text("Hej", fontWeight = FontWeight.Bold)
+SnackbarHost(hostState)
+Scaffold(topBar = {}) { }
+SingleChoiceSegmentedButtonRow { }
+ToggleButton(checked = true, onCheckedChange = {}) { }
+Modifier.clip(12.dp)
 private val _events = Channel<FormEvent>(Channel.BUFFERED)
 private val saved = Channel<Unit>()
 val events: Flow<FormEvent> = _events.receiveAsFlow()

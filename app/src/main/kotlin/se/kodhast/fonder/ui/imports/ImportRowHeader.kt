@@ -47,7 +47,7 @@ internal fun ColumnScope.ImportRowHeader(
     )
     Text(
         detail,
-        style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
+        style = MonoAmountStyle.merge(AppTheme.typography.body),
         modifier = Modifier.padding(top = Spacing.s)
     )
 
