@@ -111,7 +111,7 @@ fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifie
         AppCard(modifier = modifier.fillMaxWidth()) {
             Text(
                 stringResource(R.string.analys_status_insufficient),
-                style = MaterialTheme.typography.bodyMedium,
+                style = AppTheme.typography.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -122,7 +122,7 @@ fun AnalysisStatusBanner(analysis: FundAnalysisCalc.Analysis?, modifier: Modifie
         Row(verticalAlignment = Alignment.Top) {
             StatusDot(level, modifier = Modifier.padding(top = 6.dp, end = Spacing.m), contentDescription = null)
             Column {
-                Text(statusTitle(level), style = MaterialTheme.typography.titleMedium)
+                Text(statusTitle(level), style = AppTheme.typography.itemTitle)
                 val messages = statusTriggerMessages(analysis)
                 if (messages.isNotEmpty()) {
                     Text(
@@ -150,7 +150,7 @@ fun AnalysisGuidanceCard(analysis: FundAnalysisCalc.Analysis, modifier: Modifier
         messages.forEachIndexed { index, message ->
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
+                style = AppTheme.typography.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = if (index == 0) Modifier else Modifier.padding(top = Spacing.s)
             )
