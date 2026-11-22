@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.11.5 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.12.0 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.12.0 | **Ny version finns** (NAV-10): en prick efter versionen i sidhuvudet när en nyare release finns, "Ny version X finns" under Om i kontomenyn och Hämta i Om. android-ui 3.12.0 → 3.14.0 (3.13.0: `SwipeToDelete` med frågan inbyggd, inget synligt ändrat). |
 | 1.11.5 | **Samma textstorlek i fondfaktakortet och analyskorten** som på skärmarna runt omkring (16 sp i stället för 14 sp, `AppTheme.typography`). Inga beteendeändringar. |
 | 1.11.4 | **android-ui 3.12.0**: tidsväljarens rullhjul visar talen i appens typsnitt med tabulära siffror och i storlekar som får plats (45 sp i mitten, 32 sp ovanför och under), och rubriken "Välj tid" har samma stil som övriga dialoger. Inga beteendeändringar. android-ui 3.11.1 → 3.12.0. |
 | 1.11.3 | **android-ui 3.11.1**: mildare oskärpa under sidhuvudet (8 dp som tonar ut över 24 dp i stället för 16 dp över 32 dp), så raden under sidhuvudet går att läsa. Inga beteendeändringar. android-ui 3.11.0 → 3.11.1. |
