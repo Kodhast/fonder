@@ -132,20 +132,14 @@ fun SwitchWatchContent(
     onSelectTargetLevel: (Int) -> Unit = {},
     onIndexOnlyChange: (Boolean) -> Unit = {}
 ) {
-    val missing = state.watch.let { it is DetailUiState.Error && it.error.cause == DataError.NotFound }
-    val watch = state.watch.let { watch ->
-        if (missing && watch is DetailUiState.Error) {
-            DetailUiState.Error(watch.error.withMessage(R.string.switch_watch_missing_body))
-        } else {
-            watch
-        }
-    }
+    val missing = (state.watch as? DetailUiState.Error)?.takeIf { it.error.cause == DataError.NotFound }
+    val watch = missing?.let { DetailUiState.Error(it.error.withMessage(R.string.switch_watch_missing_body)) } ?: state.watch
     EntityDetailScreen(
         state = watch,
         header = null,
         onBack = onBack,
         title = stringResource(R.string.switch_watch_title),
-        errorTitle = if (missing) stringResource(R.string.switch_watch_missing_title) else null,
+        errorTitle = if (missing != null) stringResource(R.string.switch_watch_missing_title) else null,
         onRetry = onRetry,
         // Dra ned hämtar om kandidaternas kurvor och säljfondens historik (UI-11). Kandidaterna
         // ligger inte i kurscachen (ANA-11), så det är den enda vägen till färskare tal än de som

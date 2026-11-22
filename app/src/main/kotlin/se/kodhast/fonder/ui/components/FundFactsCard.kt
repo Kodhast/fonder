@@ -96,7 +96,7 @@ fun FundFactsCard(
         ) {
             Text(
                 facts.name,
-                style = MaterialTheme.typography.titleSmall,
+                style = AppTheme.typography.itemTitle,
                 modifier = Modifier.weight(1f).copyableFundName(facts.name)
             )
             badge?.let { InfoPill(text = it, tone = Tone.Primary) }
@@ -156,11 +156,11 @@ fun FundFactsRow(facts: FundFacts, modifier: Modifier = Modifier) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     facts.totalFeePercent?.let { MoneyFormat.feePercent(it) } ?: unknown,
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium)
+                    style = MonoAmountStyle.merge(AppTheme.typography.body)
                 )
                 Text(
                     oneYear?.let { MoneyFormat.percentSigned(it) } ?: unknown,
-                    style = MonoAmountStyle.merge(MaterialTheme.typography.bodyMedium),
+                    style = MonoAmountStyle.merge(AppTheme.typography.body),
                     color = oneYear?.let { ReturnColors.forAmount(it) } ?: MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
