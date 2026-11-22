@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,15 +43,19 @@ import se.kodhast.fonder.ui.transaktioner.TransactionFormScreen
 import se.kodhast.fonder.ui.transaktioner.TransaktionerScreen
 import se.kodhast.ui.common.SyncUiState
 import se.kodhast.ui.common.UiError
+import se.kodhast.ui.common.UpdateChecker
 import se.kodhast.ui.components.AccountInfo
 import se.kodhast.ui.components.AccountMenuAvatar
 import se.kodhast.ui.components.AppMenuItem
 import se.kodhast.ui.components.AppSnackbarHost
+import se.kodhast.ui.components.AppUpdateNotice
 import se.kodhast.ui.components.ErrorSnackbar
 import se.kodhast.ui.components.FloatingToolbarClearance
+import se.kodhast.ui.components.LocalAppUpdate
 import se.kodhast.ui.components.R as UiR
 import se.kodhast.ui.components.ToolbarAction
 import se.kodhast.ui.components.ToolbarItem
+import se.kodhast.ui.components.rememberAppUpdate
 import se.kodhast.ui.navigation.AppNavHost
 
 /**
@@ -156,19 +161,25 @@ fun FonderNavHost(
     val messages = remember { SnackbarHostState() }
     ErrorSnackbar(accountError, messages, onShown = onAccountErrorShow)
     Box(modifier.fillMaxSize()) {
-        AppNavHost(
-            backStack = backStack,
-            tabs = tabs,
-            // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
-            entryProvider = { key ->
-                val entry = entryProvider(key)
-                NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
-            },
-            modifier = Modifier.fillMaxSize(),
-            sync = SyncUiState(pending = isWorkerRunning),
-            action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
-            account = account
-        )
+        // Ny version (NAV-10): releasebygget frågar GitHub; pricken i sidhuvudet och Om-raden öppnar Om, där Hämta finns.
+        val checker = remember { if (BuildConfig.DEBUG) null else UpdateChecker("Kodhast", "fonder", BuildConfig.VERSION_NAME) }
+        val update by rememberAppUpdate(checker)
+        val notice = remember(update, backStack) { update?.let { AppUpdateNotice(it) { backStack.push(AboutKey) } } }
+        CompositionLocalProvider(LocalAppUpdate provides notice) {
+            AppNavHost(
+                backStack = backStack,
+                tabs = tabs,
+                // Samma innehållsnyckel som skärmens egen post, så att ramens sparade flikläge (rullning) gäller.
+                entryProvider = { key ->
+                    val entry = entryProvider(key)
+                    NavEntry(key, contentKey = entry.contentKey, metadata = entry.metadata) { entry.Content() }
+                },
+                modifier = Modifier.fillMaxSize(),
+                sync = SyncUiState(pending = isWorkerRunning),
+                action = ToolbarAction(stringResource(R.string.fab_menu_open), UiR.drawable.ic_add, addMenu(backStack)),
+                account = account
+            )
+        }
         AppSnackbarHost(
             messages,
             Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = FloatingToolbarClearance)
