@@ -106,6 +106,8 @@ i feature-kod. Ska något se annorlunda ut i alla tre appar ändras det i biblio
 
 ## Layout
 
+- **Komposition** – luftens nivåer, en primär handling per vy, fokuspunkt, hierarki och få val: skill
+  `android:designregler` (D-1–D-10, enda källan).
 - Tryckytor minst 48 dp (skill `android:accessibility-compose` och `android-projekt` → "Tillgänglighet").
 - Etiketten kapas, aldrig värdet (UI-6); allt som kan växa skrollar (UI-5).
 - Bakgrundsarbete visas med Kodhäst-prickarna i sidhuvudet och toppraden (NAV-6, UI-19), aldrig som en snurra i ett
