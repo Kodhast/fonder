@@ -81,7 +81,7 @@ class AppButtonTest {
     fun `en avstängd knapp är inte aktiverad och anropar inte onClick`() {
         var clicks = 0
         composeRule.setContent {
-            FonderTheme { AppButton(text = "Spara", onClick = { clicks++ }, enabled = false) }
+            FonderTheme { AppButton(text = "Spara", onClick = { clicks++ }, enabled = false, variant = ButtonVariant.Primary) }
         }
 
         composeRule.onNodeWithText("Spara").assertIsNotEnabled().performClick()
@@ -107,7 +107,7 @@ class AppButtonTest {
     fun `skärmdump av varianterna`() = composeRule.captureLightAndDark("AppButton_variants") {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AppButton(text = "Spara", onClick = {})
+                AppButton(text = "Spara", onClick = {}, variant = ButtonVariant.Primary)
                 AppButton(text = "Följ", onClick = {}, variant = ButtonVariant.Secondary)
                 AppButton(text = "Avbryt", onClick = {}, variant = ButtonVariant.Outlined)
             }
@@ -123,7 +123,7 @@ class AppButtonTest {
                     tone = Tone.NeutralPrimary
                 )
             }
-            AppButton(text = "Importera 12 poster", onClick = {}, enabled = false)
+            AppButton(text = "Importera 12 poster", onClick = {}, enabled = false, variant = ButtonVariant.Primary)
         }
     }
 }
