@@ -779,6 +779,7 @@ private fun IsinInput(
         )
         AppButton(
             text = stringResource(R.string.save),
+            variant = ButtonVariant.Primary,
             onClick = { onConfirm(text) },
             enabled = text.isNotBlank(),
             modifier = Modifier.padding(top = Spacing.s)

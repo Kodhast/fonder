@@ -16,6 +16,7 @@ import kotlinx.collections.immutable.ImmutableList
 import se.kodhast.ui.common.ListUiState
 import se.kodhast.ui.common.UiError
 import se.kodhast.ui.components.AppButton
+import se.kodhast.ui.components.ButtonVariant
 import se.kodhast.ui.components.EmptyAction
 import se.kodhast.ui.components.EmptyContent
 import se.kodhast.ui.components.EntityListScreen
@@ -72,6 +73,7 @@ internal fun <T> ImportFrame(
         if (committing) {
             AppButton(
                 text = commit,
+                variant = ButtonVariant.Primary,
                 onClick = onCommit,
                 enabled = canCommit,
                 modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(Spacing.l)
