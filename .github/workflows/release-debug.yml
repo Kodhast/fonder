@@ -60,7 +60,7 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release (rolling snapshot)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           name: Fonder debug-snapshot (${{ steps.snapshot.outputs.label }})
           tag_name: debug-snapshot
