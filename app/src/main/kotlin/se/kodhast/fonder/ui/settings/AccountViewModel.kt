@@ -17,15 +17,20 @@ import se.kodhast.fonder.data.auth.AuthUser
 import se.kodhast.fonder.data.auth.SignInException
 import se.kodhast.fonder.data.common.AppErrors
 import se.kodhast.fonder.data.common.DataError
+import se.kodhast.ui.account.NetworkStatus
 import se.kodhast.ui.common.UiError
 
 /**
  * Kontot i avatarmenyn (TP-6, NAV-7): vem som är inloggad, inloggning med Google och utloggning. Inloggningen flyttar
  * ingen data i sig – den är förutsättningen för Drive-backupen (SET-7). Ett fel står i [error] tills det visats
- * ([onErrorShown]); ett avbrutet kontoval är inget fel och hamnar aldrig där.
+ * ([onErrorShown]); ett avbrutet kontoval är inget fel och hamnar aldrig där. [online] är pluppen på avataren:
+ * android-ui visar den bara inloggad (grön ansluten, grå ring utan nät).
  */
 @HiltViewModel
-class AccountViewModel @Inject constructor(private val auth: AuthRepository) : ViewModel() {
+class AccountViewModel @Inject constructor(private val auth: AuthRepository, network: NetworkStatus) : ViewModel() {
+
+    /** Om appen har internet just nu. */
+    val online: StateFlow<Boolean> = network.online
 
     /** Inloggad Google-användare, null utloggad – läst ur Firebase, aldrig en egen kopia. */
     val user: StateFlow<AuthUser?> = auth.currentUser.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
