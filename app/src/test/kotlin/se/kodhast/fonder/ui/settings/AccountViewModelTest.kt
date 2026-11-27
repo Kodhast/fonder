@@ -21,6 +21,7 @@ import se.kodhast.fonder.data.auth.AuthRepository
 import se.kodhast.fonder.data.auth.AuthUser
 import se.kodhast.fonder.data.auth.SignInException
 import se.kodhast.fonder.data.common.DataError
+import se.kodhast.ui.account.NetworkStatus
 
 /**
  * Kontot i avatarmenyn (TP-6, NAV-7, #280 C): inloggning, utloggning och felet som visas en gång. Fake i stället för
@@ -51,6 +52,11 @@ class AccountViewModelTest {
         }
     }
 
+    private val connected = MutableStateFlow(true)
+    private val network = object : NetworkStatus {
+        override val online = connected
+    }
+
     @Before
     fun setUp() = Dispatchers.setMain(dispatcher)
 
@@ -59,7 +65,7 @@ class AccountViewModelTest {
 
     @Test
     fun `en lyckad inloggning syns som användaren`() = runTest(dispatcher) {
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.user.test {
             assertNull(awaitItem())
             vm.signIn(activityContext)
@@ -73,7 +79,7 @@ class AccountViewModelTest {
     fun `ett avbrutet kontoval ger inget fel`() = runTest(dispatcher) {
         // Att stänga kontoväljaren är ett val, inte ett fel.
         signInResult = Result.failure(SignInException(SignInException.Reason.CANCELLED))
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.signIn(activityContext)
         advanceUntilIdle()
         assertNull(vm.error.value)
@@ -82,7 +88,7 @@ class AccountViewModelTest {
     @Test
     fun `ett riktigt fel visas med sin orsak och kvitteras bort`() = runTest(dispatcher) {
         signInResult = Result.failure(SignInException(SignInException.Reason.NO_CREDENTIAL))
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.signIn(activityContext)
         advanceUntilIdle()
         assertEquals(DataError.SignInNoCredential, vm.error.value?.cause)
@@ -95,7 +101,7 @@ class AccountViewModelTest {
     fun `ett fel utan orsak faller tillbaka på SignInFailed`() = runTest(dispatcher) {
         // Ett undantag som inte är en SignInException får inte ge ett tyst misslyckande.
         signInResult = Result.failure(IllegalStateException("oväntat"))
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.signIn(activityContext)
         advanceUntilIdle()
         assertEquals(DataError.SignInFailed, vm.error.value?.cause)
@@ -104,7 +110,7 @@ class AccountViewModelTest {
     @Test
     fun `dubbeltryck på logga in startar en inloggning`() = runTest(dispatcher) {
         // Kontoväljaren ger ingen synlig återkoppling förrän den öppnats, och två anrop ger två väljare.
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.signIn(activityContext)
         vm.signIn(activityContext)
         advanceUntilIdle()
@@ -114,7 +120,7 @@ class AccountViewModelTest {
     @Test
     fun `logga ut tömmer användaren`() = runTest(dispatcher) {
         authUser.value = AuthUser("uid-1", "Test Testsson", "test@example.com")
-        val vm = AccountViewModel(fakeAuth)
+        val vm = AccountViewModel(fakeAuth, network)
         vm.user.test {
             // stateIn börjar på null innan Firebase-flödet hunnit svara.
             val first = awaitItem() ?: awaitItem()
@@ -124,5 +130,13 @@ class AccountViewModelTest {
             assertTrue(signOutCalled)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun `online följer nätet – pluppen på avataren (NAV-7)`() = runTest(dispatcher) {
+        val vm = AccountViewModel(fakeAuth, network)
+        assertTrue(vm.online.value)
+        connected.value = false
+        assertEquals(false, vm.online.value)
     }
 }

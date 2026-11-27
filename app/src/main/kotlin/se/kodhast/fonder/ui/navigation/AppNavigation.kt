@@ -73,6 +73,7 @@ fun AppNavigation(
     val isRunning by workerStatusViewModel.isRunning.collectAsStateWithLifecycle()
     val beslutBadgeCount by decisionBadgeViewModel.count.collectAsStateWithLifecycle()
     val user by accountViewModel.user.collectAsStateWithLifecycle()
+    val online by accountViewModel.online.collectAsStateWithLifecycle()
     val accountError by accountViewModel.error.collectAsStateWithLifecycle()
 
     // Engångsbegäran från Översiktens påminnelse: Inställningar skrollar fram säkerhetskopieringen
@@ -93,12 +94,13 @@ fun AppNavigation(
         beslutBadgeCount = beslutBadgeCount,
         accountError = accountError,
         onAccountErrorShow = accountViewModel::onErrorShown,
-        // Samma lambda tills kontot ändras, så att flikarnas sidhuvud inte ritas om i onödan.
-        account = remember(user, backStack) {
+        // Samma lambda tills kontot eller anslutningen ändras, så att flikarnas sidhuvud inte ritas om i onödan.
+        account = remember(user, online, backStack) {
             {
                 FonderAccountMenu(
                     user = user,
                     backStack = backStack,
+                    online = online,
                     onSignIn = { accountViewModel.signIn(context) },
                     onSignOut = accountViewModel::signOut
                 )
@@ -109,7 +111,8 @@ fun AppNavigation(
 
 /**
  * Avatarmenyn i flikarnas sidhuvud (NAV-7): bibliotekets [AccountMenuAvatar] med Fonders mål – Inställningar, Om Fonder
- * och i debug-bygget komponentgalleriet ([showGallery]). Egen funktion så att testerna prövar samma koppling som appen.
+ * och i debug-bygget komponentgalleriet ([showGallery]). [online] är pluppen på avataren (bara inloggad). Egen funktion
+ * så att testerna prövar samma koppling som appen.
  */
 @Composable
 fun FonderAccountMenu(
@@ -117,6 +120,7 @@ fun FonderAccountMenu(
     backStack: AppBackStack,
     onSignIn: () -> Unit,
     onSignOut: () -> Unit,
+    online: Boolean? = null,
     showGallery: Boolean = BuildConfig.DEBUG
 ) {
     AccountMenuAvatar(
@@ -127,6 +131,7 @@ fun FonderAccountMenu(
         onSignIn = onSignIn,
         onSignOut = onSignOut,
         signInNote = stringResource(R.string.account_sign_in_note),
+        online = online,
         onOpenGallery = if (showGallery) ({ backStack.push(ComponentGalleryKey) }) else null
     )
 }

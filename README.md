@@ -3,7 +3,7 @@
 App för att hålla koll på fonder: ladda kurser, registrera transaktioner, räkna ut värde
 och visa utveckling i diagram — med molnbackup via Google Drive.
 
-> Version: 1.12.1 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
+> Version: 1.12.2 (följer `versionName`/[KRAVLISTA.md](KRAVLISTA.md))
 
 **Kravspecifikation:** [KRAVLISTA.md](KRAVLISTA.md) · **Utvecklingsregler:** [CLAUDE.md](CLAUDE.md)
 
@@ -138,6 +138,7 @@ den fullständiga källan.
 
 | Version | Innehåll |
 |---|---|
+| 1.12.2 | **Pluppen på avataren** (NAV-7): inloggad en grön plupp när appen har internet – samma gröna i alla Kodhäst-appar – och en grå ihålig ring utan nät; utloggad ingen. Ny behörighet `ACCESS_NETWORK_STATE` (TP-8). android-ui 4.0.0 → 5.1.0. |
 | 1.12.1 | **En primär knapp per vy** (android-ui 4.0.0, D-3): knapparna utan uttalad variant är tonade i stället för fyllda – Inställningarnas Välj jämförelseindex, Exportera och Säkerhetskopiera till Drive, och Hämta i Om. Spara (ISIN) och importens slutknapp är fyllda som förut. Inga beteendeändringar. android-ui 3.14.0 → 4.0.0. |
 | 1.12.0 | **Ny version finns** (NAV-10): en prick efter versionen i sidhuvudet när en nyare release finns, "Ny version X finns" under Om i kontomenyn och Hämta i Om. android-ui 3.12.0 → 3.14.0 (3.13.0: `SwipeToDelete` med frågan inbyggd, inget synligt ändrat). |
 | 1.11.5 | **Samma textstorlek i fondfaktakortet och analyskorten** som på skärmarna runt omkring (16 sp i stället för 14 sp, `AppTheme.typography`). Inga beteendeändringar. |
