@@ -10,12 +10,15 @@ import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import se.kodhast.fonder.di.NetworkModule
+import se.kodhast.ui.account.NetworkStatus
 
 /**
  * Ersätter [NetworkModule] i alla `@HiltAndroidTest`: appens enda `OkHttpClient` (kurskällorna,
@@ -23,6 +26,7 @@ import se.kodhast.fonder.di.NetworkModule
  * socket, så att instrumenttester är oberoende av nätet och deterministiska (regel 2). Appen
  * behandlar svaret som ett vanligt nätverksfel. [NetworkGuard] räknar ändå varje försök till en
  * riktig anslutning, så att ett test kan fälla sig självt om något tar sig förbi.
+ * [NetworkStatus] är fast ansluten, så att avatarens plupp inte beror på emulatorns nät.
  */
 @Module
 @TestInstallIn(components = [SingletonComponent::class], replaces = [NetworkModule::class])
@@ -34,6 +38,12 @@ object OfflineNetworkModule {
         .addInterceptor(OfflineInterceptor)
         .socketFactory(NetworkGuard.socketFactory)
         .build()
+
+    @Provides
+    @Singleton
+    fun provideNetworkStatus(): NetworkStatus = object : NetworkStatus {
+        override val online: StateFlow<Boolean> = MutableStateFlow(true)
+    }
 }
 
 /** Svarar på varje anrop utan nätverk; anropet når aldrig OkHttps anslutningslager. */
